@@ -85,6 +85,11 @@
     background:rgba(var(--wash-rgb),0.04); border:1px solid var(--linea);
     font-size:0.78rem; position:relative;
   }
+  /* AI seats get a subtle tint instead of a text badge, so they don't need a
+     second line under the name — avoids stretching human seats in the same
+     row to match an "IA" label they don't have. Declared before .turn so the
+     turn highlight still wins when it's an AI seat's turn. */
+  .pchip.ai{border-color:var(--piedra); background:rgba(var(--wash-rgb),0.09);}
   .pchip.turn{border-color:var(--oro); background:var(--oro-soft);}
   .pchip .nm{font-weight:600; color:var(--text);}
   .pchip .ct{color:var(--piedra); font-size:0.72rem; margin-top:2px;}
@@ -133,20 +138,20 @@
   /* CARDS */
   .card{
     display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
-    width:46px; height:64px; background:var(--pergamino); color:var(--tinta); border-radius:9px;
+    width:39px; height:54px; background:var(--pergamino); color:var(--tinta); border-radius:8px;
     box-shadow:0 3px 8px rgba(0,0,0,0.28); font-family:'Fraunces', serif;
-    font-weight:700; font-size:1.25rem; flex-shrink:0; position:relative;
+    font-weight:700; font-size:1.06rem; flex-shrink:0; position:relative;
   }
-  .card .pts{position:absolute; bottom:4px; right:6px; font-size:0.52rem; font-family:'Inter'; color:var(--piedra); font-weight:600;}
-  .card .icon-wrap{margin-top:3px; height:13px; display:flex; align-items:center; justify-content:center;}
-  .card svg{width:13px; height:13px;}
+  .card .pts{position:absolute; bottom:3px; right:5px; font-size:0.44rem; font-family:'Inter'; color:var(--piedra); font-weight:600;}
+  .card .icon-wrap{margin-top:3px; height:11px; display:flex; align-items:center; justify-content:center;}
+  .card svg{width:11px; height:11px;}
   .card.oros{color:var(--c-oros);}
   .card.copas{color:var(--c-copas);}
   .card.espadas{color:var(--c-espadas);}
   .card.bastos{color:var(--c-bastos);}
-  .card.mini{width:38px; height:53px; font-size:1rem;}
-  .card.mini .icon-wrap{height:11px; margin-top:2px;}
-  .card.mini svg{width:11px; height:11px;}
+  .card.mini{width:32px; height:45px; font-size:0.85rem;}
+  .card.mini .icon-wrap{height:9px; margin-top:2px;}
+  .card.mini svg{width:9px; height:9px;}
 
   /* HAND */
   .hand-wrap{margin:12px 12px 0;}
@@ -309,9 +314,6 @@
   .help-suggestion .txt{font-size:0.82rem;}
   .help-suggestion .txt b{color:var(--oro); font-family:'Fraunces',serif; font-size:0.95rem;}
   .card.suggested{box-shadow:0 0 0 3px var(--oro), 0 3px 8px rgba(0,0,0,0.28);}
-
-  /* AI BADGE */
-  .pchip .ainote{font-size:0.6rem; color:var(--piedra); margin-top:1px; letter-spacing:0.04em;}
 
   /* DECLARER ICON (4p): marks who won the auction, for the whole hand — unlike
      the "sale" tag (current trick leader), which moves every trick. */
@@ -1658,7 +1660,8 @@ function cardHtml(card, extraClass){
 
 function makePchip(s){
   const div=document.createElement('div');
-  div.className='pchip'+(state.turn===s && state.phase==='playing'?' turn':'')+((state.bidSeat===s && state.phase==='bidding')?' turn':'');
+  const isAI = state.humanPlayers!==undefined && s>=state.humanPlayers;
+  div.className='pchip'+(isAI?' ai':'')+(state.turn===s && state.phase==='playing'?' turn':'')+((state.bidSeat===s && state.phase==='bidding')?' turn':'');
   let tag='';
   if(state.dealerIndex===s) tag='<div class="tag">reparte</div>';
   let bottomTag='';
@@ -1670,8 +1673,7 @@ function makePchip(s){
   const isDeclarer = state.auctionWinner===s && (state.phase==='playing'||state.phase==='handover');
   const soloNote = (state.numPlayers===3 && isDeclarer) ? '<div class="ct">Solo</div>' : '';
   const declIcon = (state.numPlayers===4 && isDeclarer) ? '<span class="decl-icon" title="Ganó la puja">🔨</span> ' : '';
-  const aiNote = (state.humanPlayers!==undefined && s>=state.humanPlayers) ? '<div class="ainote">IA</div>' : '';
-  div.innerHTML = `${tag}<div class="nm">${declIcon}${state.seatNames[s]}</div>${soloNote}${aiNote}${bottomTag}`;
+  div.innerHTML = `${tag}<div class="nm">${declIcon}${state.seatNames[s]}</div>${soloNote}${bottomTag}`;
   return div;
 }
 
