@@ -134,7 +134,7 @@
   .card{
     display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
     width:46px; height:64px; background:var(--pergamino); color:var(--tinta); border-radius:9px;
-    box-shadow:0 4px 13px rgba(0,0,0,0.4); font-family:'Fraunces', serif;
+    box-shadow:0 3px 8px rgba(0,0,0,0.28); font-family:'Fraunces', serif;
     font-weight:700; font-size:1.25rem; flex-shrink:0; position:relative;
   }
   .card .pts{position:absolute; bottom:4px; right:6px; font-size:0.52rem; font-family:'Inter'; color:var(--piedra); font-weight:600;}
@@ -151,7 +151,7 @@
   /* HAND */
   .hand-wrap{margin:12px 12px 0;}
   .hand-wrap .lbl{font-size:0.78rem; color:var(--oro); margin-bottom:8px;}
-  .hand{display:flex; gap:7px; overflow-x:auto; padding-bottom:6px;}
+  .hand{display:flex; gap:7px; overflow-x:auto; overflow-y:hidden; padding:10px 0 14px;}
   .card.clickable{cursor:pointer; transition:transform .12s;}
   .card.clickable:hover{transform:translateY(-4px);}
   .card.disabled{opacity:0.32; cursor:default;}
@@ -294,7 +294,7 @@
   }
   .help-suggestion .txt{font-size:0.82rem;}
   .help-suggestion .txt b{color:var(--oro); font-family:'Fraunces',serif; font-size:0.95rem;}
-  .card.suggested{box-shadow:0 0 0 3px var(--oro), 0 4px 13px rgba(0,0,0,0.4);}
+  .card.suggested{box-shadow:0 0 0 3px var(--oro), 0 3px 8px rgba(0,0,0,0.28);}
 
   /* AI BADGE */
   .pchip .ainote{font-size:0.6rem; color:var(--piedra); margin-top:1px; letter-spacing:0.04em;}
@@ -487,6 +487,26 @@
 </div>
 
 <script>
+/* =====================================================================
+   OVERVIEW
+   Single-file game: no build step, no external JS. Everything lives in
+   one global `state` object (see STATE section) that gets rebuilt by
+   newGame()/startNewHand(); the UI is a pure function of that object,
+   redrawn from scratch by render() after every state change (no diffing
+   / virtual DOM — the DOM is just thrown away and rebuilt each time).
+
+   The game itself is a state machine driven by `state.phase`:
+     'bidding' → 'trump' → 'playing' → 'handover' → (loops to 'bidding'
+     for the next hand, or → 'gameover' once someone hits the target score)
+   See GAME FLOW below for the functions that drive each transition.
+
+   Seats are just array indices 0..numPlayers-1. Seats below
+   `state.humanPlayers` are controlled by whoever is holding the phone;
+   the rest are played by the AI (see AI: BIDDING / TRUMP CHOICE / CARD
+   PLAY). PASS-AND-PLAY handles hiding a seat's cards from the others
+   when more than one human shares the device.
+   ===================================================================== */
+
 /* ---------- DATA ---------- */
 const SUITS = ['oros','copas','espadas','bastos'];
 const SUIT_LABEL = {oros:'Oros',copas:'Copas',espadas:'Espadas',bastos:'Bastos'};
@@ -496,6 +516,8 @@ const RANK_SHORT = {As:'A','3':'3',Rey:'R',Caballo:'C',Sota:'S','7':'7','6':'6',
 const POINTS = {As:11,'3':10,Rey:4,Caballo:3,Sota:2,'7':0,'6':0,'5':0,'4':0,'2':0};
 const TEAM_OF_4 = {0:'A',1:'B',2:'A',3:'B'};
 
+// Inline SVG paths for each suit's icon (used on cards, trump-choice buttons, etc).
+// Original artwork — see CONTEXT.md for why (no reused copyrighted deck art).
 function suitIcon(suit){
   const icons = {
     oros:'<circle cx="12" cy="12" r="9.4" fill="#E8C46A" stroke="#8A6420" stroke-width="1"/><circle cx="12" cy="12" r="6.4" fill="none" stroke="#8A6420" stroke-width="1"/><path d="M12 8.4 L12.7 10.8 L15.2 12 L12.7 13.2 L12 15.6 L11.3 13.2 L8.8 12 L11.3 10.8 Z" fill="#8A6420"/>',
@@ -506,11 +528,23 @@ function suitIcon(suit){
   return `<svg viewBox="0 0 24 24">${icons[suit]}</svg>`;
 }
 
-/* ---------- STATE ---------- */
+/* ---------- STATE ----------
+   `state` is the single source of truth for the whole game — it's a plain
+   object rebuilt by newGame() and mutated in place as the hand progresses.
+   Key fields (not exhaustive, set at various points below):
+     numPlayers, humanPlayers  — game type (3/4) and how many are humans here
+     phase                     — 'bidding' | 'trump' | 'playing' | 'handover' | 'gameover'
+     hands[seat]                — each seat's current cards
+     trumpSuit, biddingTeam     — set once the auction is won
+     currentTrick                — cards played so far in the trick in progress
+     seenCards, voidSuits[seat]  — memory used by the Monte Carlo AI and help mode
+     scores                      — running score per team (4p) or per seat (3p)
+   ---------------------------- */
 let state = {};
 let helpModeEnabled = false; // persists across "new game" within this session
 let gameEpoch = 0; // bumped on every newGame(); lets stale setTimeouts from a previous game detect they're obsolete
 
+// Builds one suit's worth of cards for every suit, e.g. 10 ranks × 4 suits = 40 cards.
 function buildDeck(ranks){
   const deck=[];
   for(const suit of SUITS){
@@ -528,6 +562,8 @@ function shuffle(arr){
   return arr;
 }
 function nextSeat(s){ return (s+1)%state.numPlayers; }
+// Sorts a hand for display: trump suit first (if known), then the other suits,
+// each internally ordered by strength (rankIndex 0 = As = strongest).
 function sortHand(hand, trumpSuit){
   const order = trumpSuit ? [trumpSuit, ...SUITS.filter(s=>s!==trumpSuit)] : SUITS;
   hand.sort((a,b)=>{
@@ -538,7 +574,10 @@ function sortHand(hand, trumpSuit){
 }
 function cardLabel(c){ return `${RANK_SHORT[c.rank]} de ${SUIT_LABEL[c.suit]}`; }
 
-/* mode-aware helpers */
+/* mode-aware helpers — 4 players are 2 fixed teams (A: seats 0+2, B: seats 1+3);
+   3 players is everyone-for-themselves, so "the bidding side" is just one seat.
+   These wrap that difference so the rest of the code doesn't have to branch on
+   numPlayers every time it needs to compare who's on whose side. */
 function isDeclarerSide(seat){
   if(state.numPlayers===4) return TEAM_OF_4[seat]===state.biddingTeam;
   return seat===state.biddingTeam;
@@ -563,7 +602,13 @@ function formatRunningTotals(snapshot){
   return state.seatNames.map((n,i)=>`${n}:${snapshot[i]}`).join(' · ');
 }
 
-/* ---------- GAME RULES ---------- */
+/* ---------- GAME RULES ----------
+   Trick-taking logic used by both the real game loop and every AI
+   simulation (Monte Carlo rollouts reuse these exact same functions, so
+   the AI never "cheats" by using different rules than the player sees). */
+// Does `newCard` beat `bestCard` (the current best in the trick)? Trump beats
+// non-trump; among two trumps or two cards of the lead suit, lower rankIndex
+// wins (rankIndex 0 = As); a card that's neither trump nor the lead suit never wins.
 function beats(newCard,bestCard,leadSuit,trump){
   const newTrump = newCard.suit===trump, bestTrump = bestCard.suit===trump;
   if(newTrump && !bestTrump) return true;
@@ -579,6 +624,11 @@ function trickWinnerSeat(trick,trump){
   for(let i=1;i<trick.length;i++){ if(beats(trick[i].card,best.card,leadSuit,trump)) best=trick[i]; }
   return best.seat;
 }
+// Which cards from `hand` are legal to play right now, given the trick so far.
+// Implements the "obligación de asistir y superar" rule: must follow the lead
+// suit and beat the current best if possible; if you can't follow suit, must
+// trump and beat any trump on the table if possible; only when you have
+// neither the lead suit nor trump can you play anything.
 function legalMoves(hand,trick,trump){
   if(trick.length===0) return hand.slice();
   const leadSuit=trick[0].card.suit;
@@ -597,7 +647,14 @@ function legalMoves(hand,trick,trump){
   return hand.slice();
 }
 
-/* ---------- AI: BIDDING ---------- */
+/* ---------- AI: BIDDING ----------
+   Each level estimates the highest bid this hand is "worth" to `seat` (its
+   own private ceiling), based on how many points and how many cards it
+   holds in its strongest suit plus total hand points. aiBidAction() (further
+   down, in GAME FLOW) then bids up to that ceiling one step (+5) at a time,
+   or passes once the next step would exceed it. The three levels only differ
+   in the formula's weights and how much randomness is mixed in — low is
+   wide and erratic, high is tight and well-calibrated, medium sits between. */
 function heuristicMaxBid(seat){
   const hand=state.hands[seat];
   let bestSuitPts=0, bestSuitCount=0;
@@ -640,6 +697,7 @@ function highMaxBid(seat){
   est = Math.round(est/5)*5;
   return Math.min(Math.max(est,55),140);
 }
+// Dispatches to the right ceiling-estimate function for the configured AI level.
 function aiMaxBid(seat){
   const level = state.aiLevel || 'medium';
   if(level==='low') return lowMaxBid(seat);
@@ -647,7 +705,12 @@ function aiMaxBid(seat){
   return heuristicMaxBid(seat);
 }
 
-/* ---------- AI: TRUMP CHOICE ---------- */
+/* ---------- AI: TRUMP CHOICE ----------
+   Once a seat wins the auction, it must pick a trump suit. This only looks
+   at that seat's own hand (no hidden information involved), so there's
+   nothing for the Monte Carlo machinery to help with here — the heuristic
+   (most points + most cards in a suit) is used as-is for medium and high;
+   low sometimes picks at random instead, to match its "flojo e irregular" billing. */
 function heuristicChooseTrump(seat){
   const hand=state.hands[seat];
   let bestSuit=SUITS[0], bestScore=-1;
@@ -795,6 +858,10 @@ function rolloutFromCandidate(seat, candidate, assigned){
   const score = isDeclarerSide(seat) ? biddingTeamPoints : -biddingTeamPoints;
   return {score, firstTrickWinner};
 }
+// The "Alto" AI's card-choice: for every legal card, run several rollouts
+// against a freshly-determinized (randomly but plausibly dealt) hidden hand
+// for the other players, and keep whichever card scored best on average.
+// This is the same function help mode calls into (see monteCarloHelpStats).
 function monteCarloChooseCard(seat, hand, trick, trump){
   const legal=legalMoves(hand,trick,trump);
   if(legal.length===1) return legal[0];
@@ -811,6 +878,7 @@ function monteCarloChooseCard(seat, hand, trick, trump){
   }
   return bestCard;
 }
+// Dispatches to the right card-choice policy for the configured AI level.
 function aiChooseCard(seat){
   const hand=state.hands[seat], trick=state.currentTrick, trump=state.trumpSuit;
   const level=state.aiLevel || 'medium';
@@ -819,7 +887,10 @@ function aiChooseCard(seat){
   return heuristicChooseCard(seat,hand,trick,trump);
 }
 
-/* ---------- GAME FLOW ---------- */
+/* ---------- GAME FLOW ----------
+   Starts a whole new match (fresh scores at 0) from the Ajustes panel's
+   settings. Each individual hand within the match is (re)started by
+   startNewHand() below, which deals cards and kicks off the auction. */
 function newGame(target, numPlayers, aiLevel, humanPlayers){
   numPlayers = parseInt(numPlayers)||4;
   humanPlayers = parseInt(humanPlayers)||numPlayers; // default: all players are human
@@ -883,6 +954,9 @@ function toggleHelpMode(on){
   if(state.phase) render();
 }
 
+// Deals a fresh hand (shuffles, splits evenly across seats, sorts each hand)
+// and moves into the bidding phase. Called at the start of a match and again
+// after every hand via advanceToNextHand().
 function startNewHand(){
   const ranks = state.numPlayers===4 ? RANKS_4P : RANKS_3P;
   const deck=shuffle(buildDeck(ranks));
@@ -897,6 +971,9 @@ function startNewHand(){
   startAuction();
 }
 
+// Sets up the auction: bidding starts with the seat after the dealer, and
+// every AI seat pre-computes its private max bid (aiMaxBids) up front so
+// aiBidAction() just has to compare against it turn by turn.
 function startAuction(){
   state.phase='bidding';
   state.passed=new Set();
@@ -911,6 +988,11 @@ function startAuction(){
   bidTick();
 }
 
+// Advances the auction to whoever's turn it is to bid. Re-entered after every
+// bid/pass (see recordBid/recordPass) — it either resolves the auction (if
+// only one bidder is left standing), skips seats that already passed, or
+// renders and hands off to aiBidAction() (via setTimeout, for a visible pause)
+// or waits for the human bidding UI to call confirmHumanBid()/humanPass().
 function bidTick(){
   if(state.passed.size>=state.numPlayers-1 && state.currentBid>0){
     const remaining=seatRange().filter(s=>!state.passed.has(s));
@@ -987,6 +1069,9 @@ function humanPass(){
   recordPass(state.bidSeat);
 }
 
+// Auction is over: the winning seat now needs to name a trump suit (moves the
+// state machine into the 'trump' phase). AI winners pick automatically after
+// a short delay; a human winner sees the trump-choice buttons via render().
 function finishAuction(winnerSeat){
   state.auctionWinner=winnerSeat;
   state.bidAmount=state.currentBid;
@@ -1016,6 +1101,9 @@ function renderTrumpChoices(){
     el.appendChild(div);
   });
 }
+// Trump is set: resets all the per-hand tallies (points, cante tracking,
+// help-mode memory) and moves into the 'playing' phase, with the auction
+// winner leading the first trick.
 function chooseTrump(suit){
   state.trumpSuit=suit;
   state.phase='playing';
@@ -1036,6 +1124,10 @@ function chooseTrump(suit){
   state.log.push(`Triunfo: ${SUIT_LABEL[suit]}. Sale ${state.seatNames[state.leader]}.`);
   playTick();
 }
+// Re-entered after every card played (or when a new trick starts). Renders
+// the current state, then either waits for the human to click a card or,
+// for an AI seat, calls playCard() automatically after a short delay so the
+// AI's move is visible rather than instant.
 function playTick(){
   render();
   if(state.turn===null || state.turn===undefined) return;
@@ -1048,6 +1140,10 @@ function playTick(){
     playCard(seat, aiChooseCard(seat));
   },750);
 }
+// Plays one card for `seat`: removes it from their hand, adds it to the
+// trick, and updates the memory used by the AI/help mode (seenCards,
+// voidSuits). Once all seats have played, hands off to resolveTrick();
+// otherwise passes the turn to the next seat via playTick().
 function playCard(seat,card){
   const hand=state.hands[seat];
   const idx=hand.findIndex(c=>c.id===card.id);
@@ -1073,6 +1169,11 @@ function playCard(seat,card){
     },900);
   }
 }
+// Scores the just-completed trick: awards its points to the bidding side if
+// they won it, detects and scores any cante (rey+caballo of the same suit
+// held by the winner) not already counted, and adds the 10-de-últimas bonus
+// on the final trick. Then either starts the next trick or, if that was the
+// last one, calls endHand().
 function resolveTrick(){
   const trick=state.currentTrick;
   const winnerSeat=trickWinnerSeat(trick,state.trumpSuit);
@@ -1122,6 +1223,14 @@ function resolveTrick(){
     playTick();
   }
 }
+// Hand is over (all tricks played): decides who scores. 4-player is simple —
+// the bidding team gets the bid amount if they made it, otherwise the other
+// team does. 3-player is asymmetric — a failed bid ("mano bañada") splits
+// the bid amount between the two defenders, with a 5-point bonus to whichever
+// of them was "mano" (next to the dealer) if the split would otherwise be
+// uneven. Sets state.phase='handover' so render() shows the summary panel
+// instead of the mesa, and checks whether this hand's score pushed anyone
+// past the target (→ showOverlay for a game-over win screen).
 function endHand(){
   const success = state.biddingTeamPoints >= state.bidAmount;
   state.phase='handover';
@@ -1495,7 +1604,13 @@ function renderHelp(activeSeat){
   }
 }
 
-/* ---------- RENDER ---------- */
+/* ---------- RENDER ----------
+   Everything here reads from `state` and rewrites the DOM to match — none
+   of it mutates `state`. render() (below) is the single entry point that
+   calls all the render* helpers in turn; it's called after every state
+   change (start of a phase, card played, timer fired, etc), so the UI is
+   always just "whatever the current state says it should be" rather than
+   being updated incrementally. */
 function cardHtml(card, extraClass){
   return `<div class="card ${card.suit} ${extraClass||''}" data-id="${card.id}">
     <div>${RANK_SHORT[card.rank]}</div>
@@ -1549,6 +1664,12 @@ function renderPlayers(){
   }
 }
 
+// The main render entry point — rebuilds the whole UI from `state`: scores,
+// player chips, the trick in progress, whichever panel matches the current
+// phase (bidding/trump/hand summary), the active seat's hand and legal
+// moves, the log, and the help panel. `activeSeat` is the human seat (if
+// any) whose cards/controls should currently be shown — see
+// PASS-AND-PLAY's activeSeatForUI() for how that's decided.
 function render(){
   const activeSeat = activeSeatForUI();
   updatePassScreen();
