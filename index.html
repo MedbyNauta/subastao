@@ -74,6 +74,18 @@
   .score-chip .lbl{font-size:0.66rem; color:var(--oro); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .score-chip .val{font-family:'Fraunces', serif; font-size:1.2rem;}
   .score-chip.you{border-color:var(--oro);}
+  /* Live running points for the hand in progress, right under the match
+     total — ticks up trick by trick, then sits at 0 from the moment the
+     hand resolves (see currentHandPoints()) until the next one starts. */
+  .score-chip .mano{font-size:0.64rem; color:var(--piedra); margin-top:2px; font-variant-numeric:tabular-nums;}
+  /* Brief pop when a chip's total actually changes at hand-end — see
+     pulseScoreChips(), called right after endHand()'s render(). */
+  @keyframes score-pop{
+    0%   { transform:scale(1); box-shadow:0 0 0 0 rgba(217,164,65,0); }
+    35%  { transform:scale(1.08); box-shadow:0 0 16px 3px rgba(217,164,65,0.5); border-color:var(--oro); background:var(--oro-soft); }
+    100% { transform:scale(1); box-shadow:0 0 0 0 rgba(217,164,65,0); }
+  }
+  .score-chip.pop{animation:score-pop 0.9s ease-out;}
   .icon-btn{
     width:32px; height:32px; border-radius:50%; border:1px solid var(--linea);
     background:rgba(var(--wash-rgb),0.06); color:var(--text); font-size:0.95rem;
@@ -90,9 +102,6 @@
   }
   .team-group.teamA{border-color:rgba(217,164,65,0.5);}
   .team-row{display:flex; gap:6px;}
-  /* Team's combined running points for the hand in progress — sits under
-     its pair of chips instead of in a separate "Puntos jugada a jugada" panel. */
-  .team-total{text-align:center; font-family:'Fraunces', serif; font-weight:700; font-size:1.3rem; color:var(--text); margin-top:2px;}
   .pchip{
     flex:1; text-align:center; padding:10px 4px; border-radius:8px;
     background:rgba(var(--wash-rgb),0.04); border:1px solid var(--linea);
@@ -109,10 +118,6 @@
     border:1px solid var(--linea); border-radius:5px; padding:0 4px; margin-left:4px;
     vertical-align:middle; letter-spacing:0.03em;
   }
-  /* Running trick points inline right next to the name (3-player only — see
-     makePchip()), same color/weight as the name itself so it reads as part
-     of the label rather than a separate stat. */
-  .pchip .pts-inline{font-weight:600; color:var(--text); margin-left:5px;}
   .pchip .tag{
     position:absolute; top:-8px; left:50%; transform:translateX(-50%);
     background:var(--oro); color:var(--tinta); font-size:0.6rem; padding:1px 6px;
@@ -141,11 +146,9 @@
   .trick-slot{text-align:center;}
   .trick-slot .who{font-size:0.63rem; color:var(--piedra); margin-top:3px;}
 
-  /* LIVE POINTS — folded into the player chips themselves instead of a
-     separate panel: an inline number next to the name in 3-player mode
-     (.pchip .pts-inline), or a combined team total under each pair in
-     4-player mode (.team-total) — see both near the rest of the .pchip
-     rules below. */
+  /* LIVE POINTS — live under the match total in the header score chips
+     instead of a separate panel; see .score-chip .mano near the top of
+     this file, and currentHandPoints()/pulseScoreChips() in the JS. */
 
   /* CARDS */
   .card{
@@ -939,7 +942,7 @@ function newGame(target, numPlayers, aiLevel, humanPlayers){
     numPlayers,
     humanPlayers, // how many humans play on this mobile device
     aiLevel: aiLevel || 'medium',
-    seatNames: numPlayers===4 ? ['Héctor','Miguel','Leticia','Nala'] : ['Héctor','Miguel','Leticia'],
+    seatNames: numPlayers===4 ? ['Hector','Miguel','Leticia','Nala'] : ['Hector','Miguel','Leticia'],
     scores: numPlayers===4 ? {A:0,B:0} : {0:0,1:0,2:0},
     dealerIndex:0,
     revealedSeat:null, // pass-and-play: which human seat has tapped "ver mis cartas" and is currently displayed
@@ -1262,13 +1265,16 @@ function endHand(){
   const success = state.biddingTeamPoints >= state.bidAmount;
   state.phase='handover';
   let summary;
+  let changedKeys; // which scoresRow chip(s) just got points — see pulseScoreChips()
   if(state.numPlayers===4){
     const awardedKey = success ? state.biddingTeam : (state.biddingTeam==='A'?'B':'A');
     state.scores[awardedKey]+=state.bidAmount;
     summary = {success, mode:4, awardedKey, made:state.biddingTeamPoints};
+    changedKeys=[awardedKey];
   } else if(success){
     state.scores[state.biddingTeam]+=state.bidAmount;
     summary = {success:true, mode:3, made:state.biddingTeamPoints};
+    changedKeys=[String(state.biddingTeam)];
   } else {
     const declarer=state.biddingTeam;
     const defenders=[0,1,2].filter(s=>s!==declarer);
@@ -1284,9 +1290,11 @@ function endHand(){
     state.scores[bonusSeat]+=bonusAmt;
     state.scores[otherSeat]+=otherAmt;
     summary = {success:false, mode:3, made:state.biddingTeamPoints, splits:{[bonusSeat]:bonusAmt,[otherSeat]:otherAmt}};
+    changedKeys=[String(bonusSeat),String(otherSeat)];
   }
   state.lastSummary=summary;
   render();
+  pulseScoreChips(changedKeys);
   renderSummary();
   document.getElementById('summaryPanel').classList.remove('hidden');
 
@@ -1664,26 +1672,38 @@ function makePchip(s){
   let bottomTag='';
   if((state.phase==='playing'||state.phase==='handover') && state.leader===s) bottomTag='<div class="tag-bottom">sale</div>';
   const aiTag = isAI ? '<span class="ai-tag">IA</span>' : '';
-  // Running trick points, live — only while the hand is actually in progress
-  // (the "Resultado de la mano" summary already covers final totals
-  // afterwards), and only in 3-player mode: 4-player shows just the team
-  // total under each pair instead (see renderPlayers()), nothing per-seat.
-  const ptsInline = (state.numPlayers===3 && state.phase==='playing' && state.playerTrickPoints)
-    ? `<span class="pts-inline">${state.playerTrickPoints[s]}</span>` : '';
-  div.innerHTML = `${tag}<div class="nm">${state.seatNames[s]}${ptsInline}${aiTag}</div>${bottomTag}`;
+  div.innerHTML = `${tag}<div class="nm">${state.seatNames[s]}${aiTag}</div>${bottomTag}`;
   return div;
 }
 
+// Live points for the hand in progress — 0 outside the 'playing' phase, so
+// the "Mano" line under each score chip sits at zero from the moment a hand
+// ends (see endHand()) through the next auction, ready for the next hand.
+function currentHandPoints(seat){
+  return (state.phase==='playing' && state.playerTrickPoints) ? state.playerTrickPoints[seat] : 0;
+}
 function renderScores(){
   const row=document.getElementById('scoresRow');
   if(state.numPlayers===4){
+    const manoA = currentHandPoints(0)+currentHandPoints(2);
+    const manoB = currentHandPoints(1)+currentHandPoints(3);
     row.innerHTML = `
-      <div class="score-chip you"><div class="lbl">${teamLabel('A')}</div><div class="val">${state.scores.A}</div></div>
-      <div class="score-chip"><div class="lbl">${teamLabel('B')}</div><div class="val">${state.scores.B}</div></div>`;
+      <div class="score-chip you" data-key="A"><div class="lbl">${teamLabel('A')}</div><div class="val">${state.scores.A}</div><div class="mano">Mano: ${manoA}</div></div>
+      <div class="score-chip" data-key="B"><div class="lbl">${teamLabel('B')}</div><div class="val">${state.scores.B}</div><div class="mano">Mano: ${manoB}</div></div>`;
   } else {
     row.innerHTML = state.seatNames.map((nm,i)=>`
-      <div class="score-chip ${i===0?'you':''}"><div class="lbl">${nm}</div><div class="val">${state.scores[i]}</div></div>`).join('');
+      <div class="score-chip ${i===0?'you':''}" data-key="${i}"><div class="lbl">${nm}</div><div class="val">${state.scores[i]}</div><div class="mano">Mano: ${currentHandPoints(i)}</div></div>`).join('');
   }
+}
+// Brief pop/glow on whichever score chip(s) just received points, called
+// right after endHand()'s render() has rebuilt scoresRow with fresh totals.
+function pulseScoreChips(keys){
+  keys.forEach(key=>{
+    const chip=document.querySelector(`.score-chip[data-key="${key}"]`);
+    if(!chip) return;
+    chip.classList.add('pop');
+    setTimeout(()=>chip.classList.remove('pop'), 900);
+  });
 }
 
 function renderPlayers(){
@@ -1698,16 +1718,6 @@ function renderPlayers(){
       row.className='team-row';
       g.seats.forEach(s=>row.appendChild(makePchip(s)));
       gdiv.appendChild(row);
-      // Team's combined running points, only while a hand is in progress —
-      // the only points display in 4-player mode (see makePchip(), which
-      // shows nothing per-seat here, unlike the 3-player pts-inline).
-      if(state.phase==='playing' && state.playerTrickPoints){
-        const total=g.seats.reduce((sum,s)=>sum+state.playerTrickPoints[s],0);
-        const totalDiv=document.createElement('div');
-        totalDiv.className='team-total';
-        totalDiv.textContent=total;
-        gdiv.appendChild(totalDiv);
-      }
       pdiv.appendChild(gdiv);
     });
   } else {
