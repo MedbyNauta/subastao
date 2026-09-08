@@ -299,6 +299,10 @@
   /* AI BADGE */
   .pchip .ainote{font-size:0.6rem; color:var(--piedra); margin-top:1px; letter-spacing:0.04em;}
 
+  /* DECLARER BADGE (4p): marks who won the auction, for the whole hand — unlike
+     the "sale" tag (current trick leader), which moves every trick. */
+  .pchip .decl{font-size:0.6rem; color:var(--oro); margin-top:1px; letter-spacing:0.03em; font-weight:700;}
+
   /* PASS-AND-PLAY SCREEN */
   #passOverlay .card-panel{background:var(--pergamino); color:var(--tinta);}
   #passOverlay h2{color:var(--tinta);}
@@ -904,8 +908,7 @@ function newGame(target, numPlayers, aiLevel, humanPlayers){
     seatNames: numPlayers===4 ? ['Héctor','Miguel','Leticia','Nala'] : ['Héctor','Miguel','Leticia'],
     scores: numPlayers===4 ? {A:0,B:0} : {0:0,1:0,2:0},
     dealerIndex:0,
-    revealedSeat:null, // pass-and-play: which human seat has tapped "ver mis cartas" for the current decision point
-    lastActorKey:null,
+    revealedSeat:null, // pass-and-play: which human seat has tapped "ver mis cartas" and is currently displayed
   };
   document.getElementById('overlay').classList.add('hidden');
   startNewHand();
@@ -1412,34 +1415,43 @@ function currentActorSeat(){
   if(state.phase==='playing') return state.turn;
   return null;
 }
-// Returns the seat whose hand/controls should currently be visible on screen, or
-// null if nobody's cards should be shown right now (AI's turn, or a human turn
-// that hasn't been revealed yet).
+// Returns the seat whose controls (bid buttons, trump choices, playable
+// cards) should currently be active, or null if nobody should be able to
+// act right now (AI's turn, or a human turn that hasn't been revealed yet).
 function activeSeatForUI(){
   const actor = currentActorSeat();
   if(!isHumanSeat(actor)) return null;
   if(state.humanPlayers<=1) return actor; // solo play: no one to hide cards from
   return state.revealedSeat===actor ? actor : null;
 }
+// Returns the human seat whose HAND should be displayed on screen right now
+// (whether or not it's currently their turn to act). This is deliberately
+// looser than activeSeatForUI(): once a human has revealed their cards, we
+// keep showing their (shrinking) hand while AI seats take their turns, so
+// the hand strip doesn't collapse and cause the panels below it to jump —
+// it only clears once control genuinely needs to pass to a DIFFERENT human.
+function handDisplaySeat(){
+  if(state.humanPlayers<=1) return 0; // solo: always your own hand, seat 0
+  const actor = currentActorSeat();
+  if(isHumanSeat(actor) && actor!==state.revealedSeat) return null; // a different human needs to reveal first
+  return state.revealedSeat;
+}
 function updatePassScreen(){
   const overlay = document.getElementById('passOverlay');
   if(state.humanPlayers<=1){ overlay.classList.add('hidden'); return; }
   const actor = currentActorSeat();
-  const actorKey = state.phase+':'+actor;
-  if(state.lastActorKey !== actorKey){
-    // the turn moved to a new decision point — require a fresh tap to reveal it,
-    // even if it's the same seat as before (the phone may have changed hands)
-    state.lastActorKey = actorKey;
-    state.revealedSeat = null;
-  }
-  if(!isHumanSeat(actor) || state.revealedSeat===actor){
+  // Only ask for a fresh "ver mis cartas" tap when control is moving to a
+  // DIFFERENT human seat than the one currently revealed — an AI turn in
+  // between doesn't count as the phone changing hands, so the same human
+  // stays revealed (just non-interactive) across their AI's turns.
+  if(isHumanSeat(actor) && actor!==state.revealedSeat){
+    const what = state.phase==='trump' ? 'para elegir el triunfo' : state.phase==='bidding' ? 'para pujar' : 'para jugar su carta';
+    document.getElementById('passOverlayTitle').textContent = `Pásale el móvil a ${state.seatNames[actor]}`;
+    document.getElementById('passOverlaySubtitle').textContent = `Toca cuando lo tenga ${what}. Nadie más debería ver esta pantalla.`;
+    overlay.classList.remove('hidden');
+  } else {
     overlay.classList.add('hidden');
-    return;
   }
-  const what = state.phase==='trump' ? 'para elegir el triunfo' : state.phase==='bidding' ? 'para pujar' : 'para jugar su carta';
-  document.getElementById('passOverlayTitle').textContent = `Pásale el móvil a ${state.seatNames[actor]}`;
-  document.getElementById('passOverlaySubtitle').textContent = `Toca cuando lo tenga ${what}. Nadie más debería ver esta pantalla.`;
-  overlay.classList.remove('hidden');
 }
 function revealCurrentSeat(){
   state.revealedSeat = currentActorSeat();
@@ -1627,9 +1639,15 @@ function makePchip(s){
   let bottomTag='';
   if((state.phase==='playing'||state.phase==='handover') && state.leader===s) bottomTag='<div class="tag-bottom">sale</div>';
   const cardCount = state.hands ? state.hands[s].length : 10;
-  const soloNote = (state.numPlayers===3 && state.auctionWinner===s && (state.phase==='playing'||state.phase==='handover')) ? ' · solo' : '';
+  // Persistent "who won the auction" marker — the "sale" tag only points at the
+  // CURRENT trick's leader, which changes every trick, so on its own it stops
+  // showing who's declaring after the first trick. This stays on the auction
+  // winner's chip for the whole hand (3p already implies it via "· solo").
+  const isDeclarer = state.auctionWinner===s && (state.phase==='playing'||state.phase==='handover');
+  const soloNote = (state.numPlayers===3 && isDeclarer) ? ' · solo' : '';
+  const declNote = (state.numPlayers===4 && isDeclarer) ? '<div class="decl">puja ganada</div>' : '';
   const aiNote = (state.humanPlayers!==undefined && s>=state.humanPlayers) ? '<div class="ainote">IA</div>' : '';
-  div.innerHTML = `${tag}<div class="nm">${state.seatNames[s]}</div><div class="ct">${cardCount} cartas${soloNote}</div>${aiNote}${bottomTag}`;
+  div.innerHTML = `${tag}<div class="nm">${state.seatNames[s]}</div><div class="ct">${cardCount} cartas${soloNote}</div>${declNote}${aiNote}${bottomTag}`;
   return div;
 }
 
@@ -1702,7 +1720,7 @@ function render(){
   if(state.phase==='bidding'){
     document.getElementById('bidInfo').textContent = state.currentBid>0 ? `Puja: ${state.currentBid} (${state.seatNames[state.currentBidder]})` : 'Subasta en curso';
   } else if(state.phase==='playing' || state.phase==='handover'){
-    document.getElementById('bidInfo').textContent = `Objetivo: ${state.bidAmount} · Llevan: ${state.biddingTeamPoints}`;
+    document.getElementById('bidInfo').textContent = `Puja: ${state.bidAmount} de ${biddingSideLabel()} · Llevan: ${state.biddingTeamPoints}`;
   } else {
     document.getElementById('bidInfo').textContent='';
   }
@@ -1726,26 +1744,30 @@ function render(){
     document.getElementById('bidLog').scrollTop = 999999;
   }
 
-  // hand — shows whichever human seat is currently acting (and has revealed their turn)
+  // hand — shows whichever human seat currently has the phone (handDisplaySeat),
+  // even between their own turns, so it keeps displaying their remaining cards
+  // instead of collapsing (and shifting the panels below it) while AI seats play.
+  // Clicking is only enabled when it's genuinely that seat's turn (activeSeat).
   const handRow=document.getElementById('handRow');
   handRow.innerHTML='';
   const multiHuman = state.humanPlayers>1;
-  if(activeSeat===null){
+  const displaySeat = handDisplaySeat();
+  if(displaySeat===null || !state.hands || !state.hands[displaySeat]){
     const waitingSeat = currentActorSeat();
     document.getElementById('handLbl').textContent = (waitingSeat!==null && multiHuman)
       ? `Turno de ${state.seatNames[waitingSeat]}…`
       : (multiHuman ? 'Esperando…' : 'Tu mano');
   } else {
-    const canPlay = state.phase==='playing' && state.turn===activeSeat;
-    const legal = canPlay ? legalMoves(state.hands[activeSeat], state.currentTrick, state.trumpSuit).map(c=>c.id) : [];
-    const who = multiHuman ? `Mano de ${state.seatNames[activeSeat]}` : 'Tu mano';
+    const canPlay = state.phase==='playing' && activeSeat===displaySeat && state.turn===displaySeat;
+    const legal = canPlay ? legalMoves(state.hands[displaySeat], state.currentTrick, state.trumpSuit).map(c=>c.id) : [];
+    const who = multiHuman ? `Mano de ${state.seatNames[displaySeat]}` : 'Tu mano';
     document.getElementById('handLbl').textContent = state.phase==='bidding' ? `${who} (para decidir la puja)` : who;
-    state.hands[activeSeat].forEach(card=>{
+    state.hands[displaySeat].forEach(card=>{
       const ok = canPlay && legal.includes(card.id);
       const el=document.createElement('div');
       el.innerHTML = cardHtml(card, ok?'clickable':(canPlay?'disabled':''));
       const node = el.firstElementChild;
-      if(ok) node.onclick=()=>playCard(activeSeat,card);
+      if(ok) node.onclick=()=>playCard(displaySeat,card);
       handRow.appendChild(node);
     });
   }
