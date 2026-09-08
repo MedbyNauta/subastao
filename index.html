@@ -310,9 +310,9 @@
   /* AI BADGE */
   .pchip .ainote{font-size:0.6rem; color:var(--piedra); margin-top:1px; letter-spacing:0.04em;}
 
-  /* DECLARER BADGE (4p): marks who won the auction, for the whole hand — unlike
+  /* DECLARER ICON (4p): marks who won the auction, for the whole hand — unlike
      the "sale" tag (current trick leader), which moves every trick. */
-  .pchip .decl{font-size:0.6rem; color:var(--oro); margin-top:1px; letter-spacing:0.03em; font-weight:700;}
+  .pchip .decl-icon{font-size:0.72rem; filter:grayscale(0.15);}
 
   /* PASS-AND-PLAY SCREEN */
   #passOverlay .card-panel{background:var(--pergamino); color:var(--tinta);}
@@ -1658,16 +1658,15 @@ function makePchip(s){
   if(state.dealerIndex===s) tag='<div class="tag">reparte</div>';
   let bottomTag='';
   if((state.phase==='playing'||state.phase==='handover') && state.leader===s) bottomTag='<div class="tag-bottom">sale</div>';
-  const cardCount = state.hands ? state.hands[s].length : 10;
   // Persistent "who won the auction" marker — the "sale" tag only points at the
   // CURRENT trick's leader, which changes every trick, so on its own it stops
   // showing who's declaring after the first trick. This stays on the auction
-  // winner's chip for the whole hand (3p already implies it via "· solo").
+  // winner's chip for the whole hand (3p already implies it via "Solo").
   const isDeclarer = state.auctionWinner===s && (state.phase==='playing'||state.phase==='handover');
-  const soloNote = (state.numPlayers===3 && isDeclarer) ? ' · solo' : '';
-  const declNote = (state.numPlayers===4 && isDeclarer) ? '<div class="decl">puja ganada</div>' : '';
+  const soloNote = (state.numPlayers===3 && isDeclarer) ? '<div class="ct">Solo</div>' : '';
+  const declIcon = (state.numPlayers===4 && isDeclarer) ? '<span class="decl-icon" title="Ganó la puja">🔨</span> ' : '';
   const aiNote = (state.humanPlayers!==undefined && s>=state.humanPlayers) ? '<div class="ainote">IA</div>' : '';
-  div.innerHTML = `${tag}<div class="nm">${state.seatNames[s]}</div><div class="ct">${cardCount} cartas${soloNote}</div>${declNote}${aiNote}${bottomTag}`;
+  div.innerHTML = `${tag}<div class="nm">${declIcon}${state.seatNames[s]}</div>${soloNote}${aiNote}${bottomTag}`;
   return div;
 }
 
