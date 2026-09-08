@@ -92,7 +92,7 @@
   .team-row{display:flex; gap:6px;}
   /* Team's combined running points for the hand in progress — sits under
      its pair of chips instead of in a separate "Puntos jugada a jugada" panel. */
-  .team-total{text-align:center; font-size:0.72rem; color:var(--oro); font-weight:700;}
+  .team-total{text-align:center; font-family:'Fraunces', serif; font-weight:700; font-size:1.3rem; color:var(--text); margin-top:2px;}
   .pchip{
     flex:1; text-align:center; padding:10px 4px; border-radius:8px;
     background:rgba(var(--wash-rgb),0.04); border:1px solid var(--linea);
@@ -109,11 +109,13 @@
     border:1px solid var(--linea); border-radius:5px; padding:0 4px; margin-left:4px;
     vertical-align:middle; letter-spacing:0.03em;
   }
-  .pchip .ct{color:var(--piedra); font-size:0.72rem; margin-top:2px;}
   /* Running trick points for this seat, only while a hand is actually being
      played (not during bidding/handover — the hand summary already covers
      final numbers then, so a second live tally would just be redundant). */
   .pchip .pts-line{font-family:'Fraunces', serif; font-weight:700; font-size:0.85rem; color:var(--text); margin-top:2px;}
+  /* 3-player mode has no team total, so its own per-seat number takes over
+     that "big number" role instead of staying small. */
+  .pchip .pts-line.big{font-size:1.3rem; margin-top:4px;}
   .pchip .tag{
     position:absolute; top:-8px; left:50%; transform:translateX(-50%);
     background:var(--oro); color:var(--tinta); font-size:0.6rem; padding:1px 6px;
@@ -167,15 +169,14 @@
   /* HAND */
   .hand-wrap{margin:12px 6px 0;}
   .hand-wrap .lbl{font-size:0.78rem; color:var(--oro); margin-bottom:8px; padding-left:6px;}
-  /* Two fanned rows instead of one scrolling line, so the whole hand is
-     always visible at once. The top row gets the extra card when the count
-     is odd; the bottom row is nudged right by half a card+gap and pulled up
-     under the top row, so each of its cards nests between two top cards —
-     like cards fanned out and held in one hand. */
-  .hand{display:flex; flex-direction:column; padding:6px 6px 14px;}
+  /* Two non-overlapping rows instead of one scrolling line, so the whole hand
+     is always visible at once. Even card count: both rows equal and aligned.
+     Odd count: the top row gets the extra card, and the bottom row (.offset,
+     added in JS) is nudged right by half a card+gap so its cards sit visually
+     between two top cards, like a fanned-out hand — without any overlap. */
+  .hand{display:flex; flex-direction:column; gap:6px; padding:6px 6px 14px;}
   .hand-row{display:flex; gap:7px;}
-  .hand-row.top{position:relative; z-index:2;}
-  .hand-row.bottom{position:relative; z-index:1; margin-top:-24px; margin-left:23px;}
+  .hand-row.offset{margin-left:23px;}
   .card.clickable{cursor:pointer; transition:transform .12s;}
   .card.clickable:hover{transform:translateY(-4px);}
   .card.disabled{opacity:0.32; cursor:default;}
@@ -436,7 +437,6 @@
       <option value="3">3</option>
       <option value="4">4</option>
     </select>
-    <p class="toggle-hint">Cuando juega más de una persona en el mismo móvil, antes de cada turno aparece una pantalla para pasarlo a quien le toque, y sus cartas no se muestran hasta que las pulsa.</p>
     <label class="set-lbl">Objetivo de puntos</label>
     <select id="targetSelect">
       <option value="300">300</option>
@@ -1661,17 +1661,14 @@ function makePchip(s){
   if(state.dealerIndex===s) tag='<div class="tag">reparte</div>';
   let bottomTag='';
   if((state.phase==='playing'||state.phase==='handover') && state.leader===s) bottomTag='<div class="tag-bottom">sale</div>';
-  // Persistent "who won the auction" marker — the "sale" tag only points at the
-  // CURRENT trick's leader, which changes every trick, so on its own it stops
-  // showing who's declaring after the first trick. This stays on the auction
-  // winner's chip for the whole hand (3p already implies it via "Solo").
-  const isDeclarer = state.auctionWinner===s && (state.phase==='playing'||state.phase==='handover');
-  const soloNote = (state.numPlayers===3 && isDeclarer) ? '<div class="ct">Solo</div>' : '';
   const aiTag = isAI ? '<span class="ai-tag">IA</span>' : '';
   // Running trick points, live — only while the hand is actually in progress;
   // the "Resultado de la mano" summary already covers final totals afterwards.
-  const ptsLine = (state.phase==='playing' && state.playerTrickPoints) ? `<div class="pts-line">${state.playerTrickPoints[s]} pts</div>` : '';
-  div.innerHTML = `${tag}<div class="nm">${state.seatNames[s]}${aiTag}</div>${soloNote}${ptsLine}${bottomTag}`;
+  // 3-player mode has no separate team total (see renderPlayers()), so its
+  // own number takes over that "big number" role via the .big modifier.
+  const ptsLine = (state.phase==='playing' && state.playerTrickPoints)
+    ? `<div class="pts-line${state.numPlayers===3?' big':''}">${state.playerTrickPoints[s]}</div>` : '';
+  div.innerHTML = `${tag}<div class="nm">${state.seatNames[s]}${aiTag}</div>${ptsLine}${bottomTag}`;
   return div;
 }
 
@@ -1705,7 +1702,7 @@ function renderPlayers(){
         const total=g.seats.reduce((sum,s)=>sum+state.playerTrickPoints[s],0);
         const totalDiv=document.createElement('div');
         totalDiv.className='team-total';
-        totalDiv.textContent=`${total} pts`;
+        totalDiv.textContent=total;
         gdiv.appendChild(totalDiv);
       }
       pdiv.appendChild(gdiv);
@@ -1801,11 +1798,13 @@ function render(){
     const legal = canPlay ? legalMoves(state.hands[displaySeat], state.currentTrick, state.trumpSuit).map(c=>c.id) : [];
     const who = multiHuman ? `Mano de ${state.seatNames[displaySeat]}` : 'Tu mano';
     document.getElementById('handLbl').textContent = state.phase==='bidding' ? `${who} (para decidir la puja)` : who;
-    // Fanned two-row layout (see .hand-row CSS) — the top row gets the extra
-    // card when the hand is an odd size.
+    // Two-row layout (see .hand-row CSS) — the top row gets the extra card
+    // only when the hand is an odd size; on an even count both rows match
+    // and stay aligned (no offset).
     const hand=state.hands[displaySeat];
     const topRow=document.createElement('div'); topRow.className='hand-row top';
     const bottomRow=document.createElement('div'); bottomRow.className='hand-row bottom';
+    if(hand.length%2!==0) bottomRow.classList.add('offset');
     const topCount=Math.ceil(hand.length/2);
     hand.forEach((card,i)=>{
       const ok = canPlay && legal.includes(card.id);
