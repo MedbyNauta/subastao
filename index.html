@@ -54,7 +54,7 @@
     padding:16px 16px 12px;
     border-bottom:1px solid var(--linea);
   }
-  .topbar{display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px;}
+  .topbar{margin-bottom:18px;}
   .logo{line-height:1.05;}
   .logo .word1{
     display:block; font-family:'Fraunces', serif; font-style:italic; font-weight:700;
@@ -64,7 +64,6 @@
     display:block; font-size:0.62rem; letter-spacing:0.08em; text-transform:uppercase;
     color:var(--piedra); margin-top:1px;
   }
-  .icon-row{display:flex; gap:6px; flex-shrink:0;}
   .score-row{display:flex; align-items:center; justify-content:center; gap:8px; padding:0 4px; margin-top:6px;}
   .scores{display:flex; justify-content:center; gap:6px; flex:1; min-width:0;}
   .score-chip{
@@ -86,12 +85,6 @@
     100% { transform:scale(1); box-shadow:0 0 0 0 rgba(217,164,65,0); }
   }
   .score-chip.pop{animation:score-pop 0.9s ease-out;}
-  .icon-btn{
-    width:32px; height:32px; border-radius:50%; border:1px solid var(--linea);
-    background:rgba(var(--wash-rgb),0.06); color:var(--text); font-size:0.95rem;
-    display:flex; align-items:center; justify-content:center; padding:0; line-height:1;
-  }
-  .icon-btn:active{background:var(--oro-soft);}
   button{cursor:pointer; font-family:'Inter', sans-serif;}
 
   /* PLAYER STRIP */
@@ -368,21 +361,6 @@
   .rank-chip .rk{font-family:'Fraunces', serif; font-weight:700; font-size:0.8rem; color:var(--tinta);}
   .rank-chip .pt{font-size:0.62rem; color:var(--piedra);}
 
-  /* HELP TOGGLE */
-  .toggle-row{display:flex; align-items:center; justify-content:space-between; margin:12px 0 4px;}
-  .toggle-row .set-lbl{margin:0;}
-  .switch{position:relative; display:inline-block; width:44px; height:25px; flex-shrink:0;}
-  .switch input{opacity:0; width:0; height:0;}
-  .switch .slider{
-    position:absolute; cursor:pointer; inset:0; background:rgba(31,42,61,0.2);
-    border-radius:25px; transition:.15s;
-  }
-  .switch .slider:before{
-    position:absolute; content:""; height:19px; width:19px; left:3px; bottom:3px;
-    background:#fff; border-radius:50%; transition:.15s;
-  }
-  .switch input:checked + .slider{background:var(--oro);}
-  .switch input:checked + .slider:before{transform:translateX(19px);}
   .toggle-hint{font-size:0.76rem; color:var(--piedra); margin:0 0 4px;}
 
   /* HELP PANEL */
@@ -403,6 +381,53 @@
   #passOverlay .card-panel{background:var(--pergamino); color:var(--tinta);}
   #passOverlay h2{color:var(--tinta);}
   #passOverlay p{color:var(--tinta); opacity:0.75; font-size:0.9rem;}
+
+  /* SIDE DRAWER — a tab pinned to the bottom-right edge of the viewport that
+     pulls out Nueva partida / Ajustes / Ayuda, replacing the old header
+     buttons. z-index stays below the overlays (20) so a modal (Ajustes, the
+     pass screen, game over) always covers it rather than the reverse. */
+  .side-drawer{position:fixed; bottom:20px; right:0; z-index:15;}
+  .side-scrim{
+    position:fixed; inset:0; background:rgba(0,0,0,0); pointer-events:none;
+    transition:background .3s ease;
+  }
+  .side-drawer.open .side-scrim{background:rgba(0,0,0,0.15); pointer-events:auto;}
+  .side-tab{
+    position:absolute; bottom:0; right:0; width:30px; height:54px;
+    background:var(--oro); color:var(--bg); border:none; padding:0;
+    border-radius:8px 0 0 8px; box-shadow:-3px 3px 10px rgba(0,0,0,0.18);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+    cursor:pointer; transition:transform .28s cubic-bezier(.2,.8,.3,1);
+  }
+  .side-tab .chevron{font-size:0.75rem; line-height:1; transition:transform .28s ease;}
+  .side-tab .dot{width:3px; height:3px; border-radius:50%; background:var(--bg); opacity:.7;}
+  .side-drawer.open .side-tab{transform:translateX(-172px);}
+  .side-drawer.open .side-tab .chevron{transform:rotate(180deg);}
+  .side-drawer-panel{
+    position:absolute; bottom:0; right:0; width:172px;
+    background:var(--pergamino); color:var(--tinta);
+    border-radius:14px; box-shadow:0 10px 28px rgba(0,0,0,0.25);
+    padding:14px; display:flex; flex-direction:column; gap:8px;
+    transform:translateX(100%); transition:transform .32s cubic-bezier(.2,.8,.3,1);
+  }
+  .side-drawer.open .side-drawer-panel{transform:translateX(0);}
+  .side-drawer-lbl{
+    font-size:0.65rem; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--piedra); margin-bottom:2px;
+  }
+  .side-drawer-panel button{
+    display:flex; align-items:center; gap:9px; width:100%;
+    background:rgba(31,42,61,0.05); border:1px solid rgba(31,42,61,0.15);
+    border-radius:10px; padding:10px 12px; font-family:'Inter',sans-serif;
+    font-size:0.84rem; font-weight:600; color:var(--tinta); cursor:pointer;
+  }
+  .side-drawer-panel .ic{
+    width:24px; height:24px; border-radius:50%; background:rgba(31,42,61,0.08);
+    display:flex; align-items:center; justify-content:center; font-size:0.85rem;
+    font-style:italic; flex-shrink:0;
+  }
+  .side-help-btn.active{background:var(--oro-soft); border-color:var(--oro); color:var(--oro);}
+  .side-help-btn.active .ic{background:var(--oro); color:var(--bg);}
 </style>
 </head>
 <body>
@@ -413,10 +438,6 @@
       <div class="logo">
         <span class="word1">Subastao</span>
         <span class="word2">Ourensano</span>
-      </div>
-      <div class="icon-row">
-        <button class="icon-btn" onclick="changeSetup()" title="Nueva partida">+</button>
-        <button class="icon-btn" onclick="openSettings()" title="Ajustes">⚙</button>
       </div>
     </div>
     <div class="score-row">
@@ -513,14 +534,6 @@
       <option value="medium" selected>Medio</option>
       <option value="high">Alto</option>
     </select>
-    <div class="toggle-row">
-      <label class="set-lbl" for="helpModeToggle">Modo ayuda</label>
-      <label class="switch">
-        <input type="checkbox" id="helpModeToggle" onchange="toggleHelpMode(this.checked)">
-        <span class="slider"></span>
-      </label>
-    </div>
-    <p class="toggle-hint">En cada jugada te explica qué se sabe de las cartas jugadas y te sugiere una carta con el porqué.</p>
     <button class="big-btn" style="width:100%; margin-top:16px;" onclick="changeSetup(); closeSettings();">Aplicar y empezar de nuevo</button>
 
     <div class="rules-box" style="border-top:1px solid rgba(31,42,61,0.14); margin-top:18px; padding-top:14px;">
@@ -588,6 +601,23 @@
     <p id="passOverlaySubtitle"></p>
     <button class="big-btn" style="margin-top:14px; width:100%;" onclick="revealCurrentSeat()">👀 Ver mis cartas</button>
   </div>
+</div>
+
+<!-- SIDE DRAWER: replaces the old header buttons — a tab pinned to the
+     bottom-right edge that pulls out a small panel for Nueva partida,
+     Ajustes and Ayuda, so the header stays just the logo/scores. -->
+<div class="side-drawer" id="sideDrawer">
+  <div class="side-scrim" onclick="closeSideDrawer()"></div>
+  <div class="side-drawer-panel">
+    <div class="side-drawer-lbl">Partida</div>
+    <button onclick="closeSideDrawer(); changeSetup();"><span class="ic">+</span> Nueva partida</button>
+    <button onclick="closeSideDrawer(); openSettings();"><span class="ic">⚙</span> Ajustes</button>
+    <button class="side-help-btn" id="sideHelpBtn" onclick="toggleHelpFromDrawer()"><span class="ic">i</span> Ayuda</button>
+  </div>
+  <button class="side-tab" id="sideTab" onclick="toggleSideDrawer()" aria-label="Abrir menú">
+    <span class="chevron">‹</span>
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+  </button>
 </div>
 
 <script>
@@ -1028,7 +1058,6 @@ function changeSetup(){
   newGame(t,n,lvl,h);
 }
 function openSettings(){
-  document.getElementById('helpModeToggle').checked = helpModeEnabled;
   document.getElementById('aiLevelSelect').value = state.aiLevel || 'medium';
   renderResultHistory();
   if(state.numPlayers){
@@ -1047,6 +1076,19 @@ function toggleRules(){
 function toggleHelpMode(on){
   helpModeEnabled = on;
   if(state.phase) render();
+}
+
+/* ---------- SIDE DRAWER (Nueva partida / Ajustes / Ayuda) ---------- */
+function toggleSideDrawer(){
+  document.getElementById('sideDrawer').classList.toggle('open');
+}
+function closeSideDrawer(){
+  document.getElementById('sideDrawer').classList.remove('open');
+}
+function toggleHelpFromDrawer(){
+  toggleHelpMode(!helpModeEnabled);
+  document.getElementById('sideHelpBtn').classList.toggle('active', helpModeEnabled);
+  closeSideDrawer();
 }
 
 // Deals a fresh hand (shuffles, splits evenly across seats, sorts each hand)
