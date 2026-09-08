@@ -943,7 +943,7 @@ function lowChooseCard(seat, hand, trick, trump){
 // Cartas que nadie ha visto y que no están en la mano de `seat` (candidatas a estar
 // repartidas entre los demás jugadores).
 function unseenPoolFor(seat){
-  const ranks = state.numPlayers===4 ? RANKS_4P : RANKS_3P;
+  const ranks = (state.gameType==='pocha' || state.numPlayers===4) ? RANKS_4P : RANKS_3P;
   const fullDeck = buildDeck(ranks);
   const seenIds = new Set(state.seenCards.map(c=>c.id));
   const mineIds = new Set(state.hands[seat].map(c=>c.id));
@@ -1644,16 +1644,17 @@ function startPochaPlay(){
   state.currentTrick=[];
   playTick();
 }
-// AI card play for Pocha: while still short of its bid, try to win (beat
-// the table as cheaply as possible, or lead a likely winner); once the bid
-// is met (or already blown), try to lose (play low, avoid overtaking) so
-// the AI doesn't rack up tricks it doesn't want.
-function aiChoosePochaCard(seat){
-  const hand=state.hands[seat], trick=state.currentTrick, trump=state.trumpSuit;
+// Shared Pocha card-play policy: while still short of its bid, try to win
+// (beat the table as cheaply as possible, or lead a likely winner); once the
+// bid is met (or already blown), try to lose (play low, avoid overtaking) so
+// it doesn't rack up tricks it doesn't want. Takes `tricksWonArr` as a
+// parameter (rather than reading state.pocha.tricksWon directly) so the same
+// function can also drive every simulated player inside a Monte Carlo
+// rollout, where the trick counts are hypothetical, not the real ones.
+function heuristicPochaChooseCard(seat, hand, trick, trump, tricksWonArr){
   const legal=legalMoves(hand,trick,trump);
   if(legal.length===1) return legal[0];
-  if(state.aiLevel==='low' && Math.random()<0.3) return legal[Math.floor(Math.random()*legal.length)];
-  const stillNeeded = state.pocha.bids[seat] - state.pocha.tricksWon[seat];
+  const stillNeeded = state.pocha.bids[seat] - tricksWonArr[seat];
   if(trick.length===0){
     if(stillNeeded>0){
       const as=hand.find(c=>c.suit!==trump && c.rank==='As');
@@ -1677,6 +1678,87 @@ function aiChoosePochaCard(seat){
   const notBeating = legal.filter(c=>!beats(c,bestCard,leadSuit,trump));
   if(notBeating.length) return notBeating.slice().sort((a,b)=>b.rankIndex-a.rankIndex)[0];
   return beating.slice().sort((a,b)=>a.rankIndex-b.rankIndex)[beating.length-1];
+}
+function lowChoosePochaCard(seat, hand, trick, trump, tricksWonArr){
+  const legal=legalMoves(hand,trick,trump);
+  if(Math.random()<0.3) return legal[Math.floor(Math.random()*legal.length)];
+  return heuristicPochaChooseCard(seat,hand,trick,trump,tricksWonArr);
+}
+// ---- Monte Carlo (nivel alto, Pocha) ----
+// Same idea as Subastao's rolloutFromCandidate: play `candidate`, then
+// finish the REST of the round (not just this trick) using the heuristic
+// policy for everyone, tracking each seat's tricks won from here on. Returns
+// the round score `seat` would end up with (same formula as
+// endPochaRound()) plus which seat wins the very first trick resolved (used
+// by help mode) — since Pocha has no partners, this is already framed from
+// `seat`'s own point of view, no need for Subastao's declarer-side flip.
+function rolloutFromPochaCandidate(seat, candidate, assigned){
+  const numPlayers=5, trump=state.trumpSuit;
+  const hands=[];
+  for(let s=0;s<numPlayers;s++){
+    hands[s] = s===seat ? state.hands[seat].filter(c=>c.id!==candidate.id) : assigned[s].slice();
+  }
+  let trick = state.currentTrick.slice();
+  const tricksWon = state.pocha.tricksWon.slice();
+  let turnSeat=seat;
+  let firstTrickWinner=null;
+
+  function simPlayCard(s,card){
+    const h=hands[s];
+    const idx=h.findIndex(c=>c.id===card.id);
+    h.splice(idx,1);
+    trick.push({seat:s,card});
+    if(trick.length<numPlayers){
+      turnSeat=(s+1)%numPlayers;
+      return;
+    }
+    const wSeat=trickWinnerSeat(trick,trump);
+    if(firstTrickWinner===null) firstTrickWinner=wSeat;
+    tricksWon[wSeat]++;
+    trick=[];
+    const isLast=hands.every(h2=>h2.length===0);
+    turnSeat = isLast ? null : wSeat;
+  }
+
+  simPlayCard(seat,candidate);
+  let guard=0;
+  while(hands.some(h=>h.length>0) && guard<300){
+    guard++;
+    if(turnSeat===null) break;
+    const s=turnSeat;
+    if(hands[s].length===0) break;
+    const mv=heuristicPochaChooseCard(s, hands[s], trick, trump, tricksWon);
+    simPlayCard(s,mv);
+  }
+  const bid=state.pocha.bids[seat], won=tricksWon[seat];
+  const score = won===bid ? 10+bid : (state.pocha.scoringMode==='zero' ? 0 : -Math.abs(won-bid));
+  return {score, firstTrickWinner};
+}
+function monteCarloChoosePochaCard(seat, hand, trick, trump){
+  const legal=legalMoves(hand,trick,trump);
+  if(legal.length===1) return legal[0];
+  const simsPerCandidate = Math.max(6, Math.min(20, Math.round(200/legal.length)));
+  let bestCard=legal[0], bestScore=-Infinity;
+  for(const cand of legal){
+    let total=0;
+    for(let i=0;i<simsPerCandidate;i++){
+      const assigned=determinizeAssignment(seat);
+      total+=rolloutFromPochaCandidate(seat,cand,assigned).score;
+    }
+    const avg=total/simsPerCandidate;
+    if(avg>bestScore){ bestScore=avg; bestCard=cand; }
+  }
+  return bestCard;
+}
+// Dispatches to the right Pocha card-choice policy for the configured AI level.
+function aiChoosePochaCard(seat){
+  const hand=state.hands[seat], trick=state.currentTrick, trump=state.trumpSuit;
+  const legal=legalMoves(hand,trick,trump);
+  if(legal.length===1) return legal[0];
+  const level=state.aiLevel || 'medium';
+  if(level==='low') return lowChoosePochaCard(seat,hand,trick,trump,state.pocha.tricksWon);
+  if(level==='high') return monteCarloChoosePochaCard(seat,hand,trick,trump);
+  return heuristicPochaChooseCard(seat,hand,trick,trump,state.pocha.tricksWon);
 }
 function resolvePochaTrick(){
   const trick=state.currentTrick;
@@ -2010,6 +2092,76 @@ function computeHelp(seat){
   }
   return {knownLines, reasoning, suggestion};
 }
+
+/* ---------- HELP MODE (Pocha) ----------
+   Same idea as Subastao's help mode above — Monte Carlo determinization via
+   the shared unseenPoolFor()/determinizeAssignment(), just driven by Pocha's
+   own rollout (rolloutFromPochaCandidate) and framed around "does this get
+   me closer to my own bid" instead of a partnership's points. */
+// Same win-probability tracking as monteCarloHelpStats, using the Pocha rollout.
+function monteCarloPochaHelpStats(seat, hand, trick, trump, legal){
+  const simsPerCandidate = Math.max(6, Math.min(20, Math.round(200/legal.length)));
+  const stats = legal.map(cand=>{
+    let total=0, wins=0;
+    for(let i=0;i<simsPerCandidate;i++){
+      const assigned=determinizeAssignment(seat);
+      const res=rolloutFromPochaCandidate(seat,cand,assigned);
+      total+=res.score;
+      if(res.firstTrickWinner===seat) wins++;
+    }
+    return {card:cand, avgScore: total/simsPerCandidate, winProb: wins/simsPerCandidate};
+  });
+  stats.sort((a,b)=>b.avgScore-a.avgScore);
+  return stats;
+}
+function buildPochaHelpReasoning(stats, stillNeeded){
+  const top=stats[0];
+  const winPct=Math.round(top.winProb*100);
+  const wantsToWin = stillNeeded>0;
+  let text = `Probando cientos de repartos posibles de las cartas que no conoces, jugar ${cardLabel(top.card)} es lo que más te acerca a cumplir tu puja de media.`;
+  text += ` Gana esta baza en el ${winPct}% de las simulaciones`;
+  if(wantsToWin){
+    text += winPct>=50 ? ', que es justo lo que necesitas ahora mismo.' : ' — no es mucho, pero es tu mejor opción para intentar cumplir la puja.';
+  } else {
+    text += winPct<=30 ? ', así que es una jugada segura para no pasarte de tu puja.' : ' — asumible, aunque ya no te interesa ganar más bazas esta ronda.';
+  }
+  return text;
+}
+function computePochaHelp(seat){
+  const trump=state.trumpSuit;
+  const trick=state.currentTrick;
+  const hand=state.hands[seat];
+  const legal=legalMoves(hand,trick,trump);
+  const outstanding=remainingCardsBySuit(seat);
+  const bid=state.pocha.bids[seat], won=state.pocha.tricksWon[seat];
+  const stillNeeded=bid-won;
+
+  const knownLines=[];
+  knownLines.push(`Pediste <b>${bid}</b> baza${bid===1?'':'s'} y llevas <b>${won}</b>.`);
+  if(stillNeeded>0) knownLines.push(`Te falta${stillNeeded===1?'':'n'} <b>${stillNeeded}</b> para cumplir tu puja.`);
+  else if(stillNeeded===0) knownLines.push('Ya has cumplido tu puja — te conviene no ganar más bazas.');
+  else knownLines.push(`Ya te has pasado de tu puja por <b>${-stillNeeded}</b>.`);
+  knownLines.push(`Van jugadas <b>${state.seenCards.length}</b> cartas de esta ronda.`);
+  for(let s=0;s<5;s++){
+    if(s===seat) continue;
+    const voids=[...state.voidSuits[s]];
+    if(voids.length) knownLines.push(`<b>${state.seatNames[s]}</b> no tiene: ${voids.map(v=>SUIT_LABEL[v]).join(', ')}.`);
+  }
+  if(trump) knownLines.push(`Quedan <b>${outstanding[trump].length}</b> triunfo(s) de ${SUIT_LABEL[trump]} sin ver (fuera de tu mano).`);
+  else knownLines.push('Esta ronda se juega sin triunfo.');
+
+  let suggestion=null, reasoning='';
+  if(legal.length===1){
+    suggestion=legal[0];
+    reasoning='Es la única carta que puedes jugar ahora mismo.';
+  } else {
+    const stats=monteCarloPochaHelpStats(seat, hand, trick, trump, legal);
+    suggestion=stats[0].card;
+    reasoning=buildPochaHelpReasoning(stats, stillNeeded);
+  }
+  return {knownLines, reasoning, suggestion};
+}
+
 /* ---------- SPARKLES ---------- */
 // A handful of small gold star-twinkles around the trick winner's name, plus a
 // brief glow pulse on the chip itself — reads as "nice, that mattered" without
@@ -2096,10 +2248,10 @@ function showCanteAnimation(seatName, suit, pts){
 
 function renderHelp(activeSeat){
   const panel=document.getElementById('helpPanel');
-  const show = helpModeEnabled && state.gameType!=='pocha' && state.phase==='playing' && activeSeat!==null && state.turn===activeSeat && state.hands[activeSeat].length>0;
+  const show = helpModeEnabled && state.phase==='playing' && activeSeat!==null && state.turn===activeSeat && state.hands[activeSeat].length>0;
   panel.classList.toggle('hidden', !show);
   if(!show) return;
-  const help=computeHelp(activeSeat);
+  const help = state.gameType==='pocha' ? computePochaHelp(activeSeat) : computeHelp(activeSeat);
   document.getElementById('helpKnown').innerHTML = help.knownLines.map(l=>`<div>${l}</div>`).join('');
   document.getElementById('helpReasoning').textContent = help.reasoning;
   const sug=help.suggestion;
