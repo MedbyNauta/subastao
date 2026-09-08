@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subastado v0.5 — jugar</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --bg:#10131A; --panel:#171B24;
+    --oro:#D9A441; --oro-soft:rgba(217,164,65,0.16);
+    --pergamino:#F5F0E6; --piedra:#8A8E98; --tinta:#1F2A3D;
+    --linea:rgba(245,240,230,0.14);
+    --c-oros:#C79A3E; --c-copas:#C1544A; --c-espadas:#4A6FA5; --c-bastos:#4B8A68;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--pergamino);
+    font-family:'Inter', sans-serif; -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  h1,h2,h3{font-family:'Fraunces', serif; font-weight:600; margin:0;}
+  .wrap{max-width:520px; margin:0 auto; padding:0 0 30px;}
+
+  header{
+    padding:16px 16px 12px; text-align:center;
+    border-bottom:1px solid var(--linea);
+  }
+  header h1{
+    font-size:1.55rem; letter-spacing:0.01em; font-style:italic; font-weight:700;
+    margin-bottom:10px;
+    background:linear-gradient(135deg,#F3D48A,#D9A441 55%,#B8862B);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .score-row{display:flex; align-items:center; justify-content:center; gap:8px; padding:0 4px;}
+  .scores{display:flex; justify-content:center; gap:6px; flex:1; min-width:0;}
+  .score-chip{
+    background:rgba(245,240,230,0.05); border:1px solid var(--linea);
+    border-radius:10px; padding:8px 6px; text-align:center; flex:1; min-width:0;
+  }
+  .score-chip .lbl{font-size:0.66rem; color:var(--oro); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .score-chip .val{font-family:'Fraunces', serif; font-size:1.2rem;}
+  .score-chip.you{border-color:var(--oro);}
+  .header-btns{display:flex; flex-direction:column; gap:5px; flex-shrink:0;}
+  .icon-btn{
+    width:32px; height:32px; border-radius:50%; border:1px solid var(--linea);
+    background:rgba(245,240,230,0.06); color:var(--pergamino); font-size:0.95rem;
+    display:flex; align-items:center; justify-content:center; padding:0; line-height:1;
+  }
+  .icon-btn:active{background:var(--oro-soft);}
+  button{cursor:pointer; font-family:'Inter', sans-serif;}
+
+  /* PLAYER STRIP */
+  .players{display:flex; gap:10px; padding:12px 12px 0;}
+  .team-group{
+    flex:1; display:flex; gap:6px; padding:6px; border-radius:10px;
+    border:1px solid var(--linea); background:rgba(245,240,230,0.03);
+  }
+  .team-group.teamA{border-color:rgba(217,164,65,0.5);}
+  .pchip{
+    flex:1; text-align:center; padding:10px 4px; border-radius:8px;
+    background:rgba(245,240,230,0.04); border:1px solid var(--linea);
+    font-size:0.78rem; position:relative;
+  }
+  .pchip.turn{border-color:var(--oro); background:var(--oro-soft);}
+  .pchip .nm{font-weight:600; color:var(--pergamino);}
+  .pchip .ct{color:var(--piedra); font-size:0.72rem; margin-top:2px;}
+  .pchip .tag{
+    position:absolute; top:-8px; left:50%; transform:translateX(-50%);
+    background:var(--oro); color:var(--bg); font-size:0.6rem; padding:1px 6px;
+    border-radius:8px; font-weight:700;
+  }
+  .pchip .tag-bottom{
+    position:absolute; bottom:-8px; left:50%; transform:translateX(-50%);
+    background:rgba(245,240,230,0.85); color:var(--tinta); font-size:0.6rem; padding:1px 6px;
+    border-radius:8px; font-weight:700;
+  }
+
+  /* MESA */
+  .mesa{
+    margin:12px 12px 0; background:var(--panel); border-radius:14px;
+    padding:12px 14px; min-height:80px; position:relative;
+    border:1px solid var(--linea);
+  }
+  .mesa-info{
+    display:flex; justify-content:space-between; font-size:0.75rem;
+    color:var(--oro); margin-bottom:8px;
+  }
+  .trick-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+    min-height:66px; align-items:center;
+  }
+  .trick-slot{text-align:center;}
+  .trick-slot .who{font-size:0.63rem; color:var(--piedra); margin-top:3px;}
+
+  /* LIVE POINTS */
+  .team-points-row{display:flex; gap:10px;}
+  .tp-team{flex:1; background:rgba(245,240,230,0.04); border-radius:10px; padding:10px; text-align:center; border:1px solid var(--linea);}
+  .tp-team.you{border-color:var(--oro);}
+  .tp-lbl{font-size:0.72rem; color:var(--oro);}
+  .tp-val{font-family:'Fraunces', serif; font-size:1.7rem; margin:2px 0;}
+  .tp-players{display:flex; justify-content:space-between; font-size:0.7rem; color:rgba(245,240,230,0.6); margin-top:6px;}
+  .trick-history{margin-top:8px; max-height:150px; overflow-y:auto; font-size:0.78rem;}
+  .trick-history .th-row{display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--linea);}
+  .trick-history .th-row .who{color:var(--oro);}
+  .trick-history .th-row .running{color:var(--piedra); font-size:0.72rem;}
+  .th-toggle{margin-top:10px;}
+  .th-toggle summary{font-size:0.76rem; color:var(--oro); cursor:pointer; padding:2px 0;}
+
+  /* CARDS */
+  .card{
+    display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
+    width:46px; height:64px; background:var(--pergamino); border-radius:9px;
+    box-shadow:0 4px 13px rgba(0,0,0,0.4); font-family:'Fraunces', serif;
+    font-weight:700; font-size:1.25rem; flex-shrink:0; position:relative;
+  }
+  .card .pts{position:absolute; bottom:4px; right:6px; font-size:0.52rem; font-family:'Inter'; color:var(--piedra); font-weight:600;}
+  .card .icon-wrap{margin-top:3px; height:13px; display:flex; align-items:center; justify-content:center;}
+  .card svg{width:13px; height:13px;}
+  .card.oros{color:var(--c-oros);}
+  .card.copas{color:var(--c-copas);}
+  .card.espadas{color:var(--c-espadas);}
+  .card.bastos{color:var(--c-bastos);}
+  .card.mini{width:38px; height:53px; font-size:1rem;}
+  .card.mini .icon-wrap{height:11px; margin-top:2px;}
+  .card.mini svg{width:11px; height:11px;}
+
+  /* HAND */
+  .hand-wrap{margin:12px 12px 0;}
+  .hand-wrap .lbl{font-size:0.78rem; color:var(--oro); margin-bottom:8px;}
+  .hand{display:flex; gap:7px; overflow-x:auto; padding-bottom:6px;}
+  .card.clickable{cursor:pointer; transition:transform .12s;}
+  .card.clickable:hover{transform:translateY(-4px);}
+  .card.disabled{opacity:0.32; cursor:default;}
+
+  /* CONFETTI */
+  @keyframes confetti-fall {
+    from { transform: translateY(0) rotate(0deg); opacity:1; }
+    to { transform: translateY(120px) rotate(720deg); opacity:0; }
+  }
+  @keyframes confetti-burst {
+    from { transform: translate(0,0) scale(1); opacity:1; }
+    to { transform: translate(var(--tx), var(--ty)) scale(0.1); opacity:0; }
+  }
+  .confetti-piece {
+    position: fixed; width:8px; height:8px; border-radius:50%;
+    pointer-events:none; z-index:999;
+    animation: confetti-fall 2.5s ease-in forwards;
+  }
+  .confetti-burst {
+    position: fixed; width:10px; height:10px; border-radius:50%;
+    pointer-events:none; z-index:999;
+    animation: confetti-burst 2s cubic-bezier(0.25,0.46,0.45,0.94) forwards;
+  }
+
+  /* PANELS */
+  .panel{
+    margin:12px 12px 0; background:rgba(245,240,230,0.04);
+    border:1px solid var(--linea); border-radius:14px; padding:14px;
+  }
+  .panel h3{font-size:0.95rem; color:var(--oro); margin-bottom:8px; font-weight:600;}
+  .bidlog{font-size:0.82rem; max-height:110px; overflow-y:auto; margin-bottom:10px;}
+  .bidlog div{padding:3px 0; border-bottom:1px solid var(--linea);}
+  .bid-controls{display:flex; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap;}
+  .stepper{display:flex; align-items:center; gap:6px;}
+  .stepper button{
+    width:32px; height:32px; border-radius:8px; border:1px solid var(--linea);
+    background:rgba(245,240,230,0.08); color:var(--pergamino); font-size:1.1rem;
+  }
+  .stepper .amt{font-family:'Fraunces', serif; font-size:1.2rem; min-width:44px; text-align:center;}
+  .big-btn{
+    background:var(--oro); color:var(--bg); border:none; border-radius:10px;
+    padding:12px 16px; font-family:'Inter', sans-serif; font-weight:700; font-size:0.92rem;
+  }
+  .ghost-btn{
+    background:transparent; color:var(--pergamino); border:1px solid var(--linea);
+    border-radius:10px; padding:12px 16px; font-size:0.9rem; font-weight:500;
+  }
+  .trump-choices{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;}
+  .trump-choice{
+    flex:1; min-width:100px; padding:16px 10px; text-align:center; border-radius:10px;
+    background:rgba(245,240,230,0.05); border:1px solid var(--linea); font-size:0.85rem;
+  }
+  .trump-choice svg{width:24px; height:24px; margin-bottom:8px;}
+  .trump-choice.oros{color:var(--c-oros);} .trump-choice.copas{color:var(--c-copas);}
+  .trump-choice.espadas{color:var(--c-espadas);} .trump-choice.bastos{color:var(--c-bastos);}
+  .trump-choice div:last-child{color:var(--pergamino); font-weight:500;}
+
+  .summary-row{display:flex; justify-content:space-between; font-size:0.88rem; padding:6px 0; border-bottom:1px solid var(--linea);}
+  .summary-row.total{font-weight:700; color:var(--oro);}
+
+  /* LOG */
+  details.log-box{margin:16px 12px 0;}
+  summary{font-size:0.78rem; color:var(--oro); cursor:pointer; padding:8px 0;}
+  .log-list{font-size:0.78rem; max-height:140px; overflow-y:auto; background:rgba(0,0,0,0.25); border-radius:10px; padding:10px;}
+  .log-list div{padding:2px 0; color:rgba(245,240,230,0.7);}
+
+  /* RULES */
+  .rules-box{font-size:0.85rem; line-height:1.55;}
+  .rules-box p{margin:0 0 8px;}
+  .rules-box b{color:var(--oro);}
+
+  .overlay{
+    position:fixed; inset:0; background:rgba(8,10,14,0.92);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:20;
+  }
+  .overlay .card-panel{
+    background:var(--pergamino); color:var(--tinta); border-radius:14px;
+    padding:32px 26px; text-align:center; max-width:340px;
+  }
+  .overlay h2{color:var(--tinta); font-size:1.6rem; margin-bottom:10px;}
+  .hidden{display:none !important;}
+
+  /* SETTINGS POPUP */
+  .settings-panel{
+    text-align:left; max-width:380px; width:100%;
+    max-height:82vh; overflow-y:auto;
+  }
+  .settings-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .settings-head h2{color:var(--tinta); font-size:1.25rem;}
+  .close-btn{
+    width:30px; height:30px; border-radius:50%; border:1px solid rgba(31,42,61,0.2);
+    background:transparent; color:var(--tinta); font-size:0.95rem; padding:0;
+  }
+  .set-lbl{display:block; font-size:0.78rem; color:var(--piedra); margin:12px 0 5px;}
+  .settings-panel select{
+    width:100%; background:rgba(31,42,61,0.05); color:var(--tinta);
+    border:1px solid rgba(31,42,61,0.2); border-radius:8px;
+    padding:10px 11px; font-size:0.88rem; font-family:'Inter', sans-serif;
+  }
+  .settings-panel .rules-box{border-top:1px solid rgba(31,42,61,0.14); margin-top:18px; padding-top:14px;}
+  .settings-panel .rules-box b{color:var(--tinta);}
+
+  /* HELP TOGGLE */
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; margin:12px 0 4px;}
+  .toggle-row .set-lbl{margin:0;}
+  .switch{position:relative; display:inline-block; width:44px; height:25px; flex-shrink:0;}
+  .switch input{opacity:0; width:0; height:0;}
+  .switch .slider{
+    position:absolute; cursor:pointer; inset:0; background:rgba(31,42,61,0.2);
+    border-radius:25px; transition:.15s;
+  }
+  .switch .slider:before{
+    position:absolute; content:""; height:19px; width:19px; left:3px; bottom:3px;
+    background:#fff; border-radius:50%; transition:.15s;
+  }
+  .switch input:checked + .slider{background:var(--oro);}
+  .switch input:checked + .slider:before{transform:translateX(19px);}
+  .toggle-hint{font-size:0.76rem; color:var(--piedra); margin:0 0 4px;}
+
+  /* HELP PANEL */
+  .help-panel{border-color:rgba(217,164,65,0.45);}
+  .help-panel h3{display:flex; align-items:center; gap:6px;}
+  .help-known{font-size:0.78rem; line-height:1.6; color:rgba(245,240,230,0.85); margin-bottom:10px;}
+  .help-known b{color:var(--pergamino);}
+  .help-reasoning{font-size:0.82rem; line-height:1.55; color:rgba(245,240,230,0.9); margin-bottom:10px;}
+  .help-suggestion{
+    display:flex; align-items:center; gap:10px; background:var(--oro-soft);
+    border:1px solid rgba(217,164,65,0.4); border-radius:10px; padding:10px;
+  }
+  .help-suggestion .txt{font-size:0.82rem;}
+  .help-suggestion .txt b{color:var(--oro); font-family:'Fraunces',serif; font-size:0.95rem;}
+  .card.suggested{box-shadow:0 0 0 3px var(--oro), 0 4px 13px rgba(0,0,0,0.4);}
+
+  /* AI BADGE */
+  .pchip .ainote{font-size:0.6rem; color:var(--piedra); margin-top:1px; letter-spacing:0.04em;}
+
+  /* PASS-AND-PLAY SCREEN */
+  #passOverlay .card-panel{background:var(--pergamino); color:var(--tinta);}
+  #passOverlay h2{color:var(--tinta);}
+  #passOverlay p{color:var(--tinta); opacity:0.75; font-size:0.9rem;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Subastao Ourensano</h1>
+    <div class="score-row">
+      <div class="scores" id="scoresRow"></div>
+      <div class="header-btns">
+        <button class="icon-btn" onclick="changeSetup()" title="Nueva partida">+</button>
+        <button class="icon-btn" onclick="openSettings()" title="Ajustes">⚙</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="players" id="players"></div>
+
+  <div class="mesa" id="mesaBox">
+    <div class="mesa-info">
+      <span id="trumpInfo">Triunfo: por decidir</span>
+      <span id="bidInfo">Subasta en curso</span>
+    </div>
+    <div class="trick-grid" id="trickGrid"></div>
+  </div>
+
+  <!-- HAND SUMMARY (replaces the mesa when a hand ends) -->
+  <div class="panel hidden" id="summaryPanel">
+    <h3 id="summaryTitle">Resultado de la mano</h3>
+    <div id="summaryBody"></div>
+    <button class="big-btn" style="margin-top:14px; width:100%;" onclick="advanceToNextHand()">Siguiente mano</button>
+  </div>
+
+  <div class="hand-wrap">
+    <div class="lbl" id="handLbl">Tu mano</div>
+    <div class="hand" id="handRow"></div>
+  </div>
+
+  <!-- HELP PANEL -->
+  <div class="panel help-panel hidden" id="helpPanel">
+    <h3>💡 Ayuda</h3>
+    <div class="help-known" id="helpKnown"></div>
+    <div class="help-reasoning" id="helpReasoning"></div>
+    <div class="help-suggestion" id="helpSuggestion"></div>
+  </div>
+
+  <!-- LIVE POINTS PANEL -->
+  <div class="panel hidden" id="livePointsPanel">
+    <h3>Puntos jugada a jugada</h3>
+    <div class="team-points-row" id="tpRow"></div>
+    <details class="th-toggle">
+      <summary>Ver bazas jugadas</summary>
+      <div class="trick-history" id="trickHistory"></div>
+    </details>
+  </div>
+
+  <!-- BIDDING PANEL -->
+  <div class="panel hidden" id="biddingPanel">
+    <h3>Subasta</h3>
+    <div class="bidlog" id="bidLog"></div>
+    <div id="humanBidArea" class="hidden">
+      <div class="bid-controls">
+        <div class="stepper">
+          <button onclick="stepBid(-5)">−</button>
+          <div class="amt" id="bidAmt">60</div>
+          <button onclick="stepBid(5)">+</button>
+        </div>
+        <button class="big-btn" onclick="confirmHumanBid()">Pujar</button>
+        <button class="ghost-btn" onclick="humanPass()">Pasar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRUMP PANEL -->
+  <div class="panel hidden" id="trumpPanel">
+    <h3>Elige el triunfo</h3>
+    <div class="trump-choices" id="trumpChoices"></div>
+  </div>
+
+  <details class="log-box">
+    <summary>Historial de la mano</summary>
+    <div class="log-list" id="logList"></div>
+  </details>
+</div>
+
+<div class="overlay hidden" id="settingsOverlay" onclick="if(event.target===this) closeSettings()">
+  <div class="card-panel settings-panel">
+    <div class="settings-head">
+      <h2>Ajustes</h2>
+      <button class="close-btn" onclick="closeSettings()">✕</button>
+    </div>
+    <label class="set-lbl">Tipo de juego</label>
+    <select id="playersSelect" onchange="updateHumanPlayersOptions()">
+      <option value="3">3 jugadores (uno solo contra dos)</option>
+      <option value="4" selected>4 jugadores (parejas)</option>
+    </select>
+    <label class="set-lbl">Personas jugando en este móvil</label>
+    <select id="humanPlayersSelect">
+      <option value="1" selected>1 persona + 3 IA</option>
+      <option value="2">2 personas + 2 IA</option>
+      <option value="3">3 personas + 1 IA</option>
+      <option value="4">4 personas (sin IA)</option>
+    </select>
+    <p class="toggle-hint">Cuando juega más de una persona en el mismo móvil, antes de cada turno aparece una pantalla para pasarlo a quien le toque, y sus cartas no se muestran hasta que las pulsa.</p>
+    <label class="set-lbl">Meta de puntos</label>
+    <select id="targetSelect">
+      <option value="300">Partida a 300</option>
+      <option value="500" selected>Partida a 500</option>
+      <option value="1000">Partida a 1000</option>
+    </select>
+    <label class="set-lbl">Nivel de la IA</label>
+    <select id="aiLevelSelect">
+      <option value="low">Bajo — juega bastante flojo e irregular</option>
+      <option value="medium" selected>Medio — heurística sólida y coordina con su pareja</option>
+      <option value="high">Alto — simula cientos de partidas antes de cada jugada</option>
+    </select>
+    <div class="toggle-row">
+      <label class="set-lbl" for="helpModeToggle">Modo ayuda</label>
+      <label class="switch">
+        <input type="checkbox" id="helpModeToggle" onchange="toggleHelpMode(this.checked)">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <p class="toggle-hint">En cada jugada te explica qué se sabe de las cartas jugadas y te sugiere una carta con el porqué.</p>
+    <button class="big-btn" style="width:100%; margin-top:16px;" onclick="changeSetup(); closeSettings();">Aplicar y empezar de nuevo</button>
+    <div class="rules-box">
+      <p><b>Puja</b>: mínimo 60, sube de 5 en 5. Quien gana la subasta elige el triunfo y sale.</p>
+      <p><b>Al jugar</b>: si tienes el palo pedido, tienes que jugarlo y superarlo si puedes. Si no tienes, tienes que triunfar y superar el triunfo en mesa si puedes. Si no tienes ni palo ni triunfo, puedes echar cualquier carta.</p>
+      <p><b>Cantes</b>: rey + caballo del mismo palo, al ganar una baza, dan 40 puntos si es de triunfo o 20 si es de otro palo — solo cuentan para quien se llevó la subasta, y se detectan solos aquí.</p>
+      <p><b>Últimas</b>: quien gana la última baza suma 10 puntos si es del bando que subastó.</p>
+      <p><b>Resultado</b>: si el bando subastador reúne lo que pujó, anota esa cifra; si no, la anota el bando contrario.</p>
+      <p><b>A 3 jugadores</b>: se juega con 36 cartas (sin doses), 12 por jugador. Quien gana la subasta juega solo contra los otros dos. Si se baña, los dos rivales se reparten la puja a medias; si es impar, el que iba de mano en esa mano se lleva 5 puntos más.</p>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="overlay">
+  <div class="card-panel">
+    <h2 id="overlayTitle">¡Partida ganada!</h2>
+    <p id="overlayBody"></p>
+    <button class="big-btn" style="margin-top:14px;" onclick="closeOverlay()">Jugar otra vez</button>
+  </div>
+</div>
+
+<!-- PASS-AND-PLAY SCREEN: shown before a different human's turn, so the previous
+     person doesn't see this player's hand while the phone is handed over. Fully
+     opaque (not the translucent game-over overlay) on purpose — nothing behind it
+     should be visible until this player taps to reveal. -->
+<div class="overlay hidden" id="passOverlay" style="background:var(--bg);">
+  <div class="card-panel">
+    <h2 id="passOverlayTitle">Pásale el móvil a...</h2>
+    <p id="passOverlaySubtitle"></p>
+    <button class="big-btn" style="margin-top:14px; width:100%;" onclick="revealCurrentSeat()">👁 Ver mis cartas</button>
+  </div>
+</div>
+
+<script>
+/* ---------- DATA ---------- */
+const SUITS = ['oros','copas','espadas','bastos'];
+const SUIT_LABEL = {oros:'Oros',copas:'Copas',espadas:'Espadas',bastos:'Bastos'};
+const RANKS_4P = ['As','3','Rey','Caballo','Sota','7','6','5','4','2'];
+const RANKS_3P = ['As','3','Rey','Caballo','Sota','7','6','5','4'];
+const RANK_SHORT = {As:'A','3':'3',Rey:'R',Caballo:'C',Sota:'S','7':'7','6':'6','5':'5','4':'4','2':'2'};
+const POINTS = {As:11,'3':10,Rey:4,Caballo:3,Sota:2,'7':0,'6':0,'5':0,'4':0,'2':0};
+const TEAM_OF_4 = {0:'A',1:'B',2:'A',3:'B'};
+
+function suitIcon(suit){
+  const icons = {
+    oros:'<circle cx="12" cy="12" r="6.6" fill="none" stroke="currentColor" stroke-width="4"/>',
+    copas:'<path fill="currentColor" d="M6 4h12l-1.3 8.5A4.7 4.7 0 0 1 13 16.6v2.4h3v2H8v-2h3v-2.4a4.7 4.7 0 0 1-3.7-4.1L6 4z"/>',
+    espadas:'<path fill="currentColor" d="M11 2h2v12h3l-4 8-4-8h3V2z"/><rect fill="currentColor" x="7" y="7.5" width="10" height="1.8"/>',
+    bastos:'<rect fill="currentColor" x="6.3" y="10.5" width="14" height="3" rx="1.5" transform="rotate(-45 13.3 12)"/><circle fill="currentColor" cx="17.5" cy="5.5" r="3"/>'
+  };
+  return `<svg viewBox="0 0 24 24">${icons[suit]}</svg>`;
+}
+
+/* ---------- STATE ---------- */
+let state = {};
+let helpModeEnabled = false; // persists across "new game" within this session
+let gameEpoch = 0; // bumped on every newGame(); lets stale setTimeouts from a previous game detect they're obsolete
+
+function buildDeck(ranks){
+  const deck=[];
+  for(const suit of SUITS){
+    ranks.forEach((rank,i)=>{
+      deck.push({suit,rank,rankIndex:i,pts:POINTS[rank],id:suit+'-'+rank});
+    });
+  }
+  return deck;
+}
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+function nextSeat(s){ return (s+1)%state.numPlayers; }
+function sortHand(hand, trumpSuit){
+  const order = trumpSuit ? [trumpSuit, ...SUITS.filter(s=>s!==trumpSuit)] : SUITS;
+  hand.sort((a,b)=>{
+    const sa=order.indexOf(a.suit), sb=order.indexOf(b.suit);
+    if(sa!==sb) return sa-sb;
+    return a.rankIndex-b.rankIndex;
+  });
+}
+function cardLabel(c){ return `${RANK_SHORT[c.rank]} de ${SUIT_LABEL[c.suit]}`; }
+
+/* mode-aware helpers */
+function isDeclarerSide(seat){
+  if(state.numPlayers===4) return TEAM_OF_4[seat]===state.biddingTeam;
+  return seat===state.biddingTeam;
+}
+function scoreKeyFor(seat){
+  return state.numPlayers===4 ? TEAM_OF_4[seat] : String(seat);
+}
+function teamLabel(key){
+  const n=state.seatNames;
+  return key==='A' ? `${n[0]} + ${n[2]}` : `${n[1]} + ${n[3]}`;
+}
+function scoreLabelFor(key){
+  if(state.numPlayers===4) return teamLabel(key);
+  return state.seatNames[parseInt(key)];
+}
+function biddingSideLabel(){
+  if(state.numPlayers===4) return teamLabel(state.biddingTeam);
+  return state.seatNames[state.biddingTeam];
+}
+function formatRunningTotals(snapshot){
+  if(state.numPlayers===4) return `A:${snapshot[0]+snapshot[2]} · B:${snapshot[1]+snapshot[3]}`;
+  return state.seatNames.map((n,i)=>`${n}:${snapshot[i]}`).join(' · ');
+}
+
+/* ---------- GAME RULES ---------- */
+function beats(newCard,bestCard,leadSuit,trump){
+  const newTrump = newCard.suit===trump, bestTrump = bestCard.suit===trump;
+  if(newTrump && !bestTrump) return true;
+  if(!newTrump && bestTrump) return false;
+  if(newTrump && bestTrump) return newCard.rankIndex<bestCard.rankIndex;
+  if(newCard.suit!==leadSuit) return false;
+  if(bestCard.suit!==leadSuit) return true;
+  return newCard.rankIndex<bestCard.rankIndex;
+}
+function trickWinnerSeat(trick,trump){
+  const leadSuit=trick[0].card.suit;
+  let best=trick[0];
+  for(let i=1;i<trick.length;i++){ if(beats(trick[i].card,best.card,leadSuit,trump)) best=trick[i]; }
+  return best.seat;
+}
+function legalMoves(hand,trick,trump){
+  if(trick.length===0) return hand.slice();
+  const leadSuit=trick[0].card.suit;
+  const wSeat=trickWinnerSeat(trick,trump);
+  const bestCard=trick.find(t=>t.seat===wSeat).card;
+  const sameSuit=hand.filter(c=>c.suit===leadSuit);
+  if(sameSuit.length>0){
+    const beating=sameSuit.filter(c=>beats(c,bestCard,leadSuit,trump));
+    return beating.length?beating:sameSuit;
+  }
+  const trumps=hand.filter(c=>c.suit===trump);
+  if(trumps.length>0){
+    const beating=trumps.filter(c=>beats(c,bestCard,leadSuit,trump));
+    return beating.length?beating:trumps;
+  }
+  return hand.slice();
+}
+
+/* ---------- AI: BIDDING ---------- */
+function heuristicMaxBid(seat){
+  const hand=state.hands[seat];
+  let bestSuitPts=0, bestSuitCount=0;
+  for(const suit of SUITS){
+    const cards=hand.filter(c=>c.suit===suit);
+    const pts=cards.reduce((s,c)=>s+c.pts,0);
+    if(pts+cards.length*3 > bestSuitPts+bestSuitCount*3){ bestSuitPts=pts; bestSuitCount=cards.length; }
+  }
+  const totalPts=hand.reduce((s,c)=>s+c.pts,0);
+  const aggressiveness = 0.85 + Math.random()*0.4; // 0.85–1.25, varies each hand
+  let est = (40 + bestSuitPts*1.3 + bestSuitCount*3 + totalPts*0.3) * aggressiveness;
+  est = Math.round(est/5)*5;
+  return Math.min(Math.max(est,50),130);
+}
+function lowMaxBid(seat){
+  const hand=state.hands[seat];
+  let bestSuitPts=0, bestSuitCount=0;
+  for(const suit of SUITS){
+    const cards=hand.filter(c=>c.suit===suit);
+    const pts=cards.reduce((s,c)=>s+c.pts,0);
+    if(pts+cards.length*3 > bestSuitPts+bestSuitCount*3){ bestSuitPts=pts; bestSuitCount=cards.length; }
+  }
+  const totalPts=hand.reduce((s,c)=>s+c.pts,0);
+  const randomness = 0.55 + Math.random()*0.9; // 0.55–1.45, muy irregular
+  let est = (35 + bestSuitPts*1.0 + bestSuitCount*2.5 + totalPts*0.2) * randomness;
+  est = Math.round(est/5)*5;
+  return Math.min(Math.max(est,50),120);
+}
+function highMaxBid(seat){
+  const hand=state.hands[seat];
+  let bestSuitPts=0, bestSuitCount=0;
+  for(const suit of SUITS){
+    const cards=hand.filter(c=>c.suit===suit);
+    const pts=cards.reduce((s,c)=>s+c.pts,0);
+    if(pts+cards.length*3 > bestSuitPts+bestSuitCount*3){ bestSuitPts=pts; bestSuitCount=cards.length; }
+  }
+  const totalPts=hand.reduce((s,c)=>s+c.pts,0);
+  const precision = 0.97 + Math.random()*0.10; // 0.97–1.07, mucho más ajustado
+  let est = (42 + bestSuitPts*1.35 + bestSuitCount*3.2 + totalPts*0.32) * precision;
+  est = Math.round(est/5)*5;
+  return Math.min(Math.max(est,55),140);
+}
+function aiMaxBid(seat){
+  const level = state.aiLevel || 'medium';
+  if(level==='low') return lowMaxBid(seat);
+  if(level==='high') return highMaxBid(seat);
+  return heuristicMaxBid(seat);
+}
+
+/* ---------- AI: TRUMP CHOICE ---------- */
+function heuristicChooseTrump(seat){
+  const hand=state.hands[seat];
+  let bestSuit=SUITS[0], bestScore=-1;
+  for(const suit of SUITS){
+    const cards=hand.filter(c=>c.suit===suit);
+    const score=cards.reduce((s,c)=>s+c.pts,0)+cards.length*4;
+    if(score>bestScore){bestScore=score;bestSuit=suit;}
+  }
+  return bestSuit;
+}
+function lowChooseTrump(seat){
+  if(Math.random()<0.4) return SUITS[Math.floor(Math.random()*SUITS.length)];
+  return heuristicChooseTrump(seat);
+}
+function aiChooseTrump(seat){
+  const level = state.aiLevel || 'medium';
+  if(level==='low') return lowChooseTrump(seat);
+  return heuristicChooseTrump(seat); // medium y alto: esta decisión no depende de información oculta, la heurística ya es sólida
+}
+
+/* ---------- AI: CARD PLAY ---------- */
+// Política compartida: usada directamente en nivel medio, y como "cerebro" de cada
+// jugador simulado dentro de las partidas de prueba del nivel alto (Monte Carlo).
+function heuristicChooseCard(seat, hand, trick, trump){
+  const legal=legalMoves(hand,trick,trump);
+  if(trick.length===0){
+    for(const suit of SUITS){
+      const as=hand.find(c=>c.suit===suit&&c.rank==='As'&&suit!==trump);
+      if(as) return as;
+    }
+    const nonTrump=hand.filter(c=>c.suit!==trump);
+    const pool=nonTrump.length?nonTrump:hand;
+    return pool.slice().sort((a,b)=>a.pts-b.pts)[0];
+  }
+  const leadSuit=trick[0].card.suit;
+  const wSeat=trickWinnerSeat(trick,trump);
+  const bestCard=trick.find(t=>t.seat===wSeat).card;
+  const partnerWinning = state.numPlayers===4 && wSeat!==seat && isDeclarerSide(wSeat)===isDeclarerSide(seat);
+  if(partnerWinning){
+    // el compañero ya gana la baza: no compitas con él, pásale puntos
+    const withPts=legal.filter(c=>c.pts>0).sort((a,b)=>b.pts-a.pts);
+    return withPts.length ? withPts[0] : legal.slice().sort((a,b)=>a.pts-b.pts)[0];
+  }
+  const beating=legal.filter(c=>beats(c,bestCard,leadSuit,trump));
+  if(beating.length){
+    // la más floja de las que aún ganan, para no derrochar cartas fuertes
+    return beating.slice().sort((a,b)=>a.rankIndex-b.rankIndex)[beating.length-1];
+  }
+  return legal.slice().sort((a,b)=>a.pts-b.pts)[0];
+}
+function lowChooseCard(seat, hand, trick, trump){
+  const legal=legalMoves(hand,trick,trump);
+  if(trick.length===0){
+    if(Math.random()<0.3) return heuristicChooseCard(seat,hand,trick,trump);
+    return hand[Math.floor(Math.random()*hand.length)];
+  }
+  return legal[Math.floor(Math.random()*legal.length)];
+}
+
+// ---- Monte Carlo (nivel alto) ----
+// Cartas que nadie ha visto y que no están en la mano de `seat` (candidatas a estar
+// repartidas entre los demás jugadores).
+function unseenPoolFor(seat){
+  const ranks = state.numPlayers===4 ? RANKS_4P : RANKS_3P;
+  const fullDeck = buildDeck(ranks);
+  const seenIds = new Set(state.seenCards.map(c=>c.id));
+  const mineIds = new Set(state.hands[seat].map(c=>c.id));
+  return fullDeck.filter(c=>!seenIds.has(c.id) && !mineIds.has(c.id));
+}
+// Reparte al azar las cartas no vistas entre los demás jugadores, respetando cuántas
+// cartas tiene cada uno y los palos que ya sabemos que no tienen (voidSuits).
+function determinizeAssignment(seat){
+  const others=seatRange().filter(s=>s!==seat);
+  const need={}; others.forEach(s=>need[s]=state.hands[s].length);
+  const pool=shuffle(unseenPoolFor(seat).slice());
+  const assigned={}; others.forEach(s=>assigned[s]=[]);
+  for(const card of pool){
+    let eligible=others.filter(s=>need[s]>0 && !state.voidSuits[s].has(card.suit));
+    if(!eligible.length) eligible=others.filter(s=>need[s]>0);
+    if(!eligible.length) continue;
+    const pick=eligible[Math.floor(Math.random()*eligible.length)];
+    assigned[pick].push(card); need[pick]--;
+  }
+  return assigned;
+}
+// Juega `candidate` y termina la mano en una copia simulada del estado, usando la
+// política heurística para todos los jugadores a partir de ahí. Devuelve una
+// puntuación desde el punto de vista de `seat` (más alto = mejor para su bando).
+function rolloutFromCandidate(seat, candidate, assigned){
+  const numPlayers=state.numPlayers, trump=state.trumpSuit;
+  const hands=[];
+  for(let s=0;s<numPlayers;s++){
+    hands[s] = s===seat ? state.hands[seat].filter(c=>c.id!==candidate.id) : assigned[s].slice();
+  }
+  let trick = state.currentTrick.slice();
+  let biddingTeamPoints = state.biddingTeamPoints;
+  const playerTrickPoints = state.playerTrickPoints.slice();
+  const cantedSuits={}; for(let s=0;s<numPlayers;s++) cantedSuits[s]=new Set(state.cantedSuits[s]);
+  let turnSeat=seat;
+  let firstTrickWinner=null; // who wins the very first trick resolved in this rollout (the one `candidate` is part of) — used by help mode to say "gana esta baza el X% de las veces"
+
+  function simPlayCard(s,card){
+    const h=hands[s];
+    const idx=h.findIndex(c=>c.id===card.id);
+    h.splice(idx,1);
+    trick.push({seat:s,card});
+    if(trick.length<numPlayers){
+      turnSeat=(s+1)%numPlayers;
+      return;
+    }
+    const wSeat=trickWinnerSeat(trick,trump);
+    if(firstTrickWinner===null) firstTrickWinner=wSeat;
+    const trickPts=trick.reduce((sum,t)=>sum+t.card.pts,0);
+    let bonus=0;
+    if(isDeclarerSide(wSeat)){
+      biddingTeamPoints+=trickPts;
+      for(const suit of SUITS){
+        if(!cantedSuits[wSeat].has(suit)){
+          const hh=hands[wSeat];
+          if(hh.some(c=>c.suit===suit&&c.rank==='Rey') && hh.some(c=>c.suit===suit&&c.rank==='Caballo')){
+            cantedSuits[wSeat].add(suit);
+            const p=suit===trump?40:20;
+            biddingTeamPoints+=p; bonus+=p;
+          }
+        }
+      }
+    }
+    playerTrickPoints[wSeat]+=trickPts+bonus;
+    trick=[];
+    const isLast=hands.every(h2=>h2.length===0);
+    if(isLast && isDeclarerSide(wSeat)) biddingTeamPoints+=10;
+    turnSeat = isLast ? null : wSeat;
+  }
+
+  simPlayCard(seat,candidate);
+  let guard=0;
+  while(hands.some(h=>h.length>0) && guard<300){
+    guard++;
+    if(turnSeat===null) break;
+    const s=turnSeat;
+    if(hands[s].length===0) break;
+    const mv=heuristicChooseCard(s, hands[s], trick, trump);
+    simPlayCard(s,mv);
+  }
+  const score = isDeclarerSide(seat) ? biddingTeamPoints : -biddingTeamPoints;
+  return {score, firstTrickWinner};
+}
+function monteCarloChooseCard(seat, hand, trick, trump){
+  const legal=legalMoves(hand,trick,trump);
+  if(legal.length===1) return legal[0];
+  const simsPerCandidate = Math.max(6, Math.min(20, Math.round(240/legal.length)));
+  let bestCard=legal[0], bestScore=-Infinity;
+  for(const cand of legal){
+    let total=0;
+    for(let i=0;i<simsPerCandidate;i++){
+      const assigned=determinizeAssignment(seat);
+      total+=rolloutFromCandidate(seat,cand,assigned).score;
+    }
+    const avg=total/simsPerCandidate;
+    if(avg>bestScore){ bestScore=avg; bestCard=cand; }
+  }
+  return bestCard;
+}
+function aiChooseCard(seat){
+  const hand=state.hands[seat], trick=state.currentTrick, trump=state.trumpSuit;
+  const level=state.aiLevel || 'medium';
+  if(level==='low') return lowChooseCard(seat,hand,trick,trump);
+  if(level==='high') return monteCarloChooseCard(seat,hand,trick,trump);
+  return heuristicChooseCard(seat,hand,trick,trump);
+}
+
+/* ---------- GAME FLOW ---------- */
+function newGame(target, numPlayers, aiLevel, humanPlayers){
+  numPlayers = parseInt(numPlayers)||4;
+  humanPlayers = parseInt(humanPlayers)||numPlayers; // default: all players are human
+  gameEpoch++; // invalidate any setTimeout callbacks still pending from the previous game
+  state = {
+    epoch: gameEpoch,
+    target: parseInt(target)||500,
+    numPlayers,
+    humanPlayers, // how many humans play on this mobile device
+    aiLevel: aiLevel || 'medium',
+    seatNames: numPlayers===4 ? ['Héctor','Miguel','Leticia','Nala'] : ['Héctor','Miguel','Leticia'],
+    scores: numPlayers===4 ? {A:0,B:0} : {0:0,1:0,2:0},
+    dealerIndex:0,
+    revealedSeat:null, // pass-and-play: which human seat has tapped "ver mis cartas" for the current decision point
+    lastActorKey:null,
+  };
+  document.getElementById('overlay').classList.add('hidden');
+  startNewHand();
+}
+function updateHumanPlayersOptions(keepValue){
+  const numPlayers = document.getElementById('playersSelect').value;
+  const select = document.getElementById('humanPlayersSelect');
+  const prev = keepValue!==undefined ? String(keepValue) : select.value;
+  select.innerHTML = '';
+  if(numPlayers === '3'){
+    select.innerHTML = `
+      <option value="1">1 persona + 2 IA</option>
+      <option value="2">2 personas + 1 IA</option>
+      <option value="3">3 personas (sin IA)</option>`;
+  } else {
+    select.innerHTML = `
+      <option value="1">1 persona + 3 IA</option>
+      <option value="2">2 personas + 2 IA</option>
+      <option value="3">3 personas + 1 IA</option>
+      <option value="4">4 personas (sin IA)</option>`;
+  }
+  // keep the previous choice if it's still valid for this game type, else default to solo+IA
+  const opts=[...select.options].map(o=>o.value);
+  select.value = opts.includes(prev) ? prev : '1';
+}
+function changeSetup(){
+  const t=document.getElementById('targetSelect').value;
+  const n=document.getElementById('playersSelect').value;
+  const h=document.getElementById('humanPlayersSelect').value;
+  const lvl=document.getElementById('aiLevelSelect').value;
+  newGame(t,n,lvl,h);
+}
+function openSettings(){
+  document.getElementById('helpModeToggle').checked = helpModeEnabled;
+  document.getElementById('aiLevelSelect').value = state.aiLevel || 'medium';
+  if(state.numPlayers){
+    document.getElementById('playersSelect').value = String(state.numPlayers);
+    updateHumanPlayersOptions(state.humanPlayers);
+  }
+  document.getElementById('settingsOverlay').classList.remove('hidden');
+}
+function closeSettings(){ document.getElementById('settingsOverlay').classList.add('hidden'); }
+function toggleHelpMode(on){
+  helpModeEnabled = on;
+  if(state.phase) render();
+}
+
+function startNewHand(){
+  const ranks = state.numPlayers===4 ? RANKS_4P : RANKS_3P;
+  const deck=shuffle(buildDeck(ranks));
+  state.hands = Array.from({length:state.numPlayers}, ()=>[]);
+  for(let i=0;i<deck.length;i++) state.hands[i%state.numPlayers].push(deck[i]);
+  for(let s=0;s<state.numPlayers;s++) sortHand(state.hands[s]); // every seat's hand needs sorting now, not just seat 0 — several may be human
+  state.trumpSuit=null;
+  state.currentTrick=[];
+  state.log=[];
+  document.getElementById('summaryPanel').classList.add('hidden');
+  document.getElementById('trumpPanel').classList.add('hidden');
+  startAuction();
+}
+
+function startAuction(){
+  state.phase='bidding';
+  state.passed=new Set();
+  state.currentBid=0;
+  state.currentBidder=null;
+  state.bidSeat=nextSeat(state.dealerIndex);
+  state.manoSeat=state.bidSeat;
+  state.aiMaxBids={};
+  for(let s=0;s<state.numPlayers;s++){ if(s>=state.humanPlayers) state.aiMaxBids[s]=aiMaxBid(s); }
+  state.bidLog=[`Reparte ${state.seatNames[state.dealerIndex]}.`];
+  document.getElementById('biddingPanel').classList.remove('hidden');
+  bidTick();
+}
+
+function bidTick(){
+  if(state.passed.size>=state.numPlayers-1 && state.currentBid>0){
+    const remaining=seatRange().filter(s=>!state.passed.has(s));
+    finishAuction(remaining[0]);
+    return;
+  }
+  if(state.passed.has(state.bidSeat)){
+    state.bidSeat=nextSeat(state.bidSeat);
+    bidTick();
+    return;
+  }
+  render();
+  if(state.bidSeat >= state.humanPlayers){
+    // AI player
+    const seat = state.bidSeat;
+    const epoch = state.epoch;
+    setTimeout(()=>{
+      if(state.epoch!==epoch || state.phase!=='bidding' || state.bidSeat!==seat) return;
+      aiBidAction(seat);
+    },650);
+  }
+  // else: a human's turn to bid — controls are shown by render()/activeSeatForUI(),
+  // gated behind the pass-and-play reveal screen when more than one human plays here
+}
+function seatRange(){ return Array.from({length:state.numPlayers}, (_,i)=>i); }
+function aiBidAction(seat){
+  const max=state.aiMaxBids[seat];
+  const next=state.currentBid===0?60:state.currentBid+5;
+  const bluff = Math.random()<0.12 ? 5 : 0; // occasional bold extra push
+  if(next<=max+bluff) recordBid(seat,next); else recordPass(seat);
+}
+function recordBid(seat,amount){
+  state.currentBid=amount; state.currentBidder=seat;
+  state.bidLog.push(`${state.seatNames[seat]} puja ${amount}.`);
+  state.bidSeat=nextSeat(seat);
+  bidTick();
+}
+function recordPass(seat){
+  state.passed.add(seat);
+  state.bidLog.push(`${state.seatNames[seat]} pasa.`);
+  if(state.passed.size===state.numPlayers){
+    state.bidLog.push('Todos pasan. Se reparte de nuevo.');
+    render();
+    const dealerAtRedeal = state.dealerIndex;
+    const epoch = state.epoch;
+    setTimeout(()=>{
+      if(state.epoch!==epoch || state.phase!=='bidding' || state.dealerIndex!==dealerAtRedeal) return;
+      state.dealerIndex=nextSeat(state.dealerIndex); startNewHand();
+    },1300);
+    return;
+  }
+  if(state.passed.size===state.numPlayers-1 && state.currentBid>0){
+    const remaining=seatRange().filter(s=>!state.passed.has(s));
+    finishAuction(remaining[0]);
+    return;
+  }
+  state.bidSeat=nextSeat(seat);
+  bidTick();
+}
+function stepBid(delta){
+  const el=document.getElementById('bidAmt');
+  const min = state.currentBid===0?60:state.currentBid+5;
+  let val=parseInt(el.textContent)+delta;
+  if(val<min) val=min;
+  el.textContent=val;
+}
+function confirmHumanBid(){
+  const val=parseInt(document.getElementById('bidAmt').textContent);
+  document.getElementById('humanBidArea').classList.add('hidden');
+  recordBid(state.bidSeat,val);
+}
+function humanPass(){
+  document.getElementById('humanBidArea').classList.add('hidden');
+  recordPass(state.bidSeat);
+}
+
+function finishAuction(winnerSeat){
+  state.auctionWinner=winnerSeat;
+  state.bidAmount=state.currentBid;
+  state.bidLog.push(`${state.seatNames[winnerSeat]} se lleva la subasta con ${state.currentBid} puntos.`);
+  document.getElementById('biddingPanel').classList.add('hidden');
+  state.phase='trump';
+  render();
+  if(winnerSeat >= state.humanPlayers){
+    const seat = winnerSeat;
+    const epoch = state.epoch;
+    setTimeout(()=>{
+      if(state.epoch!==epoch || state.phase!=='trump' || state.auctionWinner!==seat) return;
+      chooseTrump(aiChooseTrump(seat));
+    },800);
+  }
+  // else: human winner picks the trump — trumpPanel is shown by render()/activeSeatForUI()
+}
+function renderTrumpChoices(){
+  const el=document.getElementById('trumpChoices');
+  el.innerHTML='';
+  SUITS.forEach(suit=>{
+    const div=document.createElement('div');
+    div.className='trump-choice '+suit;
+    div.style.cursor='pointer';
+    div.innerHTML=`${suitIcon(suit)}<div>${SUIT_LABEL[suit]}</div>`;
+    div.onclick=()=>{ document.getElementById('trumpPanel').classList.add('hidden'); chooseTrump(suit); };
+    el.appendChild(div);
+  });
+}
+function chooseTrump(suit){
+  state.trumpSuit=suit;
+  state.phase='playing';
+  state.leader=state.auctionWinner;
+  state.turn=state.leader;
+  state.currentTrick=[];
+  state.biddingTeam = state.numPlayers===4 ? TEAM_OF_4[state.auctionWinner] : state.auctionWinner;
+  state.biddingTeamPoints=0;
+  state.playerTrickPoints=new Array(state.numPlayers).fill(0);
+  state.trickHistory=[];
+  state.cantedSuits={};
+  for(let s=0;s<state.numPlayers;s++) state.cantedSuits[s]=new Set();
+  // memory tracking for help mode
+  state.seenCards=[];
+  state.voidSuits={};
+  for(let s=0;s<state.numPlayers;s++) state.voidSuits[s]=new Set();
+  for(let s=0;s<state.numPlayers;s++) sortHand(state.hands[s],suit);
+  state.log.push(`Triunfo: ${SUIT_LABEL[suit]}. Sale ${state.seatNames[state.leader]}.`);
+  playTick();
+}
+function playTick(){
+  render();
+  if(state.turn===null || state.turn===undefined) return;
+  // if it's a human player, let them click; if AI, auto-play
+  if(state.turn < state.humanPlayers) return; // human player's turn, wait for click
+  const seat = state.turn;
+  const epoch = state.epoch;
+  setTimeout(()=>{
+    if(state.epoch!==epoch || state.phase!=='playing' || state.turn!==seat) return;
+    playCard(seat, aiChooseCard(seat));
+  },750);
+}
+function playCard(seat,card){
+  const hand=state.hands[seat];
+  const idx=hand.findIndex(c=>c.id===card.id);
+  hand.splice(idx,1);
+  state.currentTrick.push({seat,card});
+  state.log.push(`${state.seatNames[seat]} juega ${cardLabel(card)}.`);
+  // memory tracking: record card seen, and deduce a void suit if this player didn't follow the lead suit
+  state.seenCards.push(card);
+  if(state.currentTrick.length>1){
+    const leadSuit=state.currentTrick[0].card.suit;
+    if(card.suit!==leadSuit) state.voidSuits[seat].add(leadSuit);
+  }
+  if(state.currentTrick.length<state.numPlayers){
+    state.turn=nextSeat(seat);
+    playTick();
+  } else {
+    state.turn=null;
+    render();
+    const epoch = state.epoch;
+    setTimeout(()=>{
+      if(state.epoch!==epoch) return;
+      resolveTrick();
+    },900);
+  }
+}
+function resolveTrick(){
+  const trick=state.currentTrick;
+  const winnerSeat=trickWinnerSeat(trick,state.trumpSuit);
+  const trickPts=trick.reduce((s,t)=>s+t.card.pts,0);
+  let bonusThisTrick=0;
+  if(isDeclarerSide(winnerSeat)){
+    state.biddingTeamPoints+=trickPts;
+    for(const suit of SUITS){
+      if(!state.cantedSuits[winnerSeat].has(suit)){
+        const h=state.hands[winnerSeat];
+        if(h.some(c=>c.suit===suit&&c.rank==='Rey') && h.some(c=>c.suit===suit&&c.rank==='Caballo')){
+          state.cantedSuits[winnerSeat].add(suit);
+          const pts=suit===state.trumpSuit?40:20;
+          state.biddingTeamPoints+=pts;
+          bonusThisTrick+=pts;
+          state.log.push(`${state.seatNames[winnerSeat]} canta ${pts} en ${SUIT_LABEL[suit]}.`);
+        }
+      }
+    }
+  }
+  state.log.push(`${state.seatNames[winnerSeat]} gana la baza (${trickPts} pts).`);
+  state.currentTrick=[];
+  const isLastTrick = state.hands[0].length===0;
+  if(isLastTrick && isDeclarerSide(winnerSeat)){
+    state.biddingTeamPoints+=10;
+    bonusThisTrick+=10;
+    state.log.push('10 de últimas para el bando subastador.');
+  }
+  state.playerTrickPoints[winnerSeat]+=trickPts+bonusThisTrick;
+  state.trickHistory.push({
+    n: state.trickHistory.length+1,
+    winnerSeat, pts: trickPts+bonusThisTrick,
+    snapshot: state.playerTrickPoints.slice()
+  });
+
+  // spawn confetti over the trick winner
+  setTimeout(()=>{
+    const players = document.querySelectorAll('.pchip');
+    if(players[winnerSeat]) spawnConfetti(players[winnerSeat], 15);
+  }, 600);
+
+  if(isLastTrick){
+    endHand();
+  } else {
+    state.leader=winnerSeat;
+    state.turn=winnerSeat;
+    playTick();
+  }
+}
+function endHand(){
+  const success = state.biddingTeamPoints >= state.bidAmount;
+  state.phase='handover';
+  let summary;
+  if(state.numPlayers===4){
+    const awardedKey = success ? state.biddingTeam : (state.biddingTeam==='A'?'B':'A');
+    state.scores[awardedKey]+=state.bidAmount;
+    summary = {success, mode:4, awardedKey, made:state.biddingTeamPoints};
+  } else if(success){
+    state.scores[state.biddingTeam]+=state.bidAmount;
+    summary = {success:true, mode:3, made:state.biddingTeamPoints};
+  } else {
+    const declarer=state.biddingTeam;
+    const defenders=[0,1,2].filter(s=>s!==declarer);
+    const bonusSeat = defenders.includes(state.manoSeat) ? state.manoSeat : defenders[0];
+    const otherSeat = defenders.find(s=>s!==bonusSeat);
+    let bonusAmt, otherAmt;
+    if(state.bidAmount%10===5){
+      const base=(state.bidAmount-5)/2;
+      bonusAmt=base+5; otherAmt=base;
+    } else {
+      bonusAmt=otherAmt=state.bidAmount/2;
+    }
+    state.scores[bonusSeat]+=bonusAmt;
+    state.scores[otherSeat]+=otherAmt;
+    summary = {success:false, mode:3, made:state.biddingTeamPoints, splits:{[bonusSeat]:bonusAmt,[otherSeat]:otherAmt}};
+  }
+  state.lastSummary=summary;
+  render();
+  renderSummary();
+  document.getElementById('summaryPanel').classList.remove('hidden');
+
+  let winnerKey=null;
+  if(state.numPlayers===4){
+    if(state.scores.A>=state.target) winnerKey='A';
+    else if(state.scores.B>=state.target) winnerKey='B';
+  } else {
+    for(let s=0;s<3;s++){ if(state.scores[s]>=state.target){ winnerKey=String(s); break; } }
+  }
+  if(winnerKey!==null){ state.phase='gameover'; showOverlay(winnerKey); }
+}
+function advanceToNextHand(){
+  document.getElementById('summaryPanel').classList.add('hidden');
+  state.dealerIndex=nextSeat(state.dealerIndex);
+  startNewHand();
+}
+function showOverlay(key){
+  const label=scoreLabelFor(key);
+  const amount=state.scores[key];
+  const isYou = (state.numPlayers===4 && key==='A') || (state.numPlayers===3 && key==='0');
+  document.getElementById('overlayTitle').textContent = isYou ? '¡Has ganado la partida!' : `Gana ${label}`;
+  document.getElementById('overlayBody').textContent = `${label} llega a ${amount} puntos.`;
+  document.getElementById('overlay').classList.remove('hidden');
+  if(isYou) burstConfetti(100);
+}
+function closeOverlay(){
+  document.getElementById('overlay').classList.add('hidden');
+  newGame(
+    document.getElementById('targetSelect').value,
+    document.getElementById('playersSelect').value,
+    document.getElementById('aiLevelSelect').value
+  );
+}
+
+/* ---------- PASS-AND-PLAY (multiple humans sharing this phone) ---------- */
+// Seats 0..humanPlayers-1 are controlled by real people taking turns with the
+// phone; the rest are filled in by AI. Whenever it's a different human seat's
+// turn to act (bid, choose trump, or play a card), we require that seat to tap
+// "Ver mis cartas" before their hand/controls become visible — that's what keeps
+// one player from seeing another's cards while the phone is being handed over.
+function isHumanSeat(seat){ return seat!==null && seat!==undefined && seat < state.humanPlayers; }
+function currentActorSeat(){
+  if(state.phase==='bidding') return state.bidSeat;
+  if(state.phase==='trump') return state.auctionWinner;
+  if(state.phase==='playing') return state.turn;
+  return null;
+}
+// Returns the seat whose hand/controls should currently be visible on screen, or
+// null if nobody's cards should be shown right now (AI's turn, or a human turn
+// that hasn't been revealed yet).
+function activeSeatForUI(){
+  const actor = currentActorSeat();
+  if(!isHumanSeat(actor)) return null;
+  if(state.humanPlayers<=1) return actor; // solo play: no one to hide cards from
+  return state.revealedSeat===actor ? actor : null;
+}
+function updatePassScreen(){
+  const overlay = document.getElementById('passOverlay');
+  if(state.humanPlayers<=1){ overlay.classList.add('hidden'); return; }
+  const actor = currentActorSeat();
+  const actorKey = state.phase+':'+actor;
+  if(state.lastActorKey !== actorKey){
+    // the turn moved to a new decision point — require a fresh tap to reveal it,
+    // even if it's the same seat as before (the phone may have changed hands)
+    state.lastActorKey = actorKey;
+    state.revealedSeat = null;
+  }
+  if(!isHumanSeat(actor) || state.revealedSeat===actor){
+    overlay.classList.add('hidden');
+    return;
+  }
+  const what = state.phase==='trump' ? 'para elegir el triunfo' : state.phase==='bidding' ? 'para pujar' : 'para jugar su carta';
+  document.getElementById('passOverlayTitle').textContent = `Pásale el móvil a ${state.seatNames[actor]}`;
+  document.getElementById('passOverlaySubtitle').textContent = `Toca cuando lo tenga ${what}. Nadie más debería ver esta pantalla.`;
+  overlay.classList.remove('hidden');
+}
+function revealCurrentSeat(){
+  state.revealedSeat = currentActorSeat();
+  document.getElementById('passOverlay').classList.add('hidden');
+  render();
+}
+
+/* ---------- HELP MODE ---------- */
+function remainingCardsBySuit(seat){
+  // cards not yet seen and not in this seat's hand — i.e. still "out there" in rivals' hands
+  const pool = unseenPoolFor(seat);
+  const out = {};
+  SUITS.forEach(s=>out[s]=[]);
+  pool.forEach(c=>out[c.suit].push(c));
+  SUITS.forEach(s=>out[s].sort((a,b)=>a.rankIndex-b.rankIndex));
+  return out;
+}
+// Runs the same Monte Carlo determinization used by the "Alto" AI, but for every
+// legal card the human could play, and also tracks how often each one actually
+// wins the *current* trick (not just the final hand score) — that's what lets the
+// help text say "gana esta baza el 62% de las veces" instead of just assuming an
+// As always wins because "no hay carta más alta de su palo" (ignoring that any
+// outstanding trump beats it).
+function monteCarloHelpStats(seat, hand, trick, trump, legal){
+  const simsPerCandidate = Math.max(6, Math.min(20, Math.round(240/legal.length)));
+  const stats = legal.map(cand=>{
+    let total=0, wins=0;
+    for(let i=0;i<simsPerCandidate;i++){
+      const assigned=determinizeAssignment(seat);
+      const res=rolloutFromCandidate(seat,cand,assigned);
+      total+=res.score;
+      if(res.firstTrickWinner===seat) wins++;
+    }
+    return {card:cand, avgScore: total/simsPerCandidate, winProb: wins/simsPerCandidate};
+  });
+  stats.sort((a,b)=>b.avgScore-a.avgScore);
+  return stats;
+}
+function buildHelpReasoning(stats, trick, trump, outstanding, seat){
+  const top=stats[0];
+  const suggestion=top.card;
+  const winPct=Math.round(top.winProb*100);
+  if(trick.length===0){
+    let text=`Sales tú. Probando cientos de repartos posibles de las cartas que no conoces, jugar ${cardLabel(suggestion)} es lo que más suma a tu bando de media.`;
+    if(suggestion.suit!==trump){
+      const outTrumpsLeft=outstanding[trump].length;
+      text+=` Gana esta baza en el ${winPct}% de las simulaciones`;
+      text+= outTrumpsLeft>0 ? ` — quedan ${outTrumpsLeft} triunfo(s) sin ver, así que existe riesgo de que te la corten.` : ', y no queda ningún triunfo por ahí que te la pueda quitar.';
+    } else {
+      text+=` Es triunfo, así que gana esta baza en el ${winPct}% de las simulaciones.`;
+    }
+    return text;
+  }
+  const wSeat=trickWinnerSeat(trick,trump);
+  const bestCard=trick.find(t=>t.seat===wSeat).card;
+  const winnerIsPartner = isDeclarerSide(wSeat)===isDeclarerSide(seat) && wSeat!==seat;
+  if(winnerIsPartner && state.numPlayers===4){
+    return `La baza la va ganando tu compañero (${state.seatNames[wSeat]}). Probando cientos de repartos, lo que más conviene a vuestro bando es soltar ${cardLabel(suggestion)} — sumas sus puntos en vez de gastar una carta que podrías necesitar en otra baza.`;
+  }
+  if(top.winProb>=0.5){
+    return `Probando cientos de repartos posibles, ${cardLabel(suggestion)} es lo que más te conviene frente a ${cardLabel(bestCard)} (de ${state.seatNames[wSeat]}): gana esta baza en el ${winPct}% de las simulaciones sin gastar tus cartas más fuertes.`;
+  }
+  return `No hay ninguna jugada que gane esta baza con garantías frente a ${cardLabel(bestCard)} (de ${state.seatNames[wSeat]}) — la mejor opción solo se impone en el ${winPct}% de las simulaciones. Jugando ${cardLabel(suggestion)} es lo que más beneficia a tu bando a la larga, contando lo que puedes necesitar más adelante.`;
+}
+function computeHelp(seat){
+  const trump=state.trumpSuit;
+  const trick=state.currentTrick;
+  const hand=state.hands[seat];
+  const legal=legalMoves(hand,trick,trump);
+  const outstanding=remainingCardsBySuit(seat);
+
+  // --- "what we know" summary ---
+  const knownLines=[];
+  const seenCount=state.seenCards.length;
+  knownLines.push(`Van jugadas <b>${seenCount}</b> cartas de esta mano.`);
+  for(let s=0;s<state.numPlayers;s++){
+    if(s===seat) continue;
+    const voids=[...state.voidSuits[s]];
+    if(voids.length){
+      knownLines.push(`<b>${state.seatNames[s]}</b> no tiene: ${voids.map(v=>SUIT_LABEL[v]).join(', ')}.`);
+    }
+  }
+  const outTrumpsLeft=outstanding[trump].length;
+  knownLines.push(`Quedan <b>${outTrumpsLeft}</b> triunfo(s) de ${SUIT_LABEL[trump]} sin ver (fuera de tu mano).`);
+
+  // --- reasoning + suggestion, via Monte Carlo determinization (same engine as la IA "Alto") ---
+  let suggestion=null, reasoning='';
+  if(legal.length===1){
+    suggestion=legal[0];
+    reasoning='Es la única carta que puedes jugar ahora mismo.';
+  } else {
+    const stats=monteCarloHelpStats(seat, hand, trick, trump, legal);
+    suggestion=stats[0].card;
+    reasoning=buildHelpReasoning(stats, trick, trump, outstanding, seat);
+  }
+  return {knownLines, reasoning, suggestion};
+}
+/* ---------- CONFETTI ---------- */
+const CONFETTI_COLORS = ['#D9A441','#C1544A','#4A6FA5','#4B8A68'];
+function spawnConfetti(targetElement, count=20){
+  if(!targetElement) return;
+  const rect = targetElement.getBoundingClientRect();
+  const centerX = rect.left + rect.width/2;
+  const centerY = rect.top + rect.height/2;
+  for(let i=0; i<count; i++){
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = centerX + 'px';
+    piece.style.top = centerY + 'px';
+    piece.style.backgroundColor = CONFETTI_COLORS[i%CONFETTI_COLORS.length];
+    piece.style.setProperty('--delay', (Math.random()*0.3)+'s');
+    piece.style.animationDelay = piece.style.getPropertyValue('--delay');
+    piece.style.animationDuration = (2 + Math.random()*0.8) + 's';
+    document.body.appendChild(piece);
+    setTimeout(()=>piece.remove(), 3000);
+  }
+}
+function burstConfetti(count=80){
+  for(let i=0; i<count; i++){
+    const piece = document.createElement('div');
+    piece.className = 'confetti-burst';
+    piece.style.left = (window.innerWidth/2) + 'px';
+    piece.style.top = (window.innerHeight/2) + 'px';
+    piece.style.backgroundColor = CONFETTI_COLORS[i%CONFETTI_COLORS.length];
+    const angle = (Math.PI*2*i)/count;
+    const vel = 100 + Math.random()*150;
+    const tx = Math.cos(angle)*vel;
+    const ty = Math.sin(angle)*vel;
+    piece.style.setProperty('--tx', tx+'px');
+    piece.style.setProperty('--ty', ty+'px');
+    piece.style.animationDuration = (1.5 + Math.random()*0.8) + 's';
+    document.body.appendChild(piece);
+    setTimeout(()=>piece.remove(), 2500);
+  }
+}
+
+function renderHelp(activeSeat){
+  const panel=document.getElementById('helpPanel');
+  const show = helpModeEnabled && state.phase==='playing' && activeSeat!==null && state.turn===activeSeat && state.hands[activeSeat].length>0;
+  panel.classList.toggle('hidden', !show);
+  if(!show) return;
+  const help=computeHelp(activeSeat);
+  document.getElementById('helpKnown').innerHTML = help.knownLines.map(l=>`<div>${l}</div>`).join('');
+  document.getElementById('helpReasoning').textContent = help.reasoning;
+  const sug=help.suggestion;
+  document.getElementById('helpSuggestion').innerHTML = sug
+    ? `${cardHtml(sug,'mini')}<div class="txt">Sugerencia: <b>${cardLabel(sug)}</b></div>`
+    : '';
+  // highlight suggested card in hand
+  if(sug){
+    const handRow=document.getElementById('handRow');
+    const node=handRow.querySelector(`[data-id="${sug.id}"]`);
+    if(node) node.classList.add('suggested');
+  }
+}
+
+/* ---------- RENDER ---------- */
+function cardHtml(card, extraClass){
+  return `<div class="card ${card.suit} ${extraClass||''}" data-id="${card.id}">
+    <div>${RANK_SHORT[card.rank]}</div>
+    <div class="icon-wrap">${suitIcon(card.suit)}</div>
+    ${card.pts>0?`<div class="pts">${card.pts}</div>`:''}
+  </div>`;
+}
+
+function makePchip(s){
+  const div=document.createElement('div');
+  div.className='pchip'+(state.turn===s && state.phase==='playing'?' turn':'')+((state.bidSeat===s && state.phase==='bidding')?' turn':'');
+  let tag='';
+  if(state.dealerIndex===s) tag='<div class="tag">reparte</div>';
+  let bottomTag='';
+  if((state.phase==='playing'||state.phase==='handover') && state.leader===s) bottomTag='<div class="tag-bottom">sale</div>';
+  const cardCount = state.hands ? state.hands[s].length : 10;
+  const soloNote = (state.numPlayers===3 && state.auctionWinner===s && (state.phase==='playing'||state.phase==='handover')) ? ' · solo' : '';
+  const aiNote = (state.humanPlayers!==undefined && s>=state.humanPlayers) ? '<div class="ainote">IA</div>' : '';
+  div.innerHTML = `${tag}<div class="nm">${state.seatNames[s]}</div><div class="ct">${cardCount} cartas${soloNote}</div>${aiNote}${bottomTag}`;
+  return div;
+}
+
+function renderScores(){
+  const row=document.getElementById('scoresRow');
+  if(state.numPlayers===4){
+    row.innerHTML = `
+      <div class="score-chip you"><div class="lbl">${teamLabel('A')}</div><div class="val">${state.scores.A}</div></div>
+      <div class="score-chip"><div class="lbl">${teamLabel('B')}</div><div class="val">${state.scores.B}</div></div>`;
+  } else {
+    row.innerHTML = state.seatNames.map((nm,i)=>`
+      <div class="score-chip ${i===0?'you':''}"><div class="lbl">${nm}</div><div class="val">${state.scores[i]}</div></div>`).join('');
+  }
+}
+
+function renderPlayers(){
+  const pdiv=document.getElementById('players');
+  pdiv.innerHTML='';
+  if(state.numPlayers===4){
+    const groups=[{cls:' teamA',seats:[0,2]},{cls:'',seats:[1,3]}];
+    groups.forEach(g=>{
+      const gdiv=document.createElement('div');
+      gdiv.className='team-group'+g.cls;
+      g.seats.forEach(s=>gdiv.appendChild(makePchip(s)));
+      pdiv.appendChild(gdiv);
+    });
+  } else {
+    const gdiv=document.createElement('div');
+    gdiv.className='team-group';
+    for(let s=0;s<3;s++) gdiv.appendChild(makePchip(s));
+    pdiv.appendChild(gdiv);
+  }
+}
+
+function render(){
+  const activeSeat = activeSeatForUI();
+  updatePassScreen();
+
+  renderScores();
+  renderPlayers();
+  renderLivePoints();
+
+  document.getElementById('mesaBox').classList.toggle('hidden', state.phase==='handover');
+  document.getElementById('summaryPanel').classList.toggle('hidden', state.phase!=='handover');
+
+  // bidding controls — only visible once the current human bidder has revealed their turn
+  if(state.phase==='bidding' && activeSeat!==null && state.bidSeat===activeSeat){
+    document.getElementById('humanBidArea').classList.remove('hidden');
+    document.getElementById('bidAmt').textContent = state.currentBid===0?60:state.currentBid+5;
+  } else {
+    document.getElementById('humanBidArea').classList.add('hidden');
+  }
+
+  // trump choice — same idea: only the revealed human auction-winner sees it
+  if(state.phase==='trump' && activeSeat!==null){
+    renderTrumpChoices();
+    document.getElementById('trumpPanel').classList.remove('hidden');
+  } else {
+    document.getElementById('trumpPanel').classList.add('hidden');
+  }
+
+  // mesa info
+  document.getElementById('trumpInfo').textContent = state.trumpSuit ? `Triunfo: ${SUIT_LABEL[state.trumpSuit]}` : 'Triunfo: por decidir';
+  if(state.phase==='bidding'){
+    document.getElementById('bidInfo').textContent = state.currentBid>0 ? `Puja: ${state.currentBid} (${state.seatNames[state.currentBidder]})` : 'Subasta en curso';
+  } else if(state.phase==='playing' || state.phase==='handover'){
+    document.getElementById('bidInfo').textContent = `Objetivo: ${state.bidAmount} · Llevan: ${state.biddingTeamPoints}`;
+  } else {
+    document.getElementById('bidInfo').textContent='';
+  }
+
+  // trick grid — same left-to-right order as the player strip above (Tú, Norte, Oeste, Este for 4p)
+  const grid=document.getElementById('trickGrid');
+  grid.style.gridTemplateColumns = `repeat(${state.numPlayers},1fr)`;
+  grid.innerHTML='';
+  const mesaOrder = state.numPlayers===4 ? [0,2,1,3] : [0,1,2];
+  mesaOrder.forEach(s=>{
+    const played=(state.currentTrick||[]).find(t=>t.seat===s);
+    const slot=document.createElement('div');
+    slot.className='trick-slot';
+    slot.innerHTML = played ? cardHtml(played.card,'mini') + `<div class="who">${state.seatNames[s]}</div>` : `<div style="height:52px;"></div><div class="who">${state.seatNames[s]}</div>`;
+    grid.appendChild(slot);
+  });
+
+  // bid log
+  if(state.bidLog){
+    document.getElementById('bidLog').innerHTML = state.bidLog.map(l=>`<div>${l}</div>`).join('');
+    document.getElementById('bidLog').scrollTop = 999999;
+  }
+
+  // hand — shows whichever human seat is currently acting (and has revealed their turn)
+  const handRow=document.getElementById('handRow');
+  handRow.innerHTML='';
+  const multiHuman = state.humanPlayers>1;
+  if(activeSeat===null){
+    const waitingSeat = currentActorSeat();
+    document.getElementById('handLbl').textContent = (waitingSeat!==null && multiHuman)
+      ? `Turno de ${state.seatNames[waitingSeat]}…`
+      : (multiHuman ? 'Esperando…' : 'Tu mano');
+  } else {
+    const canPlay = state.phase==='playing' && state.turn===activeSeat;
+    const legal = canPlay ? legalMoves(state.hands[activeSeat], state.currentTrick, state.trumpSuit).map(c=>c.id) : [];
+    const who = multiHuman ? `Mano de ${state.seatNames[activeSeat]}` : 'Tu mano';
+    document.getElementById('handLbl').textContent = state.phase==='bidding' ? `${who} (para decidir la puja)` : who;
+    state.hands[activeSeat].forEach(card=>{
+      const ok = canPlay && legal.includes(card.id);
+      const el=document.createElement('div');
+      el.innerHTML = cardHtml(card, ok?'clickable':(canPlay?'disabled':''));
+      const node = el.firstElementChild;
+      if(ok) node.onclick=()=>playCard(activeSeat,card);
+      handRow.appendChild(node);
+    });
+  }
+
+  // log
+  if(state.log){
+    document.getElementById('logList').innerHTML = state.log.slice(-40).map(l=>`<div>${l}</div>`).join('');
+    document.getElementById('logList').scrollTop = 999999;
+  }
+
+  renderHelp(activeSeat);
+}
+
+function renderLivePoints(){
+  const panel=document.getElementById('livePointsPanel');
+  const showPanel = state.phase==='playing' || state.phase==='handover';
+  panel.classList.toggle('hidden', !showPanel);
+  if(!showPanel) return;
+  const pts = state.playerTrickPoints || new Array(state.numPlayers).fill(0);
+  const row=document.getElementById('tpRow');
+  if(state.numPlayers===4){
+    const totalA=pts[0]+pts[2], totalB=pts[1]+pts[3];
+    const n=state.seatNames;
+    row.innerHTML = `
+      <div class="tp-team you">
+        <div class="tp-lbl">${teamLabel('A')}</div><div class="tp-val">${totalA}</div>
+        <div class="tp-players"><span>${n[0]}: ${pts[0]}</span><span>${n[2]}: ${pts[2]}</span></div>
+      </div>
+      <div class="tp-team">
+        <div class="tp-lbl">${teamLabel('B')}</div><div class="tp-val">${totalB}</div>
+        <div class="tp-players"><span>${n[1]}: ${pts[1]}</span><span>${n[3]}: ${pts[3]}</span></div>
+      </div>`;
+  } else {
+    row.innerHTML = state.seatNames.map((nm,i)=>`
+      <div class="tp-team ${i===0?'you':''}">
+        <div class="tp-lbl">${nm}</div><div class="tp-val">${pts[i]}</div>
+      </div>`).join('');
+  }
+
+  const histEl=document.getElementById('trickHistory');
+  const hist = state.trickHistory || [];
+  histEl.innerHTML = hist.slice().reverse().map(h=>`
+    <div class="th-row">
+      <span><span class="who">Baza ${h.n}</span> — ${state.seatNames[h.winnerSeat]} +${h.pts}</span>
+      <span class="running">${formatRunningTotals(h.snapshot)}</span>
+    </div>`).join('') || '<div class="th-row"><span>Sin bazas todavía</span></div>';
+}
+
+function renderSummary(){
+  const s=state.lastSummary;
+  document.getElementById('summaryTitle').textContent = s.success ? 'Mano cumplida' : 'Mano bañada';
+  let rows = `
+    <div class="summary-row"><span>${state.numPlayers===4?'Pareja subastadora':'Jugador solo'}</span><span>${biddingSideLabel()}</span></div>
+    <div class="summary-row"><span>Puntos pujados</span><span>${state.bidAmount}</span></div>
+    <div class="summary-row"><span>Puntos reunidos</span><span>${s.made}</span></div>`;
+  if(state.numPlayers===4){
+    rows += `<div class="summary-row total"><span>Anota</span><span>${scoreLabelFor(s.awardedKey)}: +${state.bidAmount}</span></div>`;
+  } else if(s.success){
+    rows += `<div class="summary-row total"><span>Anota</span><span>${state.seatNames[state.biddingTeam]}: +${state.bidAmount}</span></div>`;
+  } else {
+    const entries = Object.entries(s.splits).map(([seat,amt])=>`${state.seatNames[seat]}: +${amt}`).join(' · ');
+    rows += `<div class="summary-row total"><span>Anotan</span><span>${entries}</span></div>`;
+  }
+  document.getElementById('summaryBody').innerHTML = rows;
+}
+
+/* ---------- INIT ---------- */
+newGame(500, 4, 'medium', 1);
+</script>
+</body>
+</html>
