@@ -264,9 +264,12 @@
   }
   .settings-panel .rules-box{border-top:1px solid rgba(31,42,61,0.14); margin-top:18px; padding-top:14px;}
   .settings-panel .rules-box b{color:var(--tinta);}
-  /* collapsible Reglas — same bold/left-aligned label style as "Historial de
-     partidas" above it, rather than the big centered-looking Fraunces heading */
-  .rules-summary{font-size:0.85rem; color:var(--tinta); font-weight:700; padding:2px 0;}
+  /* collapsible Reglas — a plain clickable <b> label instead of a native
+     <summary>/<details> marker, so it matches "Historial de partidas" above
+     it exactly (same bold/left-aligned style) rather than depending on each
+     browser's own disclosure-triangle rendering. */
+  .rules-toggle{display:block; cursor:pointer;}
+  .rules-toggle #rulesCaret{color:var(--piedra); font-weight:400;}
   .rank-row{display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 4px;}
   .rank-chip{
     background:rgba(31,42,61,0.05); border:1px solid rgba(31,42,61,0.15);
@@ -450,45 +453,41 @@
     <button class="big-btn" style="width:100%; margin-top:16px;" onclick="changeSetup(); closeSettings();">Aplicar y empezar de nuevo</button>
 
     <div class="rules-box" style="border-top:1px solid rgba(31,42,61,0.14); margin-top:18px; padding-top:14px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:6px; flex-wrap:wrap;">
-        <b style="color:var(--tinta);">Historial de partidas</b>
-        <div style="display:flex; gap:4px;">
-          <button class="close-btn" style="width:auto; height:auto; border:1px solid rgba(31,42,61,0.2); font-size:0.68rem; padding:3px 8px; color:var(--tinta);" onclick="exportResultHistory()">Exportar</button>
-          <button class="close-btn" style="width:auto; height:auto; border:1px solid rgba(31,42,61,0.2); font-size:0.68rem; padding:3px 8px; color:var(--tinta);" onclick="document.getElementById('importHistoryFile').click()">Importar</button>
-          <button class="close-btn" style="width:auto; height:auto; border:none; font-size:0.68rem; padding:3px 8px; color:var(--piedra);" onclick="clearResultHistory()">Borrar</button>
-        </div>
-        <input type="file" id="importHistoryFile" accept="application/json" class="hidden" onchange="importResultHistory(this.files[0])">
+      <b style="color:var(--tinta); font-size:0.85rem;">Historial de partidas</b>
+      <p class="toggle-hint" style="margin:6px 0 10px;">Se guarda solo en este navegador. Usa "Exportar" para descargar una copia (por ejemplo para subirla a tu repo de GitHub) e "Importar" para recuperarla en otro dispositivo.</p>
+      <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <button class="ghost-btn" style="flex:1; padding:10px 6px; font-size:0.8rem; color:var(--tinta); border-color:rgba(31,42,61,0.2);" onclick="exportResultHistory()">Exportar</button>
+        <button class="ghost-btn" style="flex:1; padding:10px 6px; font-size:0.8rem; color:var(--tinta); border-color:rgba(31,42,61,0.2);" onclick="document.getElementById('importHistoryFile').click()">Importar</button>
+        <button class="ghost-btn" style="flex:1; padding:10px 6px; font-size:0.8rem; color:var(--tinta); border-color:rgba(31,42,61,0.2);" onclick="clearResultHistory()">Borrar</button>
       </div>
-      <p class="toggle-hint" style="margin-top:0;">Se guarda solo en este navegador. Usa "Exportar" para descargar una copia (por ejemplo para subirla a tu repo de GitHub) e "Importar" para recuperarla en otro dispositivo.</p>
+      <input type="file" id="importHistoryFile" accept="application/json" class="hidden" onchange="importResultHistory(this.files[0])">
       <div id="resultHistoryList" style="font-size:0.82rem; line-height:1.5;"></div>
     </div>
 
     <div class="rules-box">
-      <details>
-        <summary class="rules-summary">Reglas</summary>
-        <div style="margin-top:10px;">
-          <p><b>Puja</b>: mínimo 60, sube de 5 en 5. Quien gana la subasta elige el triunfo y sale.</p>
-          <p><b>Al jugar</b>: si tienes el palo pedido, tienes que jugarlo y superarlo si puedes. Si no tienes, tienes que triunfar y superar el triunfo en mesa si puedes. Si no tienes ni palo ni triunfo, puedes echar cualquier carta.</p>
-          <p style="margin-bottom:6px;"><b>Valor y orden de las cartas</b>: de más a menos fuerte. El triunfo manda siempre sobre los otros palos; dentro de un mismo palo gana la carta más fuerte de esta lista.</p>
-          <div class="rank-row">
-            <div class="rank-chip"><span class="rk">As</span><span class="pt">11</span></div>
-            <div class="rank-chip"><span class="rk">3</span><span class="pt">10</span></div>
-            <div class="rank-chip"><span class="rk">Rey</span><span class="pt">4</span></div>
-            <div class="rank-chip"><span class="rk">Caballo</span><span class="pt">3</span></div>
-            <div class="rank-chip"><span class="rk">Sota</span><span class="pt">2</span></div>
-            <div class="rank-chip"><span class="rk">7</span><span class="pt">0</span></div>
-            <div class="rank-chip"><span class="rk">6</span><span class="pt">0</span></div>
-            <div class="rank-chip"><span class="rk">5</span><span class="pt">0</span></div>
-            <div class="rank-chip"><span class="rk">4</span><span class="pt">0</span></div>
-            <div class="rank-chip"><span class="rk">2</span><span class="pt">0</span></div>
-          </div>
-          <p class="toggle-hint" style="margin:2px 0 10px;">De más a menos fuerte, izquierda a derecha; el número pequeño es lo que vale esa carta al ganar la baza. El 2 solo existe en la partida a 4 jugadores. En total hay 40 puntos en juego por mano, sin contar cantes ni últimas.</p>
-          <p><b>Cantes</b>: rey + caballo del mismo palo, al ganar una baza, dan 40 puntos si es de triunfo o 20 si es de otro palo — solo cuentan para quien se llevó la subasta, y se detectan solos aquí.</p>
-          <p><b>Últimas</b>: quien gana la última baza suma 10 puntos si es del bando que subastó.</p>
-          <p><b>Resultado</b>: si el bando subastador reúne lo que pujó, anota esa cifra; si no, la anota el bando contrario.</p>
-          <p><b>A 3 jugadores</b>: se juega con 36 cartas (sin doses), 12 por jugador. Quien gana la subasta juega solo contra los otros dos. Si se baña, los dos rivales se reparten la puja a medias; si es impar, el que iba de mano en esa mano se lleva 5 puntos más.</p>
+      <b class="rules-toggle" onclick="toggleRules()">Reglas <span id="rulesCaret">▾</span></b>
+      <div id="rulesBody" class="hidden" style="margin-top:10px;">
+        <p><b>Puja</b>: mínimo 60, sube de 5 en 5. Quien gana la subasta elige el triunfo y sale.</p>
+        <p><b>Al jugar</b>: si tienes el palo pedido, tienes que jugarlo y superarlo si puedes. Si no tienes, tienes que triunfar y superar el triunfo en mesa si puedes. Si no tienes ni palo ni triunfo, puedes echar cualquier carta.</p>
+        <p style="margin-bottom:6px;"><b>Valor y orden de las cartas</b>: de más a menos fuerte. El triunfo manda siempre sobre los otros palos; dentro de un mismo palo gana la carta más fuerte de esta lista.</p>
+        <div class="rank-row">
+          <div class="rank-chip"><span class="rk">As</span><span class="pt">11</span></div>
+          <div class="rank-chip"><span class="rk">3</span><span class="pt">10</span></div>
+          <div class="rank-chip"><span class="rk">Rey</span><span class="pt">4</span></div>
+          <div class="rank-chip"><span class="rk">Caballo</span><span class="pt">3</span></div>
+          <div class="rank-chip"><span class="rk">Sota</span><span class="pt">2</span></div>
+          <div class="rank-chip"><span class="rk">7</span><span class="pt">0</span></div>
+          <div class="rank-chip"><span class="rk">6</span><span class="pt">0</span></div>
+          <div class="rank-chip"><span class="rk">5</span><span class="pt">0</span></div>
+          <div class="rank-chip"><span class="rk">4</span><span class="pt">0</span></div>
+          <div class="rank-chip"><span class="rk">2</span><span class="pt">0</span></div>
         </div>
-      </details>
+        <p class="toggle-hint" style="margin:2px 0 10px;">De más a menos fuerte, izquierda a derecha; el número pequeño es lo que vale esa carta al ganar la baza. El 2 solo existe en la partida a 4 jugadores. En total hay 40 puntos en juego por mano, sin contar cantes ni últimas.</p>
+        <p><b>Cantes</b>: rey + caballo del mismo palo, al ganar una baza, dan 40 puntos si es de triunfo o 20 si es de otro palo — solo cuentan para quien se llevó la subasta, y se detectan solos aquí.</p>
+        <p><b>Últimas</b>: quien gana la última baza suma 10 puntos si es del bando que subastó.</p>
+        <p><b>Resultado</b>: si el bando subastador reúne lo que pujó, anota esa cifra; si no, la anota el bando contrario.</p>
+        <p><b>A 3 jugadores</b>: se juega con 36 cartas (sin doses), 12 por jugador. Quien gana la subasta juega solo contra los otros dos. Si se baña, los dos rivales se reparten la puja a medias; si es impar, el que iba de mano en esa mano se lleva 5 puntos más.</p>
+      </div>
     </div>
   </div>
 </div>
@@ -972,6 +971,12 @@ function openSettings(){
   document.getElementById('settingsOverlay').classList.remove('hidden');
 }
 function closeSettings(){ document.getElementById('settingsOverlay').classList.add('hidden'); }
+function toggleRules(){
+  const body=document.getElementById('rulesBody');
+  const caret=document.getElementById('rulesCaret');
+  const nowHidden = body.classList.toggle('hidden');
+  caret.textContent = nowHidden ? '▾' : '▴';
+}
 function toggleHelpMode(on){
   helpModeEnabled = on;
   if(state.phase) render();
