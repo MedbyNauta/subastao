@@ -109,13 +109,10 @@
     border:1px solid var(--linea); border-radius:5px; padding:0 4px; margin-left:4px;
     vertical-align:middle; letter-spacing:0.03em;
   }
-  /* Running trick points for this seat, only while a hand is actually being
-     played (not during bidding/handover — the hand summary already covers
-     final numbers then, so a second live tally would just be redundant). */
-  .pchip .pts-line{font-family:'Fraunces', serif; font-weight:700; font-size:0.85rem; color:var(--text); margin-top:2px;}
-  /* 3-player mode has no team total, so its own per-seat number takes over
-     that "big number" role instead of staying small. */
-  .pchip .pts-line.big{font-size:1.3rem; margin-top:4px;}
+  /* Running trick points inline right next to the name (3-player only — see
+     makePchip()), same color/weight as the name itself so it reads as part
+     of the label rather than a separate stat. */
+  .pchip .pts-inline{font-weight:600; color:var(--text); margin-left:5px;}
   .pchip .tag{
     position:absolute; top:-8px; left:50%; transform:translateX(-50%);
     background:var(--oro); color:var(--tinta); font-size:0.6rem; padding:1px 6px;
@@ -144,9 +141,11 @@
   .trick-slot{text-align:center;}
   .trick-slot .who{font-size:0.63rem; color:var(--piedra); margin-top:3px;}
 
-  /* LIVE POINTS — folded into the player chips themselves (a second line
-     under the name) instead of a separate panel; see .pchip .pts-line and
-     .team-total below, near the rest of the .pchip rules. */
+  /* LIVE POINTS — folded into the player chips themselves instead of a
+     separate panel: an inline number next to the name in 3-player mode
+     (.pchip .pts-inline), or a combined team total under each pair in
+     4-player mode (.team-total) — see both near the rest of the .pchip
+     rules below. */
 
   /* CARDS */
   .card{
@@ -169,13 +168,16 @@
   /* HAND */
   .hand-wrap{margin:12px 6px 0;}
   .hand-wrap .lbl{font-size:0.78rem; color:var(--oro); margin-bottom:8px; padding-left:6px;}
-  /* Two non-overlapping rows instead of one scrolling line, so the whole hand
-     is always visible at once. Even card count: both rows equal and aligned.
-     Odd count: the top row gets the extra card, and the bottom row (.offset,
-     added in JS) is nudged right by half a card+gap so its cards sit visually
-     between two top cards, like a fanned-out hand — without any overlap. */
-  .hand{display:flex; flex-direction:column; gap:6px; padding:6px 6px 14px;}
-  .hand-row{display:flex; gap:7px;}
+  /* Two rows instead of one scrolling line, so the whole hand is always
+     visible at once, centered under the label. Even card count: both rows
+     equal and aligned. Odd count: the top row gets the extra card, and the
+     bottom row (.offset, added in JS) is nudged right by half a card+gap so
+     its cards sit visually between two top cards, like a fanned-out hand.
+     A slight negative gap lets the rows overlap just a touch. */
+  .hand{display:flex; flex-direction:column; align-items:center; padding:6px 6px 14px;}
+  .hand-row{display:flex; gap:7px; position:relative;}
+  .hand-row.top{z-index:2;}
+  .hand-row.bottom{z-index:1; margin-top:-8px;}
   .hand-row.offset{margin-left:23px;}
   .card.clickable{cursor:pointer; transition:transform .12s;}
   .card.clickable:hover{transform:translateY(-4px);}
@@ -1662,13 +1664,13 @@ function makePchip(s){
   let bottomTag='';
   if((state.phase==='playing'||state.phase==='handover') && state.leader===s) bottomTag='<div class="tag-bottom">sale</div>';
   const aiTag = isAI ? '<span class="ai-tag">IA</span>' : '';
-  // Running trick points, live — only while the hand is actually in progress;
-  // the "Resultado de la mano" summary already covers final totals afterwards.
-  // 3-player mode has no separate team total (see renderPlayers()), so its
-  // own number takes over that "big number" role via the .big modifier.
-  const ptsLine = (state.phase==='playing' && state.playerTrickPoints)
-    ? `<div class="pts-line${state.numPlayers===3?' big':''}">${state.playerTrickPoints[s]}</div>` : '';
-  div.innerHTML = `${tag}<div class="nm">${state.seatNames[s]}${aiTag}</div>${ptsLine}${bottomTag}`;
+  // Running trick points, live — only while the hand is actually in progress
+  // (the "Resultado de la mano" summary already covers final totals
+  // afterwards), and only in 3-player mode: 4-player shows just the team
+  // total under each pair instead (see renderPlayers()), nothing per-seat.
+  const ptsInline = (state.numPlayers===3 && state.phase==='playing' && state.playerTrickPoints)
+    ? `<span class="pts-inline">${state.playerTrickPoints[s]}</span>` : '';
+  div.innerHTML = `${tag}<div class="nm">${state.seatNames[s]}${ptsInline}${aiTag}</div>${bottomTag}`;
   return div;
 }
 
@@ -1697,7 +1699,8 @@ function renderPlayers(){
       g.seats.forEach(s=>row.appendChild(makePchip(s)));
       gdiv.appendChild(row);
       // Team's combined running points, only while a hand is in progress —
-      // same rule as each chip's own pts-line, see makePchip().
+      // the only points display in 4-player mode (see makePchip(), which
+      // shows nothing per-seat here, unlike the 3-player pts-inline).
       if(state.phase==='playing' && state.playerTrickPoints){
         const total=g.seats.reduce((sum,s)=>sum+state.playerTrickPoints[s],0);
         const totalDiv=document.createElement('div');
@@ -1787,6 +1790,9 @@ function render(){
   const handRow=document.getElementById('handRow');
   handRow.innerHTML='';
   const multiHuman = state.humanPlayers>1;
+  // Solo play doesn't need a "Tu mano" label stating the obvious — only show
+  // it in pass-and-play, where it actually says whose turn/hand this is.
+  document.getElementById('handLbl').classList.toggle('hidden', !multiHuman);
   const displaySeat = handDisplaySeat();
   if(displaySeat===null || !state.hands || !state.hands[displaySeat]){
     const waitingSeat = currentActorSeat();
