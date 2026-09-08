@@ -33,13 +33,22 @@
     }
   }
   *{box-sizing:border-box;}
+  /* Lock the outer page so it can't rubber-band/bounce like a normal webpage —
+     html/body take the full (dynamic) viewport height and never scroll
+     themselves; .wrap is the one scrollable region inside them, with
+     overscroll-behavior containing the scroll chain so dragging past its
+     top/bottom doesn't leak into the (fixed) body and reveal the bounce. */
+  html{height:100%; overflow:hidden;}
   body{
     margin:0; background:var(--bg); color:var(--text);
     font-family:'Inter', sans-serif; -webkit-font-smoothing:antialiased;
-    min-height:100vh;
+    height:100vh; height:100dvh; overflow:hidden; overscroll-behavior:none;
   }
   h1,h2,h3{font-family:'Fraunces', serif; font-weight:600; margin:0;}
-  .wrap{max-width:520px; margin:0 auto; padding:0 0 30px;}
+  .wrap{
+    max-width:520px; margin:0 auto; padding:0 0 30px;
+    height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain;
+  }
 
   header{
     padding:16px 16px 12px;
@@ -365,7 +374,7 @@
     <button class="big-btn" style="margin-top:14px; width:100%;" onclick="advanceToNextHand()">Siguiente mano</button>
   </div>
 
-  <div class="hand-wrap">
+  <div class="hand-wrap" id="handWrap">
     <div class="lbl" id="handLbl">Tu mano</div>
     <div class="hand" id="handRow"></div>
   </div>
@@ -382,7 +391,7 @@
   <div class="panel hidden" id="livePointsPanel">
     <h3>Puntos jugada a jugada</h3>
     <div class="team-points-row" id="tpRow"></div>
-    <details class="th-toggle">
+    <details class="th-toggle" id="trickHistoryDetails">
       <summary>Ver bazas jugadas</summary>
       <div class="trick-history" id="trickHistory"></div>
     </details>
@@ -411,7 +420,7 @@
     <div class="trump-choices" id="trumpChoices"></div>
   </div>
 
-  <details class="log-box">
+  <details class="log-box" id="logBoxDetails">
     <summary>Historial de la mano</summary>
     <div class="log-list" id="logList"></div>
   </details>
@@ -1864,6 +1873,20 @@ function renderSummary(){
   }
   document.getElementById('summaryBody').innerHTML = rows;
 }
+
+/* ---------- LAYOUT NICETIES ----------
+   "Ver bazas jugadas" and "Historial de la mano" can both grow tall enough
+   to push the hand below the fold, forcing a scroll just to open them. Since
+   the outer page no longer scrolls on its own (see the html/body/.wrap lock
+   in the CSS), and the hand isn't usable while either of these is open
+   anyway, hide it for as long as one of them is expanded so there's nothing
+   to scroll past to begin with. */
+function updateHandVisibilityForOpenPanels(){
+  const anyOpen = document.getElementById('trickHistoryDetails').open || document.getElementById('logBoxDetails').open;
+  document.getElementById('handWrap').classList.toggle('hidden', anyOpen);
+}
+document.getElementById('trickHistoryDetails').addEventListener('toggle', updateHandVisibilityForOpenPanels);
+document.getElementById('logBoxDetails').addEventListener('toggle', updateHandVisibilityForOpenPanels);
 
 /* ---------- INIT ---------- */
 newGame(500, 4, 'medium', 1);
