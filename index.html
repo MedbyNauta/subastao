@@ -85,10 +85,14 @@
   /* PLAYER STRIP */
   .players{display:flex; gap:10px; padding:12px 12px 0;}
   .team-group{
-    flex:1; display:flex; gap:6px; padding:6px; border-radius:10px;
+    flex:1; display:flex; flex-direction:column; gap:4px; padding:6px; border-radius:10px;
     border:1px solid var(--linea); background:rgba(var(--wash-rgb),0.03);
   }
   .team-group.teamA{border-color:rgba(217,164,65,0.5);}
+  .team-row{display:flex; gap:6px;}
+  /* Team's combined running points for the hand in progress — sits under
+     its pair of chips instead of in a separate "Puntos jugada a jugada" panel. */
+  .team-total{text-align:center; font-size:0.72rem; color:var(--oro); font-weight:700;}
   .pchip{
     flex:1; text-align:center; padding:10px 4px; border-radius:8px;
     background:rgba(var(--wash-rgb),0.04); border:1px solid var(--linea);
@@ -106,6 +110,10 @@
     vertical-align:middle; letter-spacing:0.03em;
   }
   .pchip .ct{color:var(--piedra); font-size:0.72rem; margin-top:2px;}
+  /* Running trick points for this seat, only while a hand is actually being
+     played (not during bidding/handover — the hand summary already covers
+     final numbers then, so a second live tally would just be redundant). */
+  .pchip .pts-line{font-family:'Fraunces', serif; font-weight:700; font-size:0.85rem; color:var(--text); margin-top:2px;}
   .pchip .tag{
     position:absolute; top:-8px; left:50%; transform:translateX(-50%);
     background:var(--oro); color:var(--tinta); font-size:0.6rem; padding:1px 6px;
@@ -134,19 +142,9 @@
   .trick-slot{text-align:center;}
   .trick-slot .who{font-size:0.63rem; color:var(--piedra); margin-top:3px;}
 
-  /* LIVE POINTS */
-  .team-points-row{display:flex; gap:10px;}
-  .tp-team{flex:1; background:rgba(var(--wash-rgb),0.04); border-radius:10px; padding:10px; text-align:center; border:1px solid var(--linea);}
-  .tp-team.you{border-color:var(--oro);}
-  .tp-lbl{font-size:0.72rem; color:var(--oro);}
-  .tp-val{font-family:'Fraunces', serif; font-size:1.7rem; margin:2px 0;}
-  .tp-players{display:flex; justify-content:space-between; font-size:0.7rem; color:var(--piedra); margin-top:6px;}
-  .trick-history{margin-top:8px; max-height:150px; overflow-y:auto; font-size:0.78rem;}
-  .trick-history .th-row{display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--linea);}
-  .trick-history .th-row .who{color:var(--oro);}
-  .trick-history .th-row .running{color:var(--piedra); font-size:0.72rem;}
-  .th-toggle{margin-top:10px;}
-  .th-toggle summary{font-size:0.76rem; color:var(--oro); cursor:pointer; padding:2px 0;}
+  /* LIVE POINTS — folded into the player chips themselves (a second line
+     under the name) instead of a separate panel; see .pchip .pts-line and
+     .team-total below, near the rest of the .pchip rules. */
 
   /* CARDS */
   .card{
@@ -169,7 +167,15 @@
   /* HAND */
   .hand-wrap{margin:12px 6px 0;}
   .hand-wrap .lbl{font-size:0.78rem; color:var(--oro); margin-bottom:8px; padding-left:6px;}
-  .hand{display:flex; gap:7px; overflow-x:auto; overflow-y:hidden; padding:10px 6px 14px;}
+  /* Two fanned rows instead of one scrolling line, so the whole hand is
+     always visible at once. The top row gets the extra card when the count
+     is odd; the bottom row is nudged right by half a card+gap and pulled up
+     under the top row, so each of its cards nests between two top cards —
+     like cards fanned out and held in one hand. */
+  .hand{display:flex; flex-direction:column; padding:6px 6px 14px;}
+  .hand-row{display:flex; gap:7px;}
+  .hand-row.top{position:relative; z-index:2;}
+  .hand-row.bottom{position:relative; z-index:1; margin-top:-24px; margin-left:23px;}
   .card.clickable{cursor:pointer; transition:transform .12s;}
   .card.clickable:hover{transform:translateY(-4px);}
   .card.disabled{opacity:0.32; cursor:default;}
@@ -328,10 +334,6 @@
   .help-suggestion .txt b{color:var(--oro); font-family:'Fraunces',serif; font-size:0.95rem;}
   .card.suggested{box-shadow:0 0 0 3px var(--oro), 0 3px 8px rgba(0,0,0,0.28);}
 
-  /* DECLARER ICON (4p): marks who won the auction, for the whole hand — unlike
-     the "sale" tag (current trick leader), which moves every trick. */
-  .pchip .decl-icon{font-size:0.72rem; filter:grayscale(0.15);}
-
   /* PASS-AND-PLAY SCREEN */
   #passOverlay .card-panel{background:var(--pergamino); color:var(--tinta);}
   #passOverlay h2{color:var(--tinta);}
@@ -385,16 +387,6 @@
     <div class="help-known" id="helpKnown"></div>
     <div class="help-reasoning" id="helpReasoning"></div>
     <div class="help-suggestion" id="helpSuggestion"></div>
-  </div>
-
-  <!-- LIVE POINTS PANEL -->
-  <div class="panel hidden" id="livePointsPanel">
-    <h3>Puntos jugada a jugada</h3>
-    <div class="team-points-row" id="tpRow"></div>
-    <details class="th-toggle" id="trickHistoryDetails">
-      <summary>Ver bazas jugadas</summary>
-      <div class="trick-history" id="trickHistory"></div>
-    </details>
   </div>
 
   <!-- BIDDING PANEL -->
@@ -644,10 +636,6 @@ function scoreLabelFor(key){
 function biddingSideLabel(){
   if(state.numPlayers===4) return teamLabel(state.biddingTeam);
   return state.seatNames[state.biddingTeam];
-}
-function formatRunningTotals(snapshot){
-  if(state.numPlayers===4) return `A:${snapshot[0]+snapshot[2]} · B:${snapshot[1]+snapshot[3]}`;
-  return state.seatNames.map((n,i)=>`${n}:${snapshot[i]}`).join(' · ');
 }
 
 /* ---------- GAME RULES ----------
@@ -1156,7 +1144,6 @@ function chooseTrump(suit){
   state.biddingTeam = state.numPlayers===4 ? TEAM_OF_4[state.auctionWinner] : state.auctionWinner;
   state.biddingTeamPoints=0;
   state.playerTrickPoints=new Array(state.numPlayers).fill(0);
-  state.trickHistory=[];
   state.cantedSuits={};
   for(let s=0;s<state.numPlayers;s++) state.cantedSuits[s]=new Set();
   // memory tracking for help mode
@@ -1246,11 +1233,6 @@ function resolveTrick(){
     state.log.push('10 de últimas para el bando subastador.');
   }
   state.playerTrickPoints[winnerSeat]+=trickPts+bonusThisTrick;
-  state.trickHistory.push({
-    n: state.trickHistory.length+1,
-    winnerSeat, pts: trickPts+bonusThisTrick,
-    snapshot: state.playerTrickPoints.slice()
-  });
 
   // spawn confetti over the trick winner
   setTimeout(()=>{
@@ -1685,9 +1667,11 @@ function makePchip(s){
   // winner's chip for the whole hand (3p already implies it via "Solo").
   const isDeclarer = state.auctionWinner===s && (state.phase==='playing'||state.phase==='handover');
   const soloNote = (state.numPlayers===3 && isDeclarer) ? '<div class="ct">Solo</div>' : '';
-  const declIcon = (state.numPlayers===4 && isDeclarer) ? '<span class="decl-icon" title="Ganó la puja">🔨</span> ' : '';
   const aiTag = isAI ? '<span class="ai-tag">IA</span>' : '';
-  div.innerHTML = `${tag}<div class="nm">${declIcon}${state.seatNames[s]}${aiTag}</div>${soloNote}${bottomTag}`;
+  // Running trick points, live — only while the hand is actually in progress;
+  // the "Resultado de la mano" summary already covers final totals afterwards.
+  const ptsLine = (state.phase==='playing' && state.playerTrickPoints) ? `<div class="pts-line">${state.playerTrickPoints[s]} pts</div>` : '';
+  div.innerHTML = `${tag}<div class="nm">${state.seatNames[s]}${aiTag}</div>${soloNote}${ptsLine}${bottomTag}`;
   return div;
 }
 
@@ -1711,13 +1695,28 @@ function renderPlayers(){
     groups.forEach(g=>{
       const gdiv=document.createElement('div');
       gdiv.className='team-group'+g.cls;
-      g.seats.forEach(s=>gdiv.appendChild(makePchip(s)));
+      const row=document.createElement('div');
+      row.className='team-row';
+      g.seats.forEach(s=>row.appendChild(makePchip(s)));
+      gdiv.appendChild(row);
+      // Team's combined running points, only while a hand is in progress —
+      // same rule as each chip's own pts-line, see makePchip().
+      if(state.phase==='playing' && state.playerTrickPoints){
+        const total=g.seats.reduce((sum,s)=>sum+state.playerTrickPoints[s],0);
+        const totalDiv=document.createElement('div');
+        totalDiv.className='team-total';
+        totalDiv.textContent=`${total} pts`;
+        gdiv.appendChild(totalDiv);
+      }
       pdiv.appendChild(gdiv);
     });
   } else {
     const gdiv=document.createElement('div');
     gdiv.className='team-group';
-    for(let s=0;s<3;s++) gdiv.appendChild(makePchip(s));
+    const row=document.createElement('div');
+    row.className='team-row';
+    for(let s=0;s<3;s++) row.appendChild(makePchip(s));
+    gdiv.appendChild(row);
     pdiv.appendChild(gdiv);
   }
 }
@@ -1734,7 +1733,6 @@ function render(){
 
   renderScores();
   renderPlayers();
-  renderLivePoints();
 
   document.getElementById('mesaBox').classList.toggle('hidden', state.phase==='handover');
   document.getElementById('summaryPanel').classList.toggle('hidden', state.phase!=='handover');
@@ -1760,7 +1758,8 @@ function render(){
   if(state.phase==='bidding'){
     document.getElementById('bidInfo').textContent = state.currentBid>0 ? `Puja: ${state.currentBid} (${state.seatNames[state.currentBidder]})` : 'Subasta en curso';
   } else if(state.phase==='playing' || state.phase==='handover'){
-    document.getElementById('bidInfo').textContent = `Puja: ${state.bidAmount} de ${biddingSideLabel()} · Llevan: ${state.biddingTeamPoints}`;
+    const llevaVerb = state.numPlayers===4 ? 'Llevan' : 'Lleva';
+    document.getElementById('bidInfo').textContent = `Puja: ${state.bidAmount} de ${biddingSideLabel()} · ${llevaVerb}: ${state.biddingTeamPoints}`;
   } else {
     document.getElementById('bidInfo').textContent='';
   }
@@ -1802,14 +1801,22 @@ function render(){
     const legal = canPlay ? legalMoves(state.hands[displaySeat], state.currentTrick, state.trumpSuit).map(c=>c.id) : [];
     const who = multiHuman ? `Mano de ${state.seatNames[displaySeat]}` : 'Tu mano';
     document.getElementById('handLbl').textContent = state.phase==='bidding' ? `${who} (para decidir la puja)` : who;
-    state.hands[displaySeat].forEach(card=>{
+    // Fanned two-row layout (see .hand-row CSS) — the top row gets the extra
+    // card when the hand is an odd size.
+    const hand=state.hands[displaySeat];
+    const topRow=document.createElement('div'); topRow.className='hand-row top';
+    const bottomRow=document.createElement('div'); bottomRow.className='hand-row bottom';
+    const topCount=Math.ceil(hand.length/2);
+    hand.forEach((card,i)=>{
       const ok = canPlay && legal.includes(card.id);
       const el=document.createElement('div');
       el.innerHTML = cardHtml(card, ok?'clickable':(canPlay?'disabled':''));
       const node = el.firstElementChild;
       if(ok) node.onclick=()=>playCard(displaySeat,card);
-      handRow.appendChild(node);
+      (i<topCount?topRow:bottomRow).appendChild(node);
     });
+    handRow.appendChild(topRow);
+    handRow.appendChild(bottomRow);
   }
 
   // log
@@ -1819,41 +1826,6 @@ function render(){
   }
 
   renderHelp(activeSeat);
-}
-
-function renderLivePoints(){
-  const panel=document.getElementById('livePointsPanel');
-  const showPanel = state.phase==='playing' || state.phase==='handover';
-  panel.classList.toggle('hidden', !showPanel);
-  if(!showPanel) return;
-  const pts = state.playerTrickPoints || new Array(state.numPlayers).fill(0);
-  const row=document.getElementById('tpRow');
-  if(state.numPlayers===4){
-    const totalA=pts[0]+pts[2], totalB=pts[1]+pts[3];
-    const n=state.seatNames;
-    row.innerHTML = `
-      <div class="tp-team you">
-        <div class="tp-lbl">${teamLabel('A')}</div><div class="tp-val">${totalA}</div>
-        <div class="tp-players"><span>${n[0]}: ${pts[0]}</span><span>${n[2]}: ${pts[2]}</span></div>
-      </div>
-      <div class="tp-team">
-        <div class="tp-lbl">${teamLabel('B')}</div><div class="tp-val">${totalB}</div>
-        <div class="tp-players"><span>${n[1]}: ${pts[1]}</span><span>${n[3]}: ${pts[3]}</span></div>
-      </div>`;
-  } else {
-    row.innerHTML = state.seatNames.map((nm,i)=>`
-      <div class="tp-team ${i===0?'you':''}">
-        <div class="tp-lbl">${nm}</div><div class="tp-val">${pts[i]}</div>
-      </div>`).join('');
-  }
-
-  const histEl=document.getElementById('trickHistory');
-  const hist = state.trickHistory || [];
-  histEl.innerHTML = hist.slice().reverse().map(h=>`
-    <div class="th-row">
-      <span><span class="who">Baza ${h.n}</span> — ${state.seatNames[h.winnerSeat]} +${h.pts}</span>
-      <span class="running">${formatRunningTotals(h.snapshot)}</span>
-    </div>`).join('') || '<div class="th-row"><span>Sin bazas todavía</span></div>';
 }
 
 function renderSummary(){
@@ -1875,17 +1847,14 @@ function renderSummary(){
 }
 
 /* ---------- LAYOUT NICETIES ----------
-   "Ver bazas jugadas" and "Historial de la mano" can both grow tall enough
-   to push the hand below the fold, forcing a scroll just to open them. Since
-   the outer page no longer scrolls on its own (see the html/body/.wrap lock
-   in the CSS), and the hand isn't usable while either of these is open
-   anyway, hide it for as long as one of them is expanded so there's nothing
-   to scroll past to begin with. */
+   "Historial de la mano" can grow tall enough to push the hand below the
+   fold, forcing a scroll just to open it. Since the outer page no longer
+   scrolls on its own (see the html/body/.wrap lock in the CSS), and the
+   hand isn't usable while it's open anyway, hide it for as long as the log
+   is expanded so there's nothing to scroll past to begin with. */
 function updateHandVisibilityForOpenPanels(){
-  const anyOpen = document.getElementById('trickHistoryDetails').open || document.getElementById('logBoxDetails').open;
-  document.getElementById('handWrap').classList.toggle('hidden', anyOpen);
+  document.getElementById('handWrap').classList.toggle('hidden', document.getElementById('logBoxDetails').open);
 }
-document.getElementById('trickHistoryDetails').addEventListener('toggle', updateHandVisibilityForOpenPanels);
 document.getElementById('logBoxDetails').addEventListener('toggle', updateHandVisibilityForOpenPanels);
 
 /* ---------- INIT ---------- */
