@@ -158,15 +158,15 @@
     font-weight:700; font-size:1.06rem; flex-shrink:0; position:relative;
   }
   .card .pts{position:absolute; bottom:3px; right:5px; font-size:0.44rem; font-family:'Inter'; color:var(--piedra); font-weight:600;}
-  .card .icon-wrap{margin-top:3px; height:11px; display:flex; align-items:center; justify-content:center;}
-  .card svg{width:11px; height:11px;}
+  .card .icon-wrap{margin-top:2px; height:13px; display:flex; align-items:center; justify-content:center;}
+  .card svg{width:13px; height:13px;}
   .card.oros{color:var(--c-oros);}
   .card.copas{color:var(--c-copas);}
   .card.espadas{color:var(--c-espadas);}
   .card.bastos{color:var(--c-bastos);}
   .card.mini{width:32px; height:45px; font-size:0.85rem;}
-  .card.mini .icon-wrap{height:9px; margin-top:2px;}
-  .card.mini svg{width:9px; height:9px;}
+  .card.mini .icon-wrap{height:11px; margin-top:1px;}
+  .card.mini svg{width:11px; height:11px;}
 
   /* HAND */
   .hand-wrap{margin:12px 6px 0;}
@@ -215,6 +215,65 @@
     position:fixed; inset:0; pointer-events:none; z-index:998;
     background:radial-gradient(circle, rgba(217,164,65,0.32) 0%, rgba(217,164,65,0) 68%);
     animation: win-flash-fade 1.3s ease-out forwards;
+  }
+
+  /* CANTE ANIMATION — a theatrical, courtroom-drama-style slam across the
+     center of the screen for the rey+caballo bonus (see queueCanteAnimation
+     in the JS). Sits above everything else (sparkles/win-flash included)
+     since it's the most dramatic moment in the game; pointer-events stay
+     off throughout so it never blocks the board underneath it. */
+  .cante-overlay{
+    position:fixed; inset:0; z-index:1000; pointer-events:none;
+    display:flex; align-items:center; justify-content:center;
+    animation: cante-overlay-fade 1.5s ease-out forwards;
+  }
+  @keyframes cante-overlay-fade {
+    0%   { opacity:0; }
+    8%   { opacity:1; }
+    78%  { opacity:1; }
+    100% { opacity:0; }
+  }
+  .cante-burst{
+    position:absolute; inset:0;
+    background:radial-gradient(circle, rgba(217,164,65,0.4) 0%, rgba(217,164,65,0) 62%);
+    animation: cante-burst-pulse 1.5s ease-out forwards;
+  }
+  @keyframes cante-burst-pulse {
+    0%   { transform:scale(0.3); opacity:0; }
+    16%  { transform:scale(1.15); opacity:1; }
+    45%  { transform:scale(1); opacity:0.65; }
+    100% { transform:scale(1); opacity:0; }
+  }
+  .cante-text{position:relative; text-align:center; padding:0 20px;}
+  .cante-shout{
+    font-family:'Fraunces', serif; font-style:italic; font-weight:700;
+    font-size:clamp(2.6rem, 15vw, 4.4rem); color:var(--oro); letter-spacing:0.01em;
+    text-shadow:0 0 26px rgba(217,164,65,0.85), 0 4px 10px rgba(0,0,0,0.5);
+    opacity:0; transform:scale(3) rotate(-8deg);
+    animation: cante-slam 0.5s cubic-bezier(.19,1.6,.4,1) 0.05s forwards;
+  }
+  @keyframes cante-slam {
+    0%   { transform:scale(3) rotate(-8deg); opacity:0; }
+    60%  { transform:scale(0.92) rotate(2deg); opacity:1; }
+    80%  { transform:scale(1.06) rotate(-1deg); }
+    100% { transform:scale(1) rotate(0deg); opacity:1; }
+  }
+  .cante-detail{
+    display:flex; align-items:center; justify-content:center; gap:9px;
+    margin-top:12px; opacity:0; transform:translateY(14px);
+    animation: cante-detail-in 0.4s ease-out 0.42s forwards;
+  }
+  @keyframes cante-detail-in {
+    100% { opacity:1; transform:translateY(0); }
+  }
+  .cante-detail svg{width:36px; height:36px; flex-shrink:0;}
+  .cante-detail span{
+    font-family:'Fraunces', serif; font-weight:700; font-size:1.25rem; color:#fff;
+    background:rgba(0,0,0,0.6); padding:5px 16px; border-radius:20px; white-space:nowrap;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .cante-overlay, .cante-burst, .cante-shout, .cante-detail{animation:none; opacity:1; transform:none;}
+    .cante-overlay{animation:cante-overlay-fade 1.5s ease-out forwards;}
   }
 
   /* PANELS */
@@ -1225,6 +1284,7 @@ function resolveTrick(){
           state.biddingTeamPoints+=pts;
           bonusThisTrick+=pts;
           state.log.push(`${state.seatNames[winnerSeat]} canta ${pts} en ${SUIT_LABEL[suit]}.`);
+          queueCanteAnimation(state.seatNames[winnerSeat], suit, pts);
         }
       }
     }
@@ -1628,6 +1688,43 @@ function burstConfetti(count=22){
   }
 }
 
+/* ---------- CANTE ANIMATION ----------
+   A big, theatrical "¡CANTE!" slam across the center of the screen — the
+   rey+caballo bonus is the single most exciting scoring event in the game,
+   so unlike the trick-winner sparkles it gets its own full-screen moment
+   (courtroom-drama "objection" style: oversized italic text punching in,
+   then the suit + points underneath). Purely decorative — pointer-events
+   are off throughout, so it never blocks the board or a real turn under it.
+   Queued because a single trick can trigger more than one cante at once
+   (e.g. the very first trick a declarer-side seat wins, if their hand
+   already holds two complete rey+caballo pairs) — they play one after
+   another instead of stacking on top of each other. */
+let canteQueue = [];
+let canteAnimating = false;
+function queueCanteAnimation(seatName, suit, pts){
+  canteQueue.push({seatName, suit, pts});
+  if(!canteAnimating) processCanteQueue();
+}
+function processCanteQueue(){
+  if(canteQueue.length===0){ canteAnimating=false; return; }
+  canteAnimating = true;
+  const {seatName, suit, pts} = canteQueue.shift();
+  showCanteAnimation(seatName, suit, pts);
+  setTimeout(processCanteQueue, 1500);
+}
+function showCanteAnimation(seatName, suit, pts){
+  const overlay=document.createElement('div');
+  overlay.className='cante-overlay';
+  overlay.innerHTML = `
+    <div class="cante-burst"></div>
+    <div class="cante-text">
+      <div class="cante-shout">¡Cante!</div>
+      <div class="cante-detail">${suitIcon(suit)}<span>${pts} · ${seatName}</span></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(()=>overlay.remove(), 1500);
+}
+
 function renderHelp(activeSeat){
   const panel=document.getElementById('helpPanel');
   const show = helpModeEnabled && state.phase==='playing' && activeSeat!==null && state.turn===activeSeat && state.hands[activeSeat].length>0;
@@ -1677,8 +1774,8 @@ function makePchip(s){
 }
 
 // Live points for the hand in progress — 0 outside the 'playing' phase, so
-// the "Mano" line under each score chip sits at zero from the moment a hand
-// ends (see endHand()) through the next auction, ready for the next hand.
+// the "En juego" line under each score chip sits at zero from the moment a
+// hand ends (see endHand()) through the next auction, ready for the next hand.
 function currentHandPoints(seat){
   return (state.phase==='playing' && state.playerTrickPoints) ? state.playerTrickPoints[seat] : 0;
 }
@@ -1688,11 +1785,11 @@ function renderScores(){
     const manoA = currentHandPoints(0)+currentHandPoints(2);
     const manoB = currentHandPoints(1)+currentHandPoints(3);
     row.innerHTML = `
-      <div class="score-chip you" data-key="A"><div class="lbl">${teamLabel('A')}</div><div class="val">${state.scores.A}</div><div class="mano">Mano: ${manoA}</div></div>
-      <div class="score-chip" data-key="B"><div class="lbl">${teamLabel('B')}</div><div class="val">${state.scores.B}</div><div class="mano">Mano: ${manoB}</div></div>`;
+      <div class="score-chip you" data-key="A"><div class="lbl">${teamLabel('A')}</div><div class="val">${state.scores.A}</div><div class="mano">En juego: ${manoA}</div></div>
+      <div class="score-chip" data-key="B"><div class="lbl">${teamLabel('B')}</div><div class="val">${state.scores.B}</div><div class="mano">En juego: ${manoB}</div></div>`;
   } else {
     row.innerHTML = state.seatNames.map((nm,i)=>`
-      <div class="score-chip ${i===0?'you':''}" data-key="${i}"><div class="lbl">${nm}</div><div class="val">${state.scores[i]}</div><div class="mano">Mano: ${currentHandPoints(i)}</div></div>`).join('');
+      <div class="score-chip ${i===0?'you':''}" data-key="${i}"><div class="lbl">${nm}</div><div class="val">${state.scores[i]}</div><div class="mano">En juego: ${currentHandPoints(i)}</div></div>`).join('');
   }
 }
 // Brief pop/glow on whichever score chip(s) just received points, called
