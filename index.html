@@ -85,13 +85,17 @@
     background:rgba(var(--wash-rgb),0.04); border:1px solid var(--linea);
     font-size:0.78rem; position:relative;
   }
-  /* AI seats get a subtle tint instead of a text badge, so they don't need a
-     second line under the name — avoids stretching human seats in the same
-     row to match an "IA" label they don't have. Declared before .turn so the
-     turn highlight still wins when it's an AI seat's turn. */
-  .pchip.ai{border-color:var(--piedra); background:rgba(var(--wash-rgb),0.09);}
+  /* AI seats: declared before .turn so the turn highlight still wins when
+     it's an AI seat's turn. */
   .pchip.turn{border-color:var(--oro); background:var(--oro-soft);}
   .pchip .nm{font-weight:600; color:var(--text);}
+  /* Inline "IA" tag next to the name (not a second line below it), so human
+     seats in the same row never stretch to match a label they don't have. */
+  .pchip .ai-tag{
+    display:inline-block; font-size:0.56rem; font-weight:700; color:var(--piedra);
+    border:1px solid var(--linea); border-radius:5px; padding:0 4px; margin-left:4px;
+    vertical-align:middle; letter-spacing:0.03em;
+  }
   .pchip .ct{color:var(--piedra); font-size:0.72rem; margin-top:2px;}
   .pchip .tag{
     position:absolute; top:-8px; left:50%; transform:translateX(-50%);
@@ -154,9 +158,9 @@
   .card.mini svg{width:9px; height:9px;}
 
   /* HAND */
-  .hand-wrap{margin:12px 12px 0;}
-  .hand-wrap .lbl{font-size:0.78rem; color:var(--oro); margin-bottom:8px;}
-  .hand{display:flex; gap:7px; overflow-x:auto; overflow-y:hidden; padding:10px 0 14px;}
+  .hand-wrap{margin:12px 6px 0;}
+  .hand-wrap .lbl{font-size:0.78rem; color:var(--oro); margin-bottom:8px; padding-left:6px;}
+  .hand{display:flex; gap:7px; overflow-x:auto; overflow-y:hidden; padding:10px 6px 14px;}
   .card.clickable{cursor:pointer; transition:transform .12s;}
   .card.clickable:hover{transform:translateY(-4px);}
   .card.disabled{opacity:0.32; cursor:default;}
@@ -1661,7 +1665,7 @@ function cardHtml(card, extraClass){
 function makePchip(s){
   const div=document.createElement('div');
   const isAI = state.humanPlayers!==undefined && s>=state.humanPlayers;
-  div.className='pchip'+(isAI?' ai':'')+(state.turn===s && state.phase==='playing'?' turn':'')+((state.bidSeat===s && state.phase==='bidding')?' turn':'');
+  div.className='pchip'+(state.turn===s && state.phase==='playing'?' turn':'')+((state.bidSeat===s && state.phase==='bidding')?' turn':'');
   let tag='';
   if(state.dealerIndex===s) tag='<div class="tag">reparte</div>';
   let bottomTag='';
@@ -1673,7 +1677,8 @@ function makePchip(s){
   const isDeclarer = state.auctionWinner===s && (state.phase==='playing'||state.phase==='handover');
   const soloNote = (state.numPlayers===3 && isDeclarer) ? '<div class="ct">Solo</div>' : '';
   const declIcon = (state.numPlayers===4 && isDeclarer) ? '<span class="decl-icon" title="Ganó la puja">🔨</span> ' : '';
-  div.innerHTML = `${tag}<div class="nm">${declIcon}${state.seatNames[s]}</div>${soloNote}${bottomTag}`;
+  const aiTag = isAI ? '<span class="ai-tag">IA</span>' : '';
+  div.innerHTML = `${tag}<div class="nm">${declIcon}${state.seatNames[s]}${aiTag}</div>${soloNote}${bottomTag}`;
   return div;
 }
 
