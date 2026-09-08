@@ -264,6 +264,17 @@
   }
   .settings-panel .rules-box{border-top:1px solid rgba(31,42,61,0.14); margin-top:18px; padding-top:14px;}
   .settings-panel .rules-box b{color:var(--tinta);}
+  /* collapsible Reglas — same bold/left-aligned label style as "Historial de
+     partidas" above it, rather than the big centered-looking Fraunces heading */
+  .rules-summary{font-size:0.85rem; color:var(--tinta); font-weight:700; padding:2px 0;}
+  .rank-row{display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 4px;}
+  .rank-chip{
+    background:rgba(31,42,61,0.05); border:1px solid rgba(31,42,61,0.15);
+    border-radius:8px; padding:5px 8px; text-align:center; min-width:36px;
+    display:flex; flex-direction:column; gap:1px;
+  }
+  .rank-chip .rk{font-family:'Fraunces', serif; font-weight:700; font-size:0.8rem; color:var(--tinta);}
+  .rank-chip .pt{font-size:0.62rem; color:var(--piedra);}
 
   /* HELP TOGGLE */
   .toggle-row{display:flex; align-items:center; justify-content:space-between; margin:12px 0 4px;}
@@ -406,27 +417,27 @@
     <label class="set-lbl">Tipo de juego</label>
     <select id="playersSelect" onchange="updateHumanPlayersOptions()">
       <option value="3">3 jugadores (uno solo contra dos)</option>
-      <option value="4" selected>4 jugadores (parejas)</option>
+      <option value="4" selected>4 jugadores</option>
     </select>
-    <label class="set-lbl">Personas jugando en este móvil</label>
+    <label class="set-lbl">Jugadores</label>
     <select id="humanPlayersSelect">
-      <option value="1" selected>1 persona + 3 IA</option>
-      <option value="2">2 personas + 2 IA</option>
-      <option value="3">3 personas + 1 IA</option>
-      <option value="4">4 personas (sin IA)</option>
+      <option value="1" selected>1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
     </select>
     <p class="toggle-hint">Cuando juega más de una persona en el mismo móvil, antes de cada turno aparece una pantalla para pasarlo a quien le toque, y sus cartas no se muestran hasta que las pulsa.</p>
-    <label class="set-lbl">Meta de puntos</label>
+    <label class="set-lbl">Objetivo de puntos</label>
     <select id="targetSelect">
-      <option value="300">Partida a 300</option>
-      <option value="500" selected>Partida a 500</option>
-      <option value="1000">Partida a 1000</option>
+      <option value="300">300</option>
+      <option value="500" selected>500</option>
+      <option value="1000">1000</option>
     </select>
-    <label class="set-lbl">Nivel de la IA</label>
+    <label class="set-lbl">Nivel de juego</label>
     <select id="aiLevelSelect">
-      <option value="low">Bajo — juega bastante flojo e irregular</option>
-      <option value="medium" selected>Medio — heurística sólida y coordina con su pareja</option>
-      <option value="high">Alto — simula cientos de partidas antes de cada jugada</option>
+      <option value="low">Bajo</option>
+      <option value="medium" selected>Medio</option>
+      <option value="high">Alto</option>
     </select>
     <div class="toggle-row">
       <label class="set-lbl" for="helpModeToggle">Modo ayuda</label>
@@ -453,14 +464,31 @@
     </div>
 
     <div class="rules-box">
-      <h3 style="color:var(--tinta); margin-bottom:8px;">Reglas</h3>
-      <p><b>Puja</b>: mínimo 60, sube de 5 en 5. Quien gana la subasta elige el triunfo y sale.</p>
-      <p><b>Al jugar</b>: si tienes el palo pedido, tienes que jugarlo y superarlo si puedes. Si no tienes, tienes que triunfar y superar el triunfo en mesa si puedes. Si no tienes ni palo ni triunfo, puedes echar cualquier carta.</p>
-      <p><b>Valor y orden de las cartas</b>: de más a menos fuerte, As, 3, Rey, Caballo, Sota, 7, 6, 5, 4 (y el 2 solo en la partida a 4 jugadores, la carta más floja). Puntos que vale cada una al ganar la baza: As 11, 3 10, Rey 4, Caballo 3, Sota 2, y el resto (7, 6, 5, 4, 2) no valen puntos. En total hay 40 puntos en juego por mano, sin contar cantes ni últimas. Manda siempre el triunfo sobre cualquier otro palo, y dentro de un mismo palo gana la carta más fuerte de esta lista.</p>
-      <p><b>Cantes</b>: rey + caballo del mismo palo, al ganar una baza, dan 40 puntos si es de triunfo o 20 si es de otro palo — solo cuentan para quien se llevó la subasta, y se detectan solos aquí.</p>
-      <p><b>Últimas</b>: quien gana la última baza suma 10 puntos si es del bando que subastó.</p>
-      <p><b>Resultado</b>: si el bando subastador reúne lo que pujó, anota esa cifra; si no, la anota el bando contrario.</p>
-      <p><b>A 3 jugadores</b>: se juega con 36 cartas (sin doses), 12 por jugador. Quien gana la subasta juega solo contra los otros dos. Si se baña, los dos rivales se reparten la puja a medias; si es impar, el que iba de mano en esa mano se lleva 5 puntos más.</p>
+      <details>
+        <summary class="rules-summary">Reglas</summary>
+        <div style="margin-top:10px;">
+          <p><b>Puja</b>: mínimo 60, sube de 5 en 5. Quien gana la subasta elige el triunfo y sale.</p>
+          <p><b>Al jugar</b>: si tienes el palo pedido, tienes que jugarlo y superarlo si puedes. Si no tienes, tienes que triunfar y superar el triunfo en mesa si puedes. Si no tienes ni palo ni triunfo, puedes echar cualquier carta.</p>
+          <p style="margin-bottom:6px;"><b>Valor y orden de las cartas</b>: de más a menos fuerte. El triunfo manda siempre sobre los otros palos; dentro de un mismo palo gana la carta más fuerte de esta lista.</p>
+          <div class="rank-row">
+            <div class="rank-chip"><span class="rk">As</span><span class="pt">11</span></div>
+            <div class="rank-chip"><span class="rk">3</span><span class="pt">10</span></div>
+            <div class="rank-chip"><span class="rk">Rey</span><span class="pt">4</span></div>
+            <div class="rank-chip"><span class="rk">Caballo</span><span class="pt">3</span></div>
+            <div class="rank-chip"><span class="rk">Sota</span><span class="pt">2</span></div>
+            <div class="rank-chip"><span class="rk">7</span><span class="pt">0</span></div>
+            <div class="rank-chip"><span class="rk">6</span><span class="pt">0</span></div>
+            <div class="rank-chip"><span class="rk">5</span><span class="pt">0</span></div>
+            <div class="rank-chip"><span class="rk">4</span><span class="pt">0</span></div>
+            <div class="rank-chip"><span class="rk">2</span><span class="pt">0</span></div>
+          </div>
+          <p class="toggle-hint" style="margin:2px 0 10px;">De más a menos fuerte, izquierda a derecha; el número pequeño es lo que vale esa carta al ganar la baza. El 2 solo existe en la partida a 4 jugadores. En total hay 40 puntos en juego por mano, sin contar cantes ni últimas.</p>
+          <p><b>Cantes</b>: rey + caballo del mismo palo, al ganar una baza, dan 40 puntos si es de triunfo o 20 si es de otro palo — solo cuentan para quien se llevó la subasta, y se detectan solos aquí.</p>
+          <p><b>Últimas</b>: quien gana la última baza suma 10 puntos si es del bando que subastó.</p>
+          <p><b>Resultado</b>: si el bando subastador reúne lo que pujó, anota esa cifra; si no, la anota el bando contrario.</p>
+          <p><b>A 3 jugadores</b>: se juega con 36 cartas (sin doses), 12 por jugador. Quien gana la subasta juega solo contra los otros dos. Si se baña, los dos rivales se reparten la puja a medias; si es impar, el que iba de mano en esa mano se lleva 5 puntos más.</p>
+        </div>
+      </details>
     </div>
   </div>
 </div>
@@ -920,18 +948,8 @@ function updateHumanPlayersOptions(keepValue){
   const select = document.getElementById('humanPlayersSelect');
   const prev = keepValue!==undefined ? String(keepValue) : select.value;
   select.innerHTML = '';
-  if(numPlayers === '3'){
-    select.innerHTML = `
-      <option value="1">1 persona + 2 IA</option>
-      <option value="2">2 personas + 1 IA</option>
-      <option value="3">3 personas (sin IA)</option>`;
-  } else {
-    select.innerHTML = `
-      <option value="1">1 persona + 3 IA</option>
-      <option value="2">2 personas + 2 IA</option>
-      <option value="3">3 personas + 1 IA</option>
-      <option value="4">4 personas (sin IA)</option>`;
-  }
+  const maxHumans = numPlayers === '3' ? 3 : 4;
+  for(let n=1;n<=maxHumans;n++) select.innerHTML += `<option value="${n}">${n}</option>`;
   // keep the previous choice if it's still valid for this game type, else default to solo+IA
   const opts=[...select.options].map(o=>o.value);
   select.value = opts.includes(prev) ? prev : '1';
