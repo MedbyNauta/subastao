@@ -7,17 +7,34 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,600;1,9..144,700&family=Inter:wght@400;500;600;700&display=swap');
 
-  
+  /* THEME: light (B · Sage & Sand) is the default; dark (D · Deep Editorial)
+     takes over automatically under prefers-color-scheme, which iOS ties to
+     Settings > Display & Brightness (Light/Dark/Automatic) — no toggle needed,
+     the page just follows the phone. --wash-rgb is a bare "r,g,b" triplet (not
+     wrapped in rgba()) so every subtle panel tint below can pick its own alpha
+     while still flipping with the theme. --pergamino/--tinta stay constant across
+     both themes on purpose: card faces and popups are always a light "paper"
+     surface with dark ink, like a real card, regardless of the app's own theme. */
   :root{
-    --bg:#10131A; --panel:#171B24;
-    --oro:#D9A441; --oro-soft:rgba(217,164,65,0.16);
-    --pergamino:#F5F0E6; --piedra:#8A8E98; --tinta:#1F2A3D;
-    --linea:rgba(245,240,230,0.14);
-    --c-oros:#C79A3E; --c-copas:#C1544A; --c-espadas:#4A6FA5; --c-bastos:#4B8A68;
+    --bg:#F4F1EA; --panel:#FCFBF7;
+    --oro:#7C8B6F; --oro-soft:rgba(124,139,111,0.16);
+    --pergamino:#FFFFFF; --text:#33342E; --piedra:#96938A; --tinta:#2B2A28;
+    --linea:rgba(51,52,46,0.09);
+    --wash-rgb:51,52,46;
+    --c-oros:#8A6420; --c-copas:#7A2E3A; --c-espadas:#324A66; --c-bastos:#3A5029;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1C1B19; --panel:#242220;
+      --oro:#E3A98A; --oro-soft:rgba(227,169,138,0.15);
+      --pergamino:#EDE8E0; --text:#EDE8E0; --piedra:#938E85;
+      --linea:rgba(237,232,224,0.12);
+      --wash-rgb:237,232,224;
+    }
   }
   *{box-sizing:border-box;}
   body{
-    margin:0; background:var(--bg); color:var(--pergamino);
+    margin:0; background:var(--bg); color:var(--text);
     font-family:'Inter', sans-serif; -webkit-font-smoothing:antialiased;
     min-height:100vh;
   }
@@ -25,28 +42,32 @@
   .wrap{max-width:520px; margin:0 auto; padding:0 0 30px;}
 
   header{
-    padding:16px 16px 12px; text-align:center;
+    padding:16px 16px 12px;
     border-bottom:1px solid var(--linea);
   }
-  header h1{
-    font-size:1.55rem; letter-spacing:0.01em; font-style:italic; font-weight:700;
-    margin-bottom:10px;
-    background:linear-gradient(135deg,#F3D48A,#D9A441 55%,#B8862B);
-    -webkit-background-clip:text; background-clip:text; color:transparent;
+  .topbar{display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px;}
+  .logo{line-height:1.05;}
+  .logo .word1{
+    display:block; font-family:'Fraunces', serif; font-style:italic; font-weight:700;
+    font-size:1.25rem; letter-spacing:0.01em; color:var(--oro);
   }
-  .score-row{display:flex; align-items:center; justify-content:center; gap:8px; padding:0 4px;}
+  .logo .word2{
+    display:block; font-size:0.62rem; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--piedra); margin-top:1px;
+  }
+  .icon-row{display:flex; gap:6px; flex-shrink:0;}
+  .score-row{display:flex; align-items:center; justify-content:center; gap:8px; padding:0 4px; margin-top:6px;}
   .scores{display:flex; justify-content:center; gap:6px; flex:1; min-width:0;}
   .score-chip{
-    background:rgba(245,240,230,0.05); border:1px solid var(--linea);
+    background:rgba(var(--wash-rgb),0.05); border:1px solid var(--linea);
     border-radius:10px; padding:8px 6px; text-align:center; flex:1; min-width:0;
   }
   .score-chip .lbl{font-size:0.66rem; color:var(--oro); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .score-chip .val{font-family:'Fraunces', serif; font-size:1.2rem;}
   .score-chip.you{border-color:var(--oro);}
-  .header-btns{display:flex; flex-direction:column; gap:5px; flex-shrink:0;}
   .icon-btn{
     width:32px; height:32px; border-radius:50%; border:1px solid var(--linea);
-    background:rgba(245,240,230,0.06); color:var(--pergamino); font-size:0.95rem;
+    background:rgba(var(--wash-rgb),0.06); color:var(--text); font-size:0.95rem;
     display:flex; align-items:center; justify-content:center; padding:0; line-height:1;
   }
   .icon-btn:active{background:var(--oro-soft);}
@@ -56,25 +77,25 @@
   .players{display:flex; gap:10px; padding:12px 12px 0;}
   .team-group{
     flex:1; display:flex; gap:6px; padding:6px; border-radius:10px;
-    border:1px solid var(--linea); background:rgba(245,240,230,0.03);
+    border:1px solid var(--linea); background:rgba(var(--wash-rgb),0.03);
   }
   .team-group.teamA{border-color:rgba(217,164,65,0.5);}
   .pchip{
     flex:1; text-align:center; padding:10px 4px; border-radius:8px;
-    background:rgba(245,240,230,0.04); border:1px solid var(--linea);
+    background:rgba(var(--wash-rgb),0.04); border:1px solid var(--linea);
     font-size:0.78rem; position:relative;
   }
   .pchip.turn{border-color:var(--oro); background:var(--oro-soft);}
-  .pchip .nm{font-weight:600; color:var(--pergamino);}
+  .pchip .nm{font-weight:600; color:var(--text);}
   .pchip .ct{color:var(--piedra); font-size:0.72rem; margin-top:2px;}
   .pchip .tag{
     position:absolute; top:-8px; left:50%; transform:translateX(-50%);
-    background:var(--oro); color:var(--bg); font-size:0.6rem; padding:1px 6px;
+    background:var(--oro); color:var(--tinta); font-size:0.6rem; padding:1px 6px;
     border-radius:8px; font-weight:700;
   }
   .pchip .tag-bottom{
     position:absolute; bottom:-8px; left:50%; transform:translateX(-50%);
-    background:rgba(245,240,230,0.85); color:var(--tinta); font-size:0.6rem; padding:1px 6px;
+    background:var(--pergamino); color:var(--tinta); font-size:0.6rem; padding:1px 6px;
     border-radius:8px; font-weight:700;
   }
 
@@ -97,11 +118,11 @@
 
   /* LIVE POINTS */
   .team-points-row{display:flex; gap:10px;}
-  .tp-team{flex:1; background:rgba(245,240,230,0.04); border-radius:10px; padding:10px; text-align:center; border:1px solid var(--linea);}
+  .tp-team{flex:1; background:rgba(var(--wash-rgb),0.04); border-radius:10px; padding:10px; text-align:center; border:1px solid var(--linea);}
   .tp-team.you{border-color:var(--oro);}
   .tp-lbl{font-size:0.72rem; color:var(--oro);}
   .tp-val{font-family:'Fraunces', serif; font-size:1.7rem; margin:2px 0;}
-  .tp-players{display:flex; justify-content:space-between; font-size:0.7rem; color:rgba(245,240,230,0.6); margin-top:6px;}
+  .tp-players{display:flex; justify-content:space-between; font-size:0.7rem; color:var(--piedra); margin-top:6px;}
   .trick-history{margin-top:8px; max-height:150px; overflow-y:auto; font-size:0.78rem;}
   .trick-history .th-row{display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--linea);}
   .trick-history .th-row .who{color:var(--oro);}
@@ -112,7 +133,7 @@
   /* CARDS */
   .card{
     display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
-    width:46px; height:64px; background:var(--pergamino); border-radius:9px;
+    width:46px; height:64px; background:var(--pergamino); color:var(--tinta); border-radius:9px;
     box-shadow:0 4px 13px rgba(0,0,0,0.4); font-family:'Fraunces', serif;
     font-weight:700; font-size:1.25rem; flex-shrink:0; position:relative;
   }
@@ -168,7 +189,7 @@
 
   /* PANELS */
   .panel{
-    margin:12px 12px 0; background:rgba(245,240,230,0.04);
+    margin:12px 12px 0; background:rgba(var(--wash-rgb),0.04);
     border:1px solid var(--linea); border-radius:14px; padding:14px;
   }
   .panel h3{font-size:0.95rem; color:var(--oro); margin-bottom:8px; font-weight:600;}
@@ -178,7 +199,7 @@
   .stepper{display:flex; align-items:center; gap:6px;}
   .stepper button{
     width:32px; height:32px; border-radius:8px; border:1px solid var(--linea);
-    background:rgba(245,240,230,0.08); color:var(--pergamino); font-size:1.1rem;
+    background:rgba(var(--wash-rgb),0.08); color:var(--text); font-size:1.1rem;
   }
   .stepper .amt{font-family:'Fraunces', serif; font-size:1.2rem; min-width:44px; text-align:center;}
   .big-btn{
@@ -186,18 +207,18 @@
     padding:12px 16px; font-family:'Inter', sans-serif; font-weight:700; font-size:0.92rem;
   }
   .ghost-btn{
-    background:transparent; color:var(--pergamino); border:1px solid var(--linea);
+    background:transparent; color:var(--text); border:1px solid var(--linea);
     border-radius:10px; padding:12px 16px; font-size:0.9rem; font-weight:500;
   }
   .trump-choices{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;}
   .trump-choice{
     flex:1; min-width:100px; padding:16px 10px; text-align:center; border-radius:10px;
-    background:rgba(245,240,230,0.05); border:1px solid var(--linea); font-size:0.85rem;
+    background:rgba(var(--wash-rgb),0.05); border:1px solid var(--linea); font-size:0.85rem;
   }
   .trump-choice svg{width:24px; height:24px; margin-bottom:8px;}
   .trump-choice.oros{color:var(--c-oros);} .trump-choice.copas{color:var(--c-copas);}
   .trump-choice.espadas{color:var(--c-espadas);} .trump-choice.bastos{color:var(--c-bastos);}
-  .trump-choice div:last-child{color:var(--pergamino); font-weight:500;}
+  .trump-choice div:last-child{color:var(--text); font-weight:500;}
 
   .summary-row{display:flex; justify-content:space-between; font-size:0.88rem; padding:6px 0; border-bottom:1px solid var(--linea);}
   .summary-row.total{font-weight:700; color:var(--oro);}
@@ -206,7 +227,7 @@
   details.log-box{margin:16px 12px 0;}
   summary{font-size:0.78rem; color:var(--oro); cursor:pointer; padding:8px 0;}
   .log-list{font-size:0.78rem; max-height:140px; overflow-y:auto; background:rgba(0,0,0,0.25); border-radius:10px; padding:10px;}
-  .log-list div{padding:2px 0; color:rgba(245,240,230,0.7);}
+  .log-list div{padding:2px 0; color:var(--piedra);}
 
   /* RULES */
   .rules-box{font-size:0.85rem; line-height:1.55;}
@@ -264,9 +285,9 @@
   /* HELP PANEL */
   .help-panel{border-color:rgba(217,164,65,0.45);}
   .help-panel h3{display:flex; align-items:center; gap:6px;}
-  .help-known{font-size:0.78rem; line-height:1.6; color:rgba(245,240,230,0.85); margin-bottom:10px;}
-  .help-known b{color:var(--pergamino);}
-  .help-reasoning{font-size:0.82rem; line-height:1.55; color:rgba(245,240,230,0.9); margin-bottom:10px;}
+  .help-known{font-size:0.78rem; line-height:1.6; color:var(--text); margin-bottom:10px;}
+  .help-known b{color:var(--text);}
+  .help-reasoning{font-size:0.82rem; line-height:1.55; color:var(--text); margin-bottom:10px;}
   .help-suggestion{
     display:flex; align-items:center; gap:10px; background:var(--oro-soft);
     border:1px solid rgba(217,164,65,0.4); border-radius:10px; padding:10px;
@@ -288,13 +309,18 @@
 
 <div class="wrap">
   <header>
-    <h1>Subastao Ourensano</h1>
-    <div class="score-row">
-      <div class="scores" id="scoresRow"></div>
-      <div class="header-btns">
+    <div class="topbar">
+      <div class="logo">
+        <span class="word1">Subastao</span>
+        <span class="word2">Ourensano</span>
+      </div>
+      <div class="icon-row">
         <button class="icon-btn" onclick="changeSetup()" title="Nueva partida">+</button>
         <button class="icon-btn" onclick="openSettings()" title="Ajustes">⚙</button>
       </div>
+    </div>
+    <div class="score-row">
+      <div class="scores" id="scoresRow"></div>
     </div>
   </header>
 
@@ -407,6 +433,21 @@
     </div>
     <p class="toggle-hint">En cada jugada te explica qué se sabe de las cartas jugadas y te sugiere una carta con el porqué.</p>
     <button class="big-btn" style="width:100%; margin-top:16px;" onclick="changeSetup(); closeSettings();">Aplicar y empezar de nuevo</button>
+
+    <div class="rules-box" style="border-top:1px solid rgba(31,42,61,0.14); margin-top:18px; padding-top:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:6px; flex-wrap:wrap;">
+        <b style="color:var(--tinta);">Historial de partidas</b>
+        <div style="display:flex; gap:4px;">
+          <button class="close-btn" style="width:auto; height:auto; border:1px solid rgba(31,42,61,0.2); font-size:0.68rem; padding:3px 8px; color:var(--tinta);" onclick="exportResultHistory()">Exportar</button>
+          <button class="close-btn" style="width:auto; height:auto; border:1px solid rgba(31,42,61,0.2); font-size:0.68rem; padding:3px 8px; color:var(--tinta);" onclick="document.getElementById('importHistoryFile').click()">Importar</button>
+          <button class="close-btn" style="width:auto; height:auto; border:none; font-size:0.68rem; padding:3px 8px; color:var(--piedra);" onclick="clearResultHistory()">Borrar</button>
+        </div>
+        <input type="file" id="importHistoryFile" accept="application/json" class="hidden" onchange="importResultHistory(this.files[0])">
+      </div>
+      <p class="toggle-hint" style="margin-top:0;">Se guarda solo en este navegador. Usa "Exportar" para descargar una copia (por ejemplo para subirla a tu repo de GitHub) e "Importar" para recuperarla en otro dispositivo.</p>
+      <div id="resultHistoryList" style="font-size:0.82rem; line-height:1.5;"></div>
+    </div>
+
     <div class="rules-box">
       <p><b>Puja</b>: mínimo 60, sube de 5 en 5. Quien gana la subasta elige el triunfo y sale.</p>
       <p><b>Al jugar</b>: si tienes el palo pedido, tienes que jugarlo y superarlo si puedes. Si no tienes, tienes que triunfar y superar el triunfo en mesa si puedes. Si no tienes ni palo ni triunfo, puedes echar cualquier carta.</p>
@@ -422,7 +463,14 @@
   <div class="card-panel">
     <h2 id="overlayTitle">¡Partida ganada!</h2>
     <p id="overlayBody"></p>
-    <button class="big-btn" style="margin-top:14px;" onclick="closeOverlay()">Jugar otra vez</button>
+    <div id="saveResultBox" style="margin-top:14px; text-align:left;">
+      <label class="set-lbl" for="resultNameInput">Guardar este resultado como…</label>
+      <input type="text" id="resultNameInput" placeholder="Nombre de la partida" maxlength="40"
+        style="width:100%; box-sizing:border-box; background:rgba(31,42,61,0.05); color:var(--tinta); border:1px solid rgba(31,42,61,0.2); border-radius:8px; padding:10px 11px; font-size:0.88rem; font-family:'Inter',sans-serif;">
+      <button class="ghost-btn" id="saveResultBtn" style="width:100%; margin-top:8px; color:var(--tinta); border-color:rgba(31,42,61,0.2);" onclick="saveResultFromOverlay()">Guardar resultado</button>
+      <p id="saveResultConfirm" class="toggle-hint hidden" style="color:var(--oro);">Guardado en el historial ✓</p>
+    </div>
+    <button class="big-btn" style="margin-top:10px; width:100%;" onclick="closeOverlay()">Jugar otra vez</button>
   </div>
 </div>
 
@@ -434,7 +482,7 @@
   <div class="card-panel">
     <h2 id="passOverlayTitle">Pásale el móvil a...</h2>
     <p id="passOverlaySubtitle"></p>
-    <button class="big-btn" style="margin-top:14px; width:100%;" onclick="revealCurrentSeat()">👁 Ver mis cartas</button>
+    <button class="big-btn" style="margin-top:14px; width:100%;" onclick="revealCurrentSeat()">👀 Ver mis cartas</button>
   </div>
 </div>
 
@@ -450,10 +498,10 @@ const TEAM_OF_4 = {0:'A',1:'B',2:'A',3:'B'};
 
 function suitIcon(suit){
   const icons = {
-    oros:'<circle cx="12" cy="12" r="6.6" fill="none" stroke="currentColor" stroke-width="4"/>',
-    copas:'<path fill="currentColor" d="M6 4h12l-1.3 8.5A4.7 4.7 0 0 1 13 16.6v2.4h3v2H8v-2h3v-2.4a4.7 4.7 0 0 1-3.7-4.1L6 4z"/>',
-    espadas:'<path fill="currentColor" d="M11 2h2v12h3l-4 8-4-8h3V2z"/><rect fill="currentColor" x="7" y="7.5" width="10" height="1.8"/>',
-    bastos:'<rect fill="currentColor" x="6.3" y="10.5" width="14" height="3" rx="1.5" transform="rotate(-45 13.3 12)"/><circle fill="currentColor" cx="17.5" cy="5.5" r="3"/>'
+    oros:'<circle cx="12" cy="12" r="9.4" fill="#E8C46A" stroke="#8A6420" stroke-width="1"/><circle cx="12" cy="12" r="6.4" fill="none" stroke="#8A6420" stroke-width="1"/><path d="M12 8.4 L12.7 10.8 L15.2 12 L12.7 13.2 L12 15.6 L11.3 13.2 L8.8 12 L11.3 10.8 Z" fill="#8A6420"/>',
+    copas:'<path d="M4.5 4 H19.5 L18.3 9.5 Q17.4 15 12 15.6 Q6.6 15 5.7 9.5 Z" fill="#C24F63" stroke="#7A2E3A" stroke-width="0.8"/><path d="M4.5 4 H19.5 L19 6.4 H5 Z" fill="#DD8090"/><rect x="11" y="15.4" width="2" height="4" fill="#C24F63"/><path d="M7.5 20 Q7.5 18.4 9 18.4 H15 Q16.5 18.4 16.5 20 Z" fill="#8A6420"/>',
+    espadas:'<path d="M12 2 L14 8.6 L14 16 L12 19 L10 16 L10 8.6 Z" fill="#5E7EA8" stroke="#324A66" stroke-width="0.8"/><path d="M12 2 L13 8.6 L12 16 L11 8.6 Z" fill="#8CA6C8"/><rect x="6.6" y="15.4" width="10.8" height="2.1" rx="0.6" fill="#E8C46A" stroke="#8A6420" stroke-width="0.6"/><path d="M10.5 17.5 H13.5 L14.1 21.4 H9.9 Z" fill="#E8C46A" stroke="#8A6420" stroke-width="0.6"/>',
+    bastos:'<g transform="rotate(18 12 12)"><path d="M10.6 2.6 C9.5 2.6 8.7 3.5 8.7 4.5 C8.7 5.3 9.2 6 9.9 6.3 L9.2 19.6 C9.2 20.4 9.9 21 10.6 21 H13.4 C14.1 21 14.8 20.4 14.8 19.6 L14.1 6.3 C14.8 6 15.3 5.3 15.3 4.5 C15.3 3.5 14.5 2.6 13.4 2.6 Z" fill="#5E8146" stroke="#3A5029" stroke-width="0.8"/><rect x="8.8" y="6" width="6.4" height="1.3" fill="#8A6420"/><rect x="9" y="12.5" width="6" height="1.1" fill="#3A5029" opacity="0.6"/></g>'
   };
   return `<svg viewBox="0 0 24 24">${icons[suit]}</svg>`;
 }
@@ -822,6 +870,7 @@ function changeSetup(){
 function openSettings(){
   document.getElementById('helpModeToggle').checked = helpModeEnabled;
   document.getElementById('aiLevelSelect').value = state.aiLevel || 'medium';
+  renderResultHistory();
   if(state.numPlayers){
     document.getElementById('playersSelect').value = String(state.numPlayers);
     updateHumanPlayersOptions(state.humanPlayers);
@@ -1126,7 +1175,111 @@ function showOverlay(key){
   document.getElementById('overlayTitle').textContent = isYou ? '¡Has ganado la partida!' : `Gana ${label}`;
   document.getElementById('overlayBody').textContent = `${label} llega a ${amount} puntos.`;
   document.getElementById('overlay').classList.remove('hidden');
+  document.getElementById('resultNameInput').value = '';
+  document.getElementById('saveResultConfirm').classList.add('hidden');
+  document.getElementById('saveResultBtn').classList.remove('hidden');
   if(isYou) burstConfetti(100);
+}
+
+/* ---------- RESULT HISTORY (saved to this browser via localStorage) ---------- */
+const RESULT_HISTORY_KEY = 'subastado_result_history';
+function loadResultHistory(){
+  try{
+    const raw = localStorage.getItem(RESULT_HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function saveResultHistory(list){
+  try{ localStorage.setItem(RESULT_HISTORY_KEY, JSON.stringify(list)); }catch(e){ /* storage unavailable — ignore */ }
+}
+function gameConfigLabel(){
+  const type = state.numPlayers===4 ? '4 jugadores (parejas)' : '3 jugadores (uno contra dos)';
+  const human = state.humanPlayers>=state.numPlayers ? `${state.numPlayers} personas (sin IA)` : `${state.humanPlayers} persona${state.humanPlayers===1?'':'s'} + ${state.numPlayers-state.humanPlayers} IA`;
+  const levelLabel = {low:'Bajo', medium:'Medio', high:'Alto'}[state.aiLevel] || state.aiLevel;
+  return `${type} · ${human} · IA: ${levelLabel}`;
+}
+function saveResultFromOverlay(){
+  const nameInput = document.getElementById('resultNameInput');
+  const name = (nameInput.value || '').trim() || 'Partida sin nombre';
+  const winnerKey = document.getElementById('overlayTitle').textContent.includes('Gana')
+    ? document.getElementById('overlayTitle').textContent.replace('Gana ','')
+    : 'Tú';
+  const entry = {
+    name,
+    date: new Date().toISOString(),
+    target: state.target,
+    numPlayers: state.numPlayers,
+    humanPlayers: state.humanPlayers,
+    aiLevel: state.aiLevel,
+    winner: winnerKey,
+    scores: {...state.scores}
+  };
+  const list = loadResultHistory();
+  list.unshift(entry);
+  if(list.length>50) list.length=50; // keep it from growing unbounded
+  saveResultHistory(list);
+  document.getElementById('saveResultConfirm').classList.remove('hidden');
+  document.getElementById('saveResultBtn').classList.add('hidden');
+}
+function fmtHistoryDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit', year:'2-digit'}) + ' ' + d.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+}
+function renderResultHistory(){
+  const box = document.getElementById('resultHistoryList');
+  if(!box) return;
+  const list = loadResultHistory();
+  if(list.length===0){ box.innerHTML = `<span style="color:var(--piedra);">Aún no has guardado ninguna partida.</span>`; return; }
+  const levelLabel = {low:'Bajo', medium:'Medio', high:'Alto'};
+  box.innerHTML = list.map(e=>{
+    const type = e.numPlayers===4 ? '4 jugadores' : '3 jugadores';
+    const human = e.humanPlayers>=e.numPlayers ? `${e.numPlayers} personas` : `${e.humanPlayers} persona${e.humanPlayers===1?'':'s'}+IA`;
+    const scoreStr = Object.entries(e.scores||{}).map(([k,v])=>`${k}:${v}`).join(' · ');
+    return `<div style="padding:7px 0; border-bottom:1px solid rgba(31,42,61,0.12);">
+      <div style="display:flex; justify-content:space-between;"><b>${e.name}</b><span style="color:var(--piedra); font-size:0.74rem;">${fmtHistoryDate(e.date)}</span></div>
+      <div style="color:var(--piedra); font-size:0.76rem; margin-top:1px;">Gana ${e.winner} · meta ${e.target} · ${type} · ${human} · IA ${levelLabel[e.aiLevel]||e.aiLevel}</div>
+      <div style="font-size:0.76rem; margin-top:1px;">${scoreStr}</div>
+    </div>`;
+  }).join('');
+}
+function clearResultHistory(){
+  if(!confirm('¿Borrar todo el historial de partidas guardadas?')) return;
+  saveResultHistory([]);
+  renderResultHistory();
+}
+function exportResultHistory(){
+  const list = loadResultHistory();
+  const blob = new Blob([JSON.stringify(list, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `subastado-historial-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+function importResultHistory(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let incoming;
+    try{ incoming = JSON.parse(reader.result); }
+    catch(e){ alert('El fichero no es un historial válido.'); return; }
+    if(!Array.isArray(incoming)){ alert('El fichero no es un historial válido.'); return; }
+    const existing = loadResultHistory();
+    // merge by date+name to avoid duplicating entries already present
+    const seen = new Set(existing.map(e=>e.date+'|'+e.name));
+    const merged = existing.concat(incoming.filter(e=>e && e.date && !seen.has(e.date+'|'+e.name)));
+    merged.sort((a,b)=> new Date(b.date) - new Date(a.date));
+    if(merged.length>200) merged.length=200;
+    saveResultHistory(merged);
+    renderResultHistory();
+    alert(`Historial importado: ${merged.length} partidas guardadas en total.`);
+  };
+  reader.readAsText(file);
+  document.getElementById('importHistoryFile').value = '';
 }
 function closeOverlay(){
   document.getElementById('overlay').classList.add('hidden');
