@@ -346,12 +346,14 @@
   }
   .settings-panel .rules-box{border-top:1px solid rgba(31,42,61,0.14); margin-top:18px; padding-top:14px;}
   .settings-panel .rules-box b{color:var(--tinta);}
-  /* collapsible Reglas — a plain clickable <b> label instead of a native
-     <summary>/<details> marker, so it matches "Historial de partidas" above
-     it exactly (same bold/left-aligned style) rather than depending on each
-     browser's own disclosure-triangle rendering. */
-  .rules-toggle{display:block; cursor:pointer;}
-  .rules-toggle #rulesCaret{color:var(--piedra); font-weight:400;}
+  /* Historial de partidas / Reglas titles match the Tipo de juego / Jugadores
+     labels above them (same .set-lbl style) instead of standing out as bold
+     black text — the box's own top border already separates the sections. */
+  .rules-box > .set-lbl{margin-top:0;}
+  /* Reglas is a plain clickable label instead of a native <summary>/<details>
+     marker, so it matches Historial de partidas exactly rather than
+     depending on each browser's own disclosure-triangle rendering. */
+  .rules-toggle{cursor:pointer;}
   .rank-row{display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 4px;}
   .rank-chip{
     background:rgba(31,42,61,0.05); border:1px solid rgba(31,42,61,0.15);
@@ -383,9 +385,11 @@
   #passOverlay p{color:var(--tinta); opacity:0.75; font-size:0.9rem;}
 
   /* SIDE DRAWER — a tab pinned to the bottom-right edge of the viewport that
-     pulls out Nueva partida / Ajustes / Ayuda, replacing the old header
-     buttons. z-index stays below the overlays (20) so a modal (Ajustes, the
-     pass screen, game over) always covers it rather than the reverse. */
+     pulls out Nueva partida / Ajustes / Ayuda as icon-only buttons (self-
+     explanatory on their own — no text labels needed), replacing the old
+     header buttons. z-index stays below the overlays (20) so a modal
+     (Ajustes, the pass screen, game over) always covers it rather than
+     the reverse. */
   .side-drawer{position:fixed; bottom:20px; right:0; z-index:15;}
   .side-scrim{
     position:fixed; inset:0; background:rgba(0,0,0,0); pointer-events:none;
@@ -401,33 +405,24 @@
   }
   .side-tab .chevron{font-size:0.75rem; line-height:1; transition:transform .28s ease;}
   .side-tab .dot{width:3px; height:3px; border-radius:50%; background:var(--bg); opacity:.7;}
-  .side-drawer.open .side-tab{transform:translateX(-172px);}
+  .side-drawer.open .side-tab{transform:translateX(-156px);}
   .side-drawer.open .side-tab .chevron{transform:rotate(180deg);}
   .side-drawer-panel{
-    position:absolute; bottom:0; right:0; width:172px;
-    background:var(--pergamino); color:var(--tinta);
+    position:absolute; bottom:0; right:0; width:156px; height:54px;
+    background:var(--pergamino);
     border-radius:14px; box-shadow:0 10px 28px rgba(0,0,0,0.25);
-    padding:14px; display:flex; flex-direction:column; gap:8px;
+    padding:0 10px; display:flex; align-items:center; gap:8px;
     transform:translateX(100%); transition:transform .32s cubic-bezier(.2,.8,.3,1);
   }
   .side-drawer.open .side-drawer-panel{transform:translateX(0);}
-  .side-drawer-lbl{
-    font-size:0.65rem; letter-spacing:0.08em; text-transform:uppercase;
-    color:var(--piedra); margin-bottom:2px;
-  }
   .side-drawer-panel button{
-    display:flex; align-items:center; gap:9px; width:100%;
-    background:rgba(31,42,61,0.05); border:1px solid rgba(31,42,61,0.15);
-    border-radius:10px; padding:10px 12px; font-family:'Inter',sans-serif;
-    font-size:0.84rem; font-weight:600; color:var(--tinta); cursor:pointer;
+    width:40px; height:40px; flex-shrink:0; border-radius:50%;
+    background:rgba(31,42,61,0.06); border:1px solid rgba(31,42,61,0.15);
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.05rem; color:var(--tinta); cursor:pointer; padding:0;
   }
-  .side-drawer-panel .ic{
-    width:24px; height:24px; border-radius:50%; background:rgba(31,42,61,0.08);
-    display:flex; align-items:center; justify-content:center; font-size:0.85rem;
-    font-style:italic; flex-shrink:0;
-  }
-  .side-help-btn.active{background:var(--oro-soft); border-color:var(--oro); color:var(--oro);}
-  .side-help-btn.active .ic{background:var(--oro); color:var(--bg);}
+  .side-help-btn{font-style:italic; font-family:'Fraunces', serif; font-weight:700;}
+  .side-help-btn.active{background:var(--oro); border-color:var(--oro); color:var(--bg);}
 </style>
 </head>
 <body>
@@ -537,8 +532,7 @@
     <button class="big-btn" style="width:100%; margin-top:16px;" onclick="changeSetup(); closeSettings();">Aplicar y empezar de nuevo</button>
 
     <div class="rules-box" style="border-top:1px solid rgba(31,42,61,0.14); margin-top:18px; padding-top:14px;">
-      <b style="color:var(--tinta); font-size:0.85rem;">Historial de partidas</b>
-      <p class="toggle-hint" style="margin:6px 0 10px;">Se guarda solo en este navegador. Usa "Exportar" para descargar una copia (por ejemplo para subirla a tu repo de GitHub) e "Importar" para recuperarla en otro dispositivo.</p>
+      <label class="set-lbl">Historial de partidas</label>
       <div style="display:flex; gap:8px; margin-bottom:12px;">
         <button class="ghost-btn" style="flex:1; padding:10px 6px; font-size:0.8rem; color:var(--tinta); border-color:rgba(31,42,61,0.2);" onclick="exportResultHistory()">Exportar</button>
         <button class="ghost-btn" style="flex:1; padding:10px 6px; font-size:0.8rem; color:var(--tinta); border-color:rgba(31,42,61,0.2);" onclick="document.getElementById('importHistoryFile').click()">Importar</button>
@@ -549,7 +543,7 @@
     </div>
 
     <div class="rules-box">
-      <b class="rules-toggle" onclick="toggleRules()">Reglas <span id="rulesCaret">▾</span></b>
+      <label class="set-lbl rules-toggle" onclick="toggleRules()">Reglas <span id="rulesCaret">▾</span></label>
       <div id="rulesBody" class="hidden" style="margin-top:10px;">
         <p><b>Puja</b>: mínimo 60, sube de 5 en 5. Quien gana la subasta elige el triunfo y sale.</p>
         <p><b>Al jugar</b>: si tienes el palo pedido, tienes que jugarlo y superarlo si puedes. Si no tienes, tienes que triunfar y superar el triunfo en mesa si puedes. Si no tienes ni palo ni triunfo, puedes echar cualquier carta.</p>
@@ -609,10 +603,9 @@
 <div class="side-drawer" id="sideDrawer">
   <div class="side-scrim" onclick="closeSideDrawer()"></div>
   <div class="side-drawer-panel">
-    <div class="side-drawer-lbl">Partida</div>
-    <button onclick="closeSideDrawer(); changeSetup();"><span class="ic">+</span> Nueva partida</button>
-    <button onclick="closeSideDrawer(); openSettings();"><span class="ic">⚙</span> Ajustes</button>
-    <button class="side-help-btn" id="sideHelpBtn" onclick="toggleHelpFromDrawer()"><span class="ic">i</span> Ayuda</button>
+    <button title="Nueva partida" onclick="closeSideDrawer(); changeSetup();">+</button>
+    <button title="Ajustes" onclick="closeSideDrawer(); openSettings();">⚙</button>
+    <button class="side-help-btn" id="sideHelpBtn" title="Ayuda" onclick="toggleHelpFromDrawer()">i</button>
   </div>
   <button class="side-tab" id="sideTab" onclick="toggleSideDrawer()" aria-label="Abrir menú">
     <span class="chevron">‹</span>
