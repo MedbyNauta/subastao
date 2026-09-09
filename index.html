@@ -731,13 +731,52 @@
       <div class="launcher-title" id="launcherStep2Title"></div>
       <div class="launcher-list">
         <div class="launcher-item" onclick="finishLauncher(1)"><div><b>Solo</b><span>Tú + IA en este móvil</span></div><div class="chev">›</div></div>
-        <div class="launcher-item" onclick="goLauncherMultiplayer()"><div><b>Varios en este móvil</b><span>Os vais pasando el teléfono</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="goLauncherMultiplayer()"><div><b>Multi en móvil</b><span>Os vais pasando el teléfono</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="goLauncherOnlineMenu()"><div><b>Multi Online</b><span>Cada uno desde su móvil</span></div><div class="chev">›</div></div>
       </div>
     </div>
     <div class="launcher-screen" id="launcherStep3">
       <button class="launcher-back" onclick="launcherGo(2)">‹ Atrás</button>
       <div class="launcher-title">¿Cuántas personas?</div>
       <div class="launcher-list" id="launcherHumanList"></div>
+    </div>
+    <div class="launcher-screen" id="launcherStepOnlineMenu">
+      <button class="launcher-back" onclick="launcherGo(2)">‹ Atrás</button>
+      <div class="launcher-title">Multi Online</div>
+      <div class="launcher-list">
+        <div class="launcher-item" onclick="launcherGo('OnlineCreate')"><div><b>Crear partida</b><span>Genera un código para invitar</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="launcherGo('OnlineJoin')"><div><b>Unirse a partida</b><span>Introduce un código</span></div><div class="chev">›</div></div>
+      </div>
+    </div>
+    <div class="launcher-screen" id="launcherStepOnlineCreate">
+      <button class="launcher-back" onclick="launcherGo('OnlineMenu')">‹ Atrás</button>
+      <div class="launcher-title">Crear partida</div>
+      <div style="padding:0 4px;">
+        <input type="text" id="onlineCreateName" placeholder="Tu nombre" maxlength="20"
+          style="width:100%; box-sizing:border-box; background:rgba(31,42,61,0.05); color:var(--tinta); border:1px solid rgba(31,42,61,0.2); border-radius:8px; padding:10px 11px; font-size:0.88rem; font-family:'Inter',sans-serif;">
+        <button class="big-btn" style="width:100%; margin-top:12px;" onclick="startCreateOnlineRoom()">Crear sala</button>
+        <p class="toggle-hint" id="onlineCreateError" style="color:#b33;"></p>
+      </div>
+    </div>
+    <div class="launcher-screen" id="launcherStepOnlineJoin">
+      <button class="launcher-back" onclick="launcherGo('OnlineMenu')">‹ Atrás</button>
+      <div class="launcher-title">Unirse a partida</div>
+      <div style="padding:0 4px;">
+        <input type="text" id="onlineJoinName" placeholder="Tu nombre" maxlength="20"
+          style="width:100%; box-sizing:border-box; background:rgba(31,42,61,0.05); color:var(--tinta); border:1px solid rgba(31,42,61,0.2); border-radius:8px; padding:10px 11px; font-size:0.88rem; font-family:'Inter',sans-serif;">
+        <input type="text" id="onlineJoinCode" placeholder="Código de partida" maxlength="6"
+          style="width:100%; box-sizing:border-box; background:rgba(31,42,61,0.05); color:var(--tinta); border:1px solid rgba(31,42,61,0.2); border-radius:8px; padding:10px 11px; font-size:0.88rem; font-family:'Inter',sans-serif; text-transform:uppercase; margin-top:8px; letter-spacing:2px;">
+        <button class="big-btn" style="width:100%; margin-top:12px;" onclick="joinOnlineRoom()">Unirse</button>
+        <p class="toggle-hint" id="onlineJoinError" style="color:#b33;"></p>
+      </div>
+    </div>
+    <div class="launcher-screen" id="launcherStepOnlineLobby">
+      <button class="launcher-back" onclick="leaveOnlineLobby()">‹ Salir</button>
+      <div class="launcher-title">Sala de espera</div>
+      <p class="toggle-hint">Código de la partida: <b id="onlineLobbyCode" style="font-size:1.3rem; letter-spacing:3px; color:var(--oro);"></b></p>
+      <div class="launcher-list" id="onlineLobbyPlayers"></div>
+      <button class="big-btn hidden" id="onlineLobbyStartBtn" style="width:100%; margin-top:14px;" onclick="startOnlineGame()">Empezar partida</button>
+      <p class="toggle-hint" id="onlineLobbyWaitMsg">Esperando a que el anfitrión empiece la partida…</p>
     </div>
   </div>
 </div>
@@ -757,6 +796,28 @@
     <span class="dot"></span><span class="dot"></span><span class="dot"></span>
   </button>
 </div>
+
+<!-- Firebase (compat build — plain globals, no bundler needed) used only for
+     Multi Online (see NETWORKING / ONLINE MULTIPLAYER section below). -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script>
+// TODO: paste your own Firebase project's config here (Project settings ›
+// General › "Your apps" › SDK setup and configuration). Needs Firestore
+// (Native mode) and Anonymous auth enabled — see firestore.rules below.
+const firebaseConfig = {
+  apiKey: "AIzaSyAxtJIPuwfIpCUEt6H-Hq4V7fSDYOURXak",
+  authDomain: "apuestas-de-bazas.firebaseapp.com",
+  projectId: "apuestas-de-bazas",
+  storageBucket: "apuestas-de-bazas.firebasestorage.app",
+  messagingSenderId: "929540107134",
+  appId: "1:929540107134:web:94b73d7697df2fb10de12f"
+};
+firebase.initializeApp(firebaseConfig);
+const fbAuth = firebase.auth();
+const fbDb = firebase.firestore();
+</script>
 
 <script>
 /* =====================================================================
@@ -1584,7 +1645,7 @@ function endHand(){
   } else {
     for(let s=0;s<3;s++){ if(state.scores[s]>=state.target){ winnerKey=String(s); break; } }
   }
-  if(winnerKey!==null){ state.phase='gameover'; showOverlay(winnerKey); }
+  if(winnerKey!==null){ state.phase='gameover'; state.gameOverInfo={key:winnerKey}; showOverlay(winnerKey); netPush(true); }
 }
 function advanceToNextHand(){
   document.getElementById('summaryPanel').classList.add('hidden');
@@ -1913,7 +1974,9 @@ function endPochaRound(){
     const scores=state.pocha.scores;
     const winnerSeat = scores.indexOf(Math.max(...scores));
     state.phase='gameover';
+    state.gameOverInfo={seat:winnerSeat};
     showPochaOverlay(winnerSeat);
+    netPush(true);
   }
 }
 function renderPochaSummary(results, isLastRound){
@@ -2048,6 +2111,7 @@ function importResultHistory(file){
   document.getElementById('importHistoryFile').value = '';
 }
 function closeOverlay(){
+  netTeardown(); // leave the online room (if any) before starting a fresh local game
   document.getElementById('overlay').classList.add('hidden');
   newGame(
     document.getElementById('targetSelect').value,
@@ -2078,6 +2142,7 @@ function currentActorSeat(){
 function activeSeatForUI(){
   const actor = currentActorSeat();
   if(!isHumanSeat(actor)) return null;
+  if(state.online) return actor===state.online.mySeat ? actor : null; // online: each device only ever controls its own seat
   if(state.humanPlayers<=1) return actor; // solo play: no one to hide cards from
   return state.revealedSeat===actor ? actor : null;
 }
@@ -2088,6 +2153,7 @@ function activeSeatForUI(){
 // the hand strip doesn't collapse and cause the panels below it to jump —
 // it only clears once control genuinely needs to pass to a DIFFERENT human.
 function handDisplaySeat(){
+  if(state.online) return state.online.mySeat; // online: always your own device's seat, no phone-passing involved
   if(state.humanPlayers<=1) return 0; // solo: always your own hand, seat 0
   const actor = currentActorSeat();
   if(isHumanSeat(actor) && actor!==state.revealedSeat) return null; // a different human needs to reveal first
@@ -2095,7 +2161,7 @@ function handDisplaySeat(){
 }
 function updatePassScreen(){
   const overlay = document.getElementById('passOverlay');
-  if(state.humanPlayers<=1){ overlay.classList.add('hidden'); return; }
+  if(state.online || state.humanPlayers<=1){ overlay.classList.add('hidden'); return; } // online never needs the "pass the phone" screen — each seat is a separate device
   const actor = currentActorSeat();
   // Only ask for a fresh "ver mis cartas" tap when control is moving to a
   // DIFFERENT human seat than the one currently revealed — an AI turn in
@@ -2538,6 +2604,12 @@ function render(){
 
   document.getElementById('mesaBox').classList.toggle('hidden', state.phase==='handover');
   document.getElementById('summaryPanel').classList.toggle('hidden', state.phase!=='handover');
+  // These containers are also opened explicitly by startAuction()/startPochaRound()
+  // for whichever device actually runs the engine (host, or a solo/pass-and-play
+  // device) — kept in sync here too so an online guest's device (which never runs
+  // those functions itself, only mirrors synced state) shows the right one.
+  document.getElementById('biddingPanel').classList.toggle('hidden', state.phase!=='bidding');
+  document.getElementById('pochaBidPanel').classList.toggle('hidden', state.phase!=='pocha-bidding');
 
   // bidding controls — only visible once the current human bidder has revealed their turn
   if(state.phase==='bidding' && activeSeat!==null && state.bidSeat===activeSeat){
@@ -2702,6 +2774,7 @@ function pickLauncherType(type){
 // silently reapplying whatever was last chosen in Ajustes — hides any
 // mid-game overlay first so nothing else shows through behind it.
 function goToLauncher(){
+  netTeardown(); // leave any online room's listeners behind before starting fresh
   document.getElementById('overlay').classList.add('hidden');
   document.getElementById('settingsOverlay').classList.add('hidden');
   launcherGo(1);
@@ -2729,6 +2802,281 @@ function finishLauncher(humanPlayers){
   document.getElementById('launcherOverlay').classList.add('hidden');
   newGame(500, launcherType, 'medium', humanPlayers, 'penalty');
 }
+
+/* =====================================================================
+   NETWORKING / ONLINE MULTIPLAYER (Firebase Firestore)
+   One device is the "host": it's the only one that ever runs the actual
+   game engine (startAuction/bidTick/playTick/AI turns/etc, all untouched
+   above) — after every render() it publishes the whole `state` object to
+   rooms/{code}.stateJson. Every other device just mirrors that state and
+   re-renders (see enterOnlineGame/applyRemoteState); when a guest acts
+   (bids, plays a card...) their tap doesn't touch local state at all — it
+   posts a small action doc to rooms/{code}/actions instead, which the host
+   listens for and replays through the exact same recordBid/playCard/etc
+   functions a local click would use (see the wrapping at the bottom of
+   this section), then republishes the result. Card privacy note: the
+   published state includes every seat's hand — fine against a casual
+   opponent, but not hardened against someone reading the Firestore doc
+   directly (see accompanying firestore.rules notes).
+   ===================================================================== */
+let onlineUid = null;
+let roomUnsub = null, actionsUnsub = null, lobbyRoomCode = null;
+
+function goLauncherOnlineMenu(){ launcherGo('OnlineMenu'); }
+
+function genRoomCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // skips 0/O/1/I — easier to read aloud
+  let code = '';
+  for(let i=0;i<5;i++) code += chars[Math.floor(Math.random()*chars.length)];
+  return code;
+}
+function maxSeatsFor(gameType){ return gameType==='pocha' ? 5 : parseInt(gameType); }
+
+function ensureFirebaseAuth(){
+  return new Promise((resolve,reject)=>{
+    if(fbAuth.currentUser){ resolve(fbAuth.currentUser.uid); return; }
+    const unsub = fbAuth.onAuthStateChanged(user=>{ if(user){ unsub(); resolve(user.uid); } });
+    fbAuth.signInAnonymously().catch(e=>{ unsub(); reject(e); });
+  });
+}
+
+async function startCreateOnlineRoom(){
+  const nameEl = document.getElementById('onlineCreateName');
+  const errEl = document.getElementById('onlineCreateError');
+  const name = (nameEl.value||'').trim() || 'Anfitrión';
+  errEl.textContent = '';
+  try{
+    const uid = await ensureFirebaseAuth();
+    onlineUid = uid;
+    const code = genRoomCode();
+    await fbDb.collection('rooms').doc(code).set({
+      gameType: launcherType,
+      hostUid: uid,
+      status: 'lobby',
+      players: [{uid, name, seat:0}],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    lobbyRoomCode = code;
+    openOnlineLobby(code, true);
+  }catch(e){
+    errEl.textContent = 'No se pudo crear la sala: ' + (e.message||e);
+  }
+}
+
+async function joinOnlineRoom(){
+  const nameEl = document.getElementById('onlineJoinName');
+  const codeEl = document.getElementById('onlineJoinCode');
+  const errEl = document.getElementById('onlineJoinError');
+  const name = (nameEl.value||'').trim() || 'Jugador';
+  const code = (codeEl.value||'').trim().toUpperCase();
+  errEl.textContent = '';
+  if(!code){ errEl.textContent = 'Introduce un código.'; return; }
+  try{
+    const uid = await ensureFirebaseAuth();
+    onlineUid = uid;
+    const ref = fbDb.collection('rooms').doc(code);
+    await fbDb.runTransaction(async tx=>{
+      const doc = await tx.get(ref);
+      if(!doc.exists) throw new Error('Esa sala no existe.');
+      const data = doc.data();
+      if(data.status!=='lobby') throw new Error('Esa partida ya ha empezado.');
+      const players = data.players || [];
+      if(!players.some(p=>p.uid===uid)){
+        if(players.length>=maxSeatsFor(data.gameType)) throw new Error('La sala ya está completa.');
+        players.push({uid, name, seat: players.length});
+        tx.update(ref, {players});
+      }
+    });
+    lobbyRoomCode = code;
+    openOnlineLobby(code, false);
+  }catch(e){
+    errEl.textContent = e.message || 'No se pudo unir a la sala.';
+  }
+}
+
+function openOnlineLobby(code, isHost){
+  document.getElementById('onlineLobbyCode').textContent = code;
+  document.getElementById('onlineLobbyStartBtn').classList.toggle('hidden', !isHost);
+  document.getElementById('onlineLobbyWaitMsg').classList.toggle('hidden', isHost);
+  launcherGo('OnlineLobby');
+  if(roomUnsub) roomUnsub();
+  roomUnsub = fbDb.collection('rooms').doc(code).onSnapshot(snap=>{
+    if(!snap.exists) return;
+    const data = snap.data();
+    if(data.status==='lobby'){
+      renderOnlineLobbyPlayers(data);
+    } else if(data.status==='playing'){
+      if(!state.online) enterOnlineGame(data, isHost);
+      else if(!state.online.isHost && data.stateJson) applyRemoteState(data.stateJson);
+    }
+  });
+}
+function renderOnlineLobbyPlayers(data){
+  const max = maxSeatsFor(data.gameType);
+  const list = document.getElementById('onlineLobbyPlayers');
+  list.innerHTML = data.players.map(p=>
+    `<div class="launcher-item" style="cursor:default;"><div><b>${p.name}</b><span>${p.uid===data.hostUid?'Anfitrión':'Jugador'}</span></div></div>`
+  ).join('');
+  document.getElementById('onlineLobbyStartBtn').textContent =
+    data.players.length>=max ? 'Empezar partida' : `Empezar (${data.players.length}/${max}, resto IA)`;
+}
+function leaveOnlineLobby(){
+  netTeardown();
+  launcherGo('OnlineMenu');
+}
+function netTeardown(){
+  if(roomUnsub){ roomUnsub(); roomUnsub=null; }
+  if(actionsUnsub){ actionsUnsub(); actionsUnsub=null; }
+  lobbyRoomCode = null;
+}
+
+// Host taps "Empezar partida": seeds a fresh local `state` (the same engine
+// used by Solo/Multi en móvil) with one human seat per joined player, in
+// join order, any remaining seats filled by AI — then publishes that
+// initial state so every joined device can load it (see enterOnlineGame).
+async function startOnlineGame(){
+  const code = lobbyRoomCode;
+  const ref = fbDb.collection('rooms').doc(code);
+  const doc = await ref.get();
+  const data = doc.data();
+  const players = data.players || [];
+  newGame(500, data.gameType, 'medium', players.length, 'penalty');
+  players.forEach((p,i)=>{ state.seatNames[i] = p.name; });
+  state.online = { code, isHost:true, uid:onlineUid, mySeat:0, players };
+  await ref.set({ status:'playing' }, {merge:true});
+  attachHostActionsListener(code);
+  document.getElementById('launcherOverlay').classList.add('hidden');
+  netPush(true);
+}
+
+// Non-host, first time seeing status:'playing' — load the state the host
+// just published and start rendering our own view of it.
+function enterOnlineGame(data, isHost){
+  if(isHost || !data.stateJson) return;
+  state = deserializeState(data.stateJson);
+  const mySeat = (data.players||[]).findIndex(p=>p.uid===onlineUid);
+  state.online = { code: lobbyRoomCode, isHost:false, uid:onlineUid, mySeat, players:data.players };
+  document.getElementById('launcherOverlay').classList.add('hidden');
+  document.getElementById('logoWord1').textContent = state.gameType==='pocha' ? 'Pocha' : 'Subastao';
+  document.getElementById('logoWord2').classList.toggle('hidden', state.gameType==='pocha');
+  render();
+}
+// Non-host, every subsequent state update the host publishes.
+function applyRemoteState(json){
+  const online = state.online;
+  state = deserializeState(json);
+  state.online = online;
+  render();
+}
+
+// Host-only: listens for guests' bid/pass/trump/card/advance actions and
+// replays each one through the normal engine functions, in arrival order.
+function attachHostActionsListener(code){
+  if(actionsUnsub) actionsUnsub();
+  actionsUnsub = fbDb.collection('rooms').doc(code).collection('actions').orderBy('ts')
+    .onSnapshot(snap=>{
+      snap.docChanges().forEach(change=>{
+        if(change.type!=='added') return;
+        const action = change.doc.data();
+        change.doc.ref.delete().catch(()=>{});
+        applyNetAction(action);
+      });
+    });
+}
+function applyNetAction(action){
+  switch(action.type){
+    case 'bid': recordBid(action.seat, action.amount); break;
+    case 'pass': recordPass(action.seat); break;
+    case 'trump': chooseTrump(action.suit); break;
+    case 'play': {
+      const card = state.hands[action.seat] && state.hands[action.seat].find(c=>c.id===action.cardId);
+      if(card) playCard(action.seat, card);
+      break;
+    }
+    case 'pochaBid': recordPochaBid(action.seat, action.amount); break;
+    case 'advance': onAdvanceClicked(); break;
+  }
+}
+function netShouldForward(){ return !!(state.online && !state.online.isHost); }
+function netSendAction(type, payload){
+  fbDb.collection('rooms').doc(state.online.code).collection('actions').add({
+    type, ...payload, uid: state.online.uid, ts: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(e=>console.error('netSendAction failed', e));
+}
+
+// Sets/Maps aren't JSON-safe (state.passed, state.cantedSuits[seat],
+// state.voidSuits[seat] are all Sets) — this generic replacer/reviver pair
+// handles them without hardcoding every field that happens to hold one.
+function serializeState(s){
+  return JSON.stringify(s, (k,v)=> v instanceof Set ? {__set__:[...v]} : v);
+}
+function deserializeState(json){
+  return JSON.parse(json, (k,v)=> (v && typeof v==='object' && Array.isArray(v.__set__)) ? new Set(v.__set__) : v);
+}
+
+let netPushTimer = null;
+function netPush(immediate){
+  if(!(state.online && state.online.isHost)) return;
+  const fire = ()=>{
+    netPushTimer = null;
+    fbDb.collection('rooms').doc(state.online.code).set({
+      stateJson: serializeState(state), status:'playing',
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true}).catch(e=>console.error('netPush failed', e));
+  };
+  if(immediate){ if(netPushTimer){ clearTimeout(netPushTimer); netPushTimer=null; } fire(); return; }
+  if(netPushTimer) return;
+  netPushTimer = setTimeout(fire, 120);
+}
+
+// Every render() call publishes the new state to Firestore when hosting an
+// online room — this single hook covers every state-mutating path in the
+// game (auction, trump, tricks, hand/round end, game over) since they all
+// call render() themselves already. It also covers the flip side for a
+// guest: showOverlay()/showPochaOverlay() are normally only ever called
+// directly from endHand()/endPochaRound() on whichever device just resolved
+// the hand — a guest instead notices state.phase/gameOverInfo flip to
+// 'gameover' via the synced state and pops its own overlay here.
+const _localRender = render;
+render = function(){
+  _localRender();
+  netPush();
+  if(state.online && !state.online.isHost && state.phase==='gameover' && state.gameOverInfo
+     && document.getElementById('overlay').classList.contains('hidden')){
+    if(state.gameType==='pocha') showPochaOverlay(state.gameOverInfo.seat);
+    else showOverlay(state.gameOverInfo.key);
+  }
+};
+
+// Guests never run the engine themselves — their taps become network
+// actions instead of local mutations (see netShouldForward/netSendAction
+// above); the host applies them the normal way via applyNetAction().
+const _localRecordBid = recordBid, _localRecordPass = recordPass, _localChooseTrump = chooseTrump,
+      _localPlayCard = playCard, _localRecordPochaBid = recordPochaBid, _localOnAdvanceClicked = onAdvanceClicked;
+recordBid = function(seat, amount){
+  if(netShouldForward()){ netSendAction('bid', {seat, amount}); return; }
+  _localRecordBid(seat, amount);
+};
+recordPass = function(seat){
+  if(netShouldForward()){ netSendAction('pass', {seat}); return; }
+  _localRecordPass(seat);
+};
+chooseTrump = function(suit){
+  if(netShouldForward()){ netSendAction('trump', {suit}); return; }
+  _localChooseTrump(suit);
+};
+playCard = function(seat, card){
+  if(netShouldForward()){ netSendAction('play', {seat, cardId: card.id}); return; }
+  _localPlayCard(seat, card);
+};
+recordPochaBid = function(seat, amount){
+  if(netShouldForward()){ netSendAction('pochaBid', {seat, amount}); return; }
+  _localRecordPochaBid(seat, amount);
+};
+onAdvanceClicked = function(){
+  if(netShouldForward()){ netSendAction('advance', {}); return; }
+  _localOnAdvanceClicked();
+};
 </script>
 </body>
 </html>

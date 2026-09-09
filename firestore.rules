@@ -1,0 +1,21 @@
+rules_version = '2';
+// Reglas para el multijugador online de Subastao/Pocha.
+// Nivel de protección: exige estar autenticado (con Auth Anónima) para leer o
+// escribir cualquier cosa. No evita que un jugador de la propia sala haga
+// trampas mirando el documento de la sala en las DevTools — para eso haría
+// falta repartir las manos en documentos privados por jugador, más complejo.
+// Esto sólo bloquea a cualquiera que no pase por la app.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /rooms/{roomId} {
+      allow read, create, update: if request.auth != null;
+      allow delete: if false;
+
+      match /actions/{actionId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+        allow update, delete: if request.auth != null;
+      }
+    }
+  }
+}
