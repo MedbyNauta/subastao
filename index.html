@@ -432,7 +432,7 @@
     <div class="topbar">
       <div class="logo">
         <span class="word1" id="logoWord1">Subastao</span>
-        <span class="word2">Ourensano</span>
+        <span class="word2" id="logoWord2">Ourensano</span>
       </div>
     </div>
     <div class="score-row">
@@ -1083,7 +1083,16 @@ function newGame(target, playerType, aiLevel, humanPlayers, pochaScoring){
     revealedSeat:null, // pass-and-play: which human seat has tapped "ver mis cartas" and is currently displayed
   };
   document.getElementById('logoWord1').textContent = gameType==='pocha' ? 'Pocha' : 'Subastao';
+  document.getElementById('logoWord2').classList.toggle('hidden', gameType==='pocha');
   document.getElementById('overlay').classList.add('hidden');
+  // Both games' bidding panels are only ever shown/hidden explicitly (by
+  // startAuction()/finishAuction() and startPochaRound()/startPochaPlay()),
+  // not from render() — so switching game type mid-auction could otherwise
+  // leave the OTHER game's stale panel on screen. Hide both up front.
+  document.getElementById('biddingPanel').classList.add('hidden');
+  document.getElementById('humanBidArea').classList.add('hidden');
+  document.getElementById('pochaBidPanel').classList.add('hidden');
+  document.getElementById('humanPochaBidArea').classList.add('hidden');
   if(gameType==='pocha') startPochaGame(pochaScoring); else startNewHand();
 }
 function updateHumanPlayersOptions(keepValue){
