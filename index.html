@@ -304,6 +304,12 @@
 
   .summary-row{display:flex; justify-content:space-between; font-size:0.88rem; padding:6px 0; border-bottom:1px solid var(--linea);}
   .summary-row.total{font-weight:700; color:var(--oro);}
+  /* Pocha round summary: fixed-width numeric columns (grid, not flex) so the
+     "bid · won" and score line up vertically across rows regardless of how
+     long each player's name is or how many digits their numbers have. */
+  .summary-row.pocha-row{display:grid; grid-template-columns:1fr 52px 40px; align-items:center; gap:6px;}
+  .summary-row.pocha-row .bw{text-align:center; font-variant-numeric:tabular-nums; color:var(--piedra);}
+  .summary-row.pocha-row .score{text-align:right; font-variant-numeric:tabular-nums; font-weight:700;}
 
   /* LOG */
   details.log-box{margin:16px 12px 0;}
@@ -632,6 +638,19 @@
     <h2 id="passOverlayTitle">Pásale el móvil a...</h2>
     <p id="passOverlaySubtitle"></p>
     <button class="big-btn" style="margin-top:14px; width:100%;" onclick="revealCurrentSeat()">👀 Ver mis cartas</button>
+  </div>
+</div>
+
+<!-- LAUNCHER: shown on every fresh load, before any game state exists — pick
+     which game to play. Visible by default (no "hidden" class), unlike every
+     other overlay here. -->
+<div class="overlay" id="launcherOverlay">
+  <div class="card-panel">
+    <h2>Subastao Ourensano</h2>
+    <p style="opacity:0.75; font-size:0.9rem; margin:6px 0 20px;">¿A qué quieres jugar?</p>
+    <button class="big-btn" style="width:100%; margin-bottom:10px;" onclick="startFromLauncher('3')">Subastao a 3</button>
+    <button class="big-btn" style="width:100%; margin-bottom:10px;" onclick="startFromLauncher('4')">Subastao a 4</button>
+    <button class="big-btn" style="width:100%;" onclick="startFromLauncher('pocha')">Pocha</button>
   </div>
 </div>
 
@@ -1812,7 +1831,7 @@ function endPochaRound(){
 function renderPochaSummary(results, isLastRound){
   document.getElementById('summaryTitle').textContent = `Ronda ${state.pocha.roundIndex+1} de ${state.pocha.roundSizes.length}`;
   document.getElementById('summaryBody').innerHTML = results.map(r=>
-    `<div class="summary-row"><span>${state.seatNames[r.seat]}</span><span>${r.bid} · ${r.won} · ${r.score>=0?'+':''}${r.score}</span></div>`
+    `<div class="summary-row pocha-row"><span>${state.seatNames[r.seat]}</span><span class="bw">${r.bid} · ${r.won}</span><span class="score">${r.score>=0?'+':''}${r.score}</span></div>`
   ).join('');
   document.getElementById('summaryAdvanceBtn').textContent = isLastRound ? 'Ver resultado final' : 'Siguiente ronda';
 }
@@ -2534,8 +2553,14 @@ function updateHandVisibilityForOpenPanels(){
 }
 document.getElementById('logBoxDetails').addEventListener('toggle', updateHandVisibilityForOpenPanels);
 
-/* ---------- INIT ---------- */
-newGame(500, 3, 'medium', 1);
+/* ---------- INIT ----------
+   No auto-start — the LAUNCHER overlay (visible by default in the HTML)
+   picks the game type first; newGame() only runs once the player taps one
+   of its three buttons. */
+function startFromLauncher(type){
+  document.getElementById('launcherOverlay').classList.add('hidden');
+  newGame(500, type, 'medium', 1);
+}
 </script>
 </body>
 </html>
