@@ -69,6 +69,12 @@
   .turn-timer.low{color:#B33A3A;}
   @keyframes turn-timer-pulse{ 0%,100%{opacity:1;} 50%{opacity:0.5;} }
   .turn-timer.timeout{color:#B33A3A; border-color:#B33A3A; animation:turn-timer-pulse 0.8s ease-in-out infinite;}
+  .conn-banner{
+    position:fixed; top:0; left:0; right:0; z-index:1500;
+    background:#B33A3A; color:#fff; text-align:center;
+    font-size:0.78rem; font-weight:600; padding:6px 10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.25);
+  }
   .topbar{margin-bottom:18px;}
   .logo{line-height:1.05;}
   .logo .word1{
@@ -354,6 +360,7 @@
     background:var(--oro); color:var(--bg); border:none; border-radius:10px;
     padding:12px 16px; font-family:'Inter', sans-serif; font-weight:700; font-size:0.92rem;
   }
+  .big-btn:disabled{opacity:0.55; cursor:default;}
   .ghost-btn{
     background:transparent; color:var(--text); border:1px solid var(--linea);
     border-radius:10px; padding:12px 16px; font-size:0.9rem; font-weight:500;
@@ -370,6 +377,19 @@
     max-width:340px; width:100%; border-radius:14px; padding:28px 24px;
     border:1px solid var(--linea);
   }
+  /* Text inputs on the launcher's own screens (Crear/Unirse partida) — these
+     live directly on the theme-following launcher panel above, NOT on a
+     pergamino card-panel, so (unlike the settings/game-over popups) they
+     need theme-aware colors or they render dark ink on a dark background in
+     dark mode. font-size is 16px, not something smaller, so focusing them
+     doesn't trigger iOS/Android's auto-zoom-on-input (which can leave the
+     whole page zoomed in afterwards). */
+  .launcher-input{
+    width:100%; box-sizing:border-box; background:rgba(var(--wash-rgb),0.05); color:var(--text);
+    border:1px solid var(--linea); border-radius:8px;
+    padding:10px 11px; font-size:16px; font-family:'Inter', sans-serif;
+  }
+  .launcher-input + .launcher-input{ margin-top:8px; }
   .launcher-screen{display:none;}
   .launcher-screen.active{display:block;}
   .launcher-hero{
@@ -445,7 +465,11 @@
   .settings-panel select{
     width:100%; background:rgba(31,42,61,0.05); color:var(--tinta);
     border:1px solid rgba(31,42,61,0.2); border-radius:8px;
-    padding:10px 11px; font-size:0.88rem; font-family:'Inter', sans-serif;
+    /* 16px, not 0.88rem (~14px) — anything smaller makes iOS/Android
+       auto-zoom the whole page in on focus, and it can stay zoomed in
+       after the picker closes (see the same fix on the online-lobby
+       text inputs below). */
+    padding:10px 11px; font-size:16px; font-family:'Inter', sans-serif;
   }
   .settings-panel .rules-box{border-top:1px solid rgba(31,42,61,0.14); margin-top:18px; padding-top:14px;}
   .settings-panel .rules-box b{color:var(--tinta);}
@@ -529,6 +553,13 @@
 </style>
 </head>
 <body>
+
+<!-- CONNECTION BANNER — shown whenever an online Firestore listener (lobby,
+     synced game state, or the host's actions queue) errors out, e.g. the
+     device loses network. Fixed at the very top so it's visible over the
+     launcher, the game, and any open panel; Firestore's SDK keeps retrying
+     the listener on its own, so this is purely informational. -->
+<div class="conn-banner hidden" id="connBanner">Sin conexión — reintentando…</div>
 
 <div class="wrap">
   <header>
@@ -661,6 +692,11 @@
         <option value="zero">0 puntos</option>
         <option value="penalty" selected>Resta la diferencia</option>
       </select>
+      <label class="set-lbl">Puja del último en cantar</label>
+      <select id="pochaForbidSelect">
+        <option value="on" selected>No puede cuadrar la puja total (obliga a fallar)</option>
+        <option value="off">Puede cuadrar (puede acertar todo el mundo)</option>
+      </select>
     </div>
     <label class="set-lbl">Nivel de juego</label>
     <select id="aiLevelSelect">
@@ -710,7 +746,7 @@
           <p><b>Jugadores</b>: de 3 a 5, baraja española de 40 cartas.</p>
           <p><b>Rondas</b>: se juegan varias rondas seguidas, con un número de cartas por jugador que primero sube y luego baja hasta volver a 1 — el máximo depende de cuántos juguéis (10 a 3 jugadores, 8 a 4, 6 a 5).</p>
           <p><b>Triunfo</b>: al repartir se destapa la siguiente carta del mazo sobrante — su palo es el triunfo de la ronda. En la ronda de 8 cartas no sobra ninguna, así que esa ronda se juega sin triunfo.</p>
-          <p><b>Puja</b>: por turnos, cada jugador canta cuántas bazas cree que va a hacer esa ronda (de 0 al total de cartas repartidas). El último en cantar no puede pedir el número que haría que la suma de todas las pujas cuadre exactamente con las cartas repartidas — así siempre falla alguien.</p>
+          <p><b>Puja</b>: por turnos, cada jugador canta cuántas bazas cree que va a hacer esa ronda (de 0 al total de cartas repartidas). Por defecto, el último en cantar no puede pedir el número que haría que la suma de todas las pujas cuadre exactamente con las cartas repartidas — así siempre falla alguien; esto se puede desactivar en Ajustes ("Puja del último en cantar").</p>
           <p><b>Al jugar</b>: igual que en el Subastao — si tienes el palo pedido, tienes que jugarlo y superarlo si puedes; si no, tienes que triunfar y superarlo si puedes (cuando hay triunfo esa ronda); si no tienes ni palo ni triunfo, puedes echar cualquier carta.</p>
           <p><b>Puntuación</b>: si aciertas tu puja exacta, sumas 10 + tantos puntos como bazas pedidas. Si fallas, según el ajuste "Puntuación al fallar la puja": no sumas nada, o restas la diferencia entre lo pedido y lo conseguido.</p>
           <p><b>Ganador</b>: quien tenga más puntos al terminar la ronda de 1 carta final.</p>
@@ -727,7 +763,7 @@
     <div id="saveResultBox" style="margin-top:14px; text-align:left;">
       <label class="set-lbl" for="resultNameInput">Guardar este resultado como…</label>
       <input type="text" id="resultNameInput" placeholder="Nombre de la partida" maxlength="40"
-        style="width:100%; box-sizing:border-box; background:rgba(31,42,61,0.05); color:var(--tinta); border:1px solid rgba(31,42,61,0.2); border-radius:8px; padding:10px 11px; font-size:0.88rem; font-family:'Inter',sans-serif;">
+        style="width:100%; box-sizing:border-box; background:rgba(31,42,61,0.05); color:var(--tinta); border:1px solid rgba(31,42,61,0.2); border-radius:8px; padding:10px 11px; font-size:16px; font-family:'Inter',sans-serif;">
       <button class="ghost-btn" id="saveResultBtn" style="width:100%; margin-top:8px; color:var(--tinta); border-color:rgba(31,42,61,0.2);" onclick="saveResultFromOverlay()">Guardar resultado</button>
       <p id="saveResultConfirm" class="toggle-hint hidden" style="color:var(--oro);">Guardado en el historial ✓</p>
     </div>
@@ -796,11 +832,9 @@
       <button class="launcher-back" onclick="launcherGo('OnlineMenu')">‹ Atrás</button>
       <div class="launcher-title">Crear partida</div>
       <div style="padding:0 4px;">
-        <input type="text" id="onlineCreateName" placeholder="Tu nombre" maxlength="8"
-          style="width:100%; box-sizing:border-box; background:rgba(31,42,61,0.05); color:var(--tinta); border:1px solid rgba(31,42,61,0.2); border-radius:8px; padding:10px 11px; font-size:0.88rem; font-family:'Inter',sans-serif;">
-        <input type="number" id="onlineCreateStake" placeholder="Valor aportado (opcional)" min="0" step="0.5"
-          style="width:100%; box-sizing:border-box; background:rgba(31,42,61,0.05); color:var(--tinta); border:1px solid rgba(31,42,61,0.2); border-radius:8px; padding:10px 11px; font-size:0.88rem; font-family:'Inter',sans-serif; margin-top:8px;">
-        <button class="big-btn" style="width:100%; margin-top:12px;" onclick="startCreateOnlineRoom()">Crear sala</button>
+        <input type="text" class="launcher-input" id="onlineCreateName" placeholder="Tu nombre" maxlength="8">
+        <input type="number" class="launcher-input" id="onlineCreateStake" placeholder="Valor aportado (opcional)" min="0" step="0.5">
+        <button class="big-btn" id="createRoomBtn" style="width:100%; margin-top:12px;" onclick="startCreateOnlineRoom()">Crear sala</button>
         <p class="toggle-hint" id="onlineCreateError" style="color:#b33;"></p>
       </div>
     </div>
@@ -808,11 +842,10 @@
       <button class="launcher-back" onclick="leaveOnlineJoinScreen()">‹ Atrás</button>
       <div class="launcher-title">Unirse a partida</div>
       <div style="padding:0 4px;">
-        <input type="text" id="onlineJoinName" placeholder="Tu nombre" maxlength="8"
-          style="width:100%; box-sizing:border-box; background:rgba(31,42,61,0.05); color:var(--tinta); border:1px solid rgba(31,42,61,0.2); border-radius:8px; padding:10px 11px; font-size:0.88rem; font-family:'Inter',sans-serif;">
-        <input type="text" id="onlineJoinCode" placeholder="Código de partida" maxlength="6"
-          style="width:100%; box-sizing:border-box; background:rgba(31,42,61,0.05); color:var(--tinta); border:1px solid rgba(31,42,61,0.2); border-radius:8px; padding:10px 11px; font-size:0.88rem; font-family:'Inter',sans-serif; text-transform:uppercase; margin-top:8px; letter-spacing:2px;">
-        <button class="big-btn" style="width:100%; margin-top:12px;" onclick="joinOnlineRoom()">Unirse</button>
+        <input type="text" class="launcher-input" id="onlineJoinName" placeholder="Tu nombre" maxlength="8">
+        <input type="text" class="launcher-input" id="onlineJoinCode" placeholder="Código de partida" maxlength="6"
+          style="text-transform:uppercase; letter-spacing:2px;">
+        <button class="big-btn" id="joinRoomBtn" style="width:100%; margin-top:12px;" onclick="joinOnlineRoom()">Unirse</button>
         <p class="toggle-hint" id="onlineJoinError" style="color:#b33;"></p>
       </div>
       <label class="set-lbl" style="margin-top:14px; display:block;">Salas abiertas</label>
@@ -1301,7 +1334,7 @@ function parseGameSelector(sel){
   }
   return {gameType:'subastao', numPlayers: parseInt(sel)||4};
 }
-function newGame(target, playerType, aiLevel, humanPlayers, pochaScoring){
+function newGame(target, playerType, aiLevel, humanPlayers, pochaScoring, pochaForbidLastMatch){
   const {gameType, numPlayers} = parseGameSelector(playerType);
   humanPlayers = parseInt(humanPlayers)||numPlayers; // default: all players are human
   gameEpoch++; // invalidate any setTimeout callbacks still pending from the previous game
@@ -1329,7 +1362,7 @@ function newGame(target, playerType, aiLevel, humanPlayers, pochaScoring){
   document.getElementById('humanBidArea').classList.add('hidden');
   document.getElementById('pochaBidPanel').classList.add('hidden');
   document.getElementById('humanPochaBidArea').classList.add('hidden');
-  if(gameType==='pocha') startPochaGame(pochaScoring); else startNewHand();
+  if(gameType==='pocha') startPochaGame(pochaScoring, pochaForbidLastMatch); else startNewHand();
 }
 function updateHumanPlayersOptions(keepValue){
   const type = document.getElementById('playersSelect').value;
@@ -1359,14 +1392,18 @@ function changeSetup(){
   const h=document.getElementById('humanPlayersSelect').value;
   const lvl=document.getElementById('aiLevelSelect').value;
   const ps=document.getElementById('pochaScoringSelect').value;
-  newGame(t,n,lvl,h,ps);
+  const pf=document.getElementById('pochaForbidSelect').value;
+  newGame(t,n,lvl,h,ps,pf);
 }
 function openSettings(){
   document.getElementById('aiLevelSelect').value = state.aiLevel || 'medium';
   renderResultHistory();
   if(state.numPlayers){
     document.getElementById('playersSelect').value = state.gameType==='pocha' ? 'pocha'+state.numPlayers : String(state.numPlayers);
-    if(state.gameType==='pocha') document.getElementById('pochaScoringSelect').value = state.pocha.scoringMode;
+    if(state.gameType==='pocha'){
+      document.getElementById('pochaScoringSelect').value = state.pocha.scoringMode;
+      document.getElementById('pochaForbidSelect').value = state.pocha.forbidLastMatch===false ? 'off' : 'on';
+    }
     updateHumanPlayersOptions(state.humanPlayers); // also syncs the Objetivo/Puntuación/Reglas visibility
   }
   document.getElementById('settingsOverlay').classList.remove('hidden');
@@ -1638,7 +1675,7 @@ function resolveTrick(){
         state.biddingTeamPoints+=pts;
         bonusThisTrick+=pts;
         state.log.push(`${state.seatNames[winnerSeat]} canta ${pts} en ${SUIT_LABEL[suit]}.`);
-        queueCanteAnimation(state.seatNames[winnerSeat], suit, pts);
+        pushEffect('cante', {seatName:state.seatNames[winnerSeat], suit, pts});
       }
     }
   }
@@ -1652,11 +1689,7 @@ function resolveTrick(){
   }
   state.playerTrickPoints[winnerSeat]+=trickPts+bonusThisTrick;
 
-  // spawn confetti over the trick winner
-  setTimeout(()=>{
-    const players = document.querySelectorAll('.pchip');
-    if(players[winnerSeat]) spawnConfetti(players[winnerSeat], 15);
-  }, 600);
+  pushEffect('trickWin', {winnerSeat});
 
   if(isLastTrick){
     endHand();
@@ -1706,8 +1739,8 @@ function endHand(){
     changedKeys=[String(bonusSeat),String(otherSeat)];
   }
   state.lastSummary=summary;
+  pushEffect('scorePulse', {keys:changedKeys});
   render();
-  pulseScoreChips(changedKeys);
   renderSummary();
   document.getElementById('summaryPanel').classList.remove('hidden');
 
@@ -1759,12 +1792,13 @@ function onAdvanceClicked(){
   if(state.gameType==='pocha') advancePochaRound(); else advanceToNextHand();
 }
 
-function startPochaGame(scoringMode){
+function startPochaGame(scoringMode, forbidLastMatch){
   state.pocha = {
     roundSizes: pochaRoundSizesFor(state.numPlayers),
     roundIndex: 0,
     scores: new Array(state.numPlayers).fill(0),
     scoringMode: scoringMode==='zero' ? 'zero' : 'penalty',
+    forbidLastMatch: forbidLastMatch!=='off', // default true — "hay que fastidiar": the last bidder can't make every bid add up exactly
     bids: new Array(state.numPlayers).fill(null),
     tricksWon: new Array(state.numPlayers).fill(0),
     bidTurnSeat: null,
@@ -1819,10 +1853,12 @@ function pochaBidTick(){
   // else: a human's turn to bid — the stepper is shown by render()/activeSeatForUI()
 }
 // The bid `seat` is NOT allowed to make, or null if there's no restriction
-// (i.e. at least one other seat hasn't bid yet). Classic "hay que fastidiar"
+// (i.e. at least one other seat hasn't bid yet, or the "hay que fastidiar"
+// rule is turned off in Ajustes — state.pocha.forbidLastMatch). Classic
 // rule: whoever bids last can't pick the number that would make every bid
 // this round add up to exactly the cards dealt, so someone always misses.
 function forbiddenPochaBid(seat){
+  if(!state.pocha.forbidLastMatch) return null;
   const roundSize = state.pocha.roundSizes[state.pocha.roundIndex];
   const others = seatRange().filter(s=>s!==seat);
   if(others.some(s=>state.pocha.bids[s]===null)) return null;
@@ -2019,10 +2055,7 @@ function resolvePochaTrick(){
   state.log.push(`${state.seatNames[winnerSeat]} gana la baza.`);
   state.currentTrick=[];
   const isLastTrick = state.hands[0].length===0;
-  setTimeout(()=>{
-    const players = document.querySelectorAll('.pchip');
-    if(players[winnerSeat]) spawnConfetti(players[winnerSeat], 15);
-  }, 600);
+  pushEffect('trickWin', {winnerSeat});
   if(isLastTrick){
     endPochaRound();
   } else {
@@ -2041,10 +2074,10 @@ function endPochaRound(){
   });
   state.log.push(`Fin de la ronda ${state.pocha.roundIndex+1}.`);
   const isLastRound = state.pocha.roundIndex >= state.pocha.roundSizes.length-1;
+  pushEffect('pochaScorePulse', {results});
   render();
   renderPochaSummary(results, isLastRound);
   document.getElementById('summaryPanel').classList.remove('hidden');
-  pulsePochaScoreChips(results);
   if(isLastRound){
     const scores=state.pocha.scores;
     const winnerSeat = scores.indexOf(Math.max(...scores));
@@ -2469,6 +2502,49 @@ function burstConfetti(count=22){
   }
 }
 
+/* ---------- STATE EFFECTS (ephemeral animations, synced for online play) ----------
+   Trick-winner sparkles, the "¡Cante!" overlay and the end-of-hand/round
+   score-chip pulse used to fire as a plain side effect right inside
+   resolveTrick()/endHand()/endPochaRound() — fine for whichever device
+   actually runs the game engine (host, solo, or pass-and-play), but
+   invisible to an online guest: a guest never calls those functions itself,
+   it only ever receives a fresh `state` snapshot and re-renders it (see
+   NETWORKING / ONLINE MULTIPLAYER below), so any animation triggered as a
+   one-off function call on the host's device was simply never seen on
+   anyone else's screen. Recording each event as a small entry in
+   state.effects — part of the synced state — and replaying whichever
+   entries this device hasn't shown yet from inside render() fixes that:
+   host and guest both end up firing the exact same animations at the same
+   moments, each independently, no extra network messages needed. */
+function pushEffect(type, payload){
+  if(!state.effects) state.effects=[];
+  state.effectSeq=(state.effectSeq||0)+1;
+  state.effects.push({id:state.effectSeq, type, ...payload});
+  if(state.effects.length>30) state.effects.splice(0, state.effects.length-30); // bound the synced state's size
+}
+let lastEffectEpoch=-1, lastEffectId=0;
+function processStateEffects(){
+  if(!state.effects || !state.effects.length) return;
+  if(state.epoch!==lastEffectEpoch){ lastEffectEpoch=state.epoch; lastEffectId=0; } // new game — start from scratch
+  const fresh = state.effects.filter(e=>e.id>lastEffectId);
+  if(!fresh.length) return;
+  lastEffectId = state.effects[state.effects.length-1].id;
+  fresh.forEach(e=>{
+    if(e.type==='trickWin'){
+      setTimeout(()=>{
+        const players = document.querySelectorAll('.pchip');
+        if(players[e.winnerSeat]) spawnConfetti(players[e.winnerSeat], 15);
+      }, 600);
+    } else if(e.type==='cante'){
+      queueCanteAnimation(e.seatName, e.suit, e.pts);
+    } else if(e.type==='scorePulse'){
+      pulseScoreChips(e.keys);
+    } else if(e.type==='pochaScorePulse'){
+      pulsePochaScoreChips(e.results);
+    }
+  });
+}
+
 /* ---------- CANTE ANIMATION ----------
    A big, theatrical "¡CANTE!" slam across the center of the screen — the
    rey+caballo bonus is the single most exciting scoring event in the game,
@@ -2818,6 +2894,7 @@ function render(){
 
   renderHelp(activeSeat);
   updateTurnTimer(activeSeat);
+  processStateEffects();
 }
 
 // 30s countdown, top-right of the header, shown whenever activeSeat is
@@ -2985,8 +3062,46 @@ function finishLauncher(humanPlayers){
    opponent, but not hardened against someone reading the Firestore doc
    directly (see accompanying firestore.rules notes).
    ===================================================================== */
-let onlineUid = null;
+// `onlineUid` identifies THIS BROWSER TAB as a distinct player, so testing
+// with two tabs of the same browser (or two people sharing a device/profile)
+// doesn't collide: Firebase's anonymous auth uid is persisted per browser
+// profile and shared across every tab of that profile, so it can't tell tabs
+// apart — sessionStorage can (fresh per tab, stable across reloads of that
+// same tab). `onlineAuthUid` is the real Firebase Auth uid, kept separately
+// only because firestore.rules ties action writes to request.auth.uid.
+let onlineUid = null, onlineAuthUid = null;
 let roomUnsub = null, actionsUnsub = null, lobbyRoomCode = null;
+// Shown while any online Firestore listener is erroring out (device offline,
+// permission hiccup, etc) — purely informational, the SDK keeps retrying the
+// listener itself. connErrorSources tracks WHICH listeners are currently
+// unhappy so the banner only hides once every one of them has recovered.
+const connErrorSources = new Set();
+function setConnError(source, hasError){
+  if(hasError) connErrorSources.add(source); else connErrorSources.delete(source);
+  const el = document.getElementById('connBanner');
+  if(el) el.classList.toggle('hidden', connErrorSources.size===0);
+}
+// Applied action ids, so a Firestore redelivery after a dropped connection
+// (the delete that normally removes an applied action can itself fail to
+// reach the server) doesn't replay the same bid/card twice. Capped so it
+// can't grow unbounded over a very long game.
+const appliedActionIds = new Set();
+function markActionApplied(id){
+  appliedActionIds.add(id);
+  if(appliedActionIds.size>500){
+    const first = appliedActionIds.values().next().value;
+    appliedActionIds.delete(first);
+  }
+}
+function ensureSessionId(){
+  let id;
+  try{ id = sessionStorage.getItem('subastado_session_id'); }catch(e){ id = null; }
+  if(!id){
+    id = 'p_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    try{ sessionStorage.setItem('subastado_session_id', id); }catch(e){ /* private mode etc — falls back to a fresh id per call, still fine within one page load */ }
+  }
+  return id;
+}
 
 function goLauncherOnlineMenu(){ launcherGo('OnlineMenu'); }
 function goLauncherOnlineJoin(){ launcherGo('OnlineJoin'); watchOpenRooms(); }
@@ -3047,32 +3162,41 @@ function ensureFirebaseAuth(){
 }
 
 async function startCreateOnlineRoom(){
+  const btn = document.getElementById('createRoomBtn');
+  if(btn.disabled) return; // already in flight — ignore a fast double-tap
   const nameEl = document.getElementById('onlineCreateName');
   const stakeEl = document.getElementById('onlineCreateStake');
   const errEl = document.getElementById('onlineCreateError');
   const name = (nameEl.value||'').trim().slice(0,8) || 'Anfitrión';
   const stake = stakeEl.value ? parseFloat(stakeEl.value) : null;
   errEl.textContent = '';
+  btn.disabled = true;
   try{
     const uid = await ensureFirebaseAuth();
-    onlineUid = uid;
+    const sessionId = ensureSessionId();
+    onlineUid = sessionId;
+    onlineAuthUid = uid;
     const code = genRoomCode();
     await fbDb.collection('rooms').doc(code).set({
       gameType: launcherType,
       hostUid: uid,
       status: 'lobby',
       stake: (stake!==null && !isNaN(stake) && stake>0) ? stake : null,
-      players: [{uid, name, seat:0}],
+      players: [{uid, sessionId, name, seat:0}],
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     lobbyRoomCode = code;
     openOnlineLobby(code, true);
   }catch(e){
     errEl.textContent = 'No se pudo crear la sala: ' + (e.message||e);
+  }finally{
+    btn.disabled = false;
   }
 }
 
 async function joinOnlineRoom(){
+  const btn = document.getElementById('joinRoomBtn');
+  if(btn.disabled) return; // already in flight — ignore a fast double-tap
   const nameEl = document.getElementById('onlineJoinName');
   const codeEl = document.getElementById('onlineJoinCode');
   const errEl = document.getElementById('onlineJoinError');
@@ -3080,27 +3204,38 @@ async function joinOnlineRoom(){
   const code = (codeEl.value||'').trim().toUpperCase();
   errEl.textContent = '';
   if(!code){ errEl.textContent = 'Introduce un código.'; return; }
+  btn.disabled = true;
   try{
     const uid = await ensureFirebaseAuth();
-    onlineUid = uid;
+    const sessionId = ensureSessionId();
+    onlineUid = sessionId;
+    onlineAuthUid = uid;
     const ref = fbDb.collection('rooms').doc(code);
     await fbDb.runTransaction(async tx=>{
       const doc = await tx.get(ref);
       if(!doc.exists) throw new Error('Esa sala no existe.');
       const data = doc.data();
-      if(data.status!=='lobby') throw new Error('Esa partida ya ha empezado.');
       const players = data.players || [];
-      if(!players.some(p=>p.uid===uid)){
-        if(players.length>=maxSeatsFor(data.gameType)) throw new Error('La sala ya está completa.');
-        players.push({uid, name, seat: players.length});
+      const idx = players.findIndex(p=>p.sessionId===sessionId);
+      if(idx>=0){
+        // Reconnecting from this same tab (e.g. after a reload) — same seat
+        // as before, whatever the game's status; just refresh uid/name.
+        players[idx] = {...players[idx], uid, name};
         tx.update(ref, {players});
+        return;
       }
+      if(data.status!=='lobby') throw new Error('Esa partida ya ha empezado.');
+      if(players.length>=maxSeatsFor(data.gameType)) throw new Error('La sala ya está completa.');
+      players.push({uid, sessionId, name, seat: players.length});
+      tx.update(ref, {players});
     });
     lobbyRoomCode = code;
     stopWatchingOpenRooms();
     openOnlineLobby(code, false);
   }catch(e){
     errEl.textContent = e.message || 'No se pudo unir a la sala.';
+  }finally{
+    btn.disabled = false;
   }
 }
 
@@ -3111,6 +3246,7 @@ function openOnlineLobby(code, isHost){
   launcherGo('OnlineLobby');
   if(roomUnsub) roomUnsub();
   roomUnsub = fbDb.collection('rooms').doc(code).onSnapshot(snap=>{
+    setConnError('room', false);
     if(!snap.exists) return;
     const data = snap.data();
     const stakeEl = document.getElementById('onlineLobbyStake');
@@ -3122,7 +3258,7 @@ function openOnlineLobby(code, isHost){
       if(!state.online) enterOnlineGame(data, isHost);
       else if(!state.online.isHost && data.stateJson) applyRemoteState(data.stateJson);
     }
-  });
+  }, ()=>setConnError('room', true));
 }
 function renderOnlineLobbyPlayers(data){
   const max = maxSeatsFor(data.gameType);
@@ -3142,6 +3278,9 @@ function netTeardown(){
   if(actionsUnsub){ actionsUnsub(); actionsUnsub=null; }
   stopWatchingOpenRooms();
   lobbyRoomCode = null;
+  setConnError('room', false);
+  setConnError('actions', false);
+  appliedActionIds.clear();
 }
 
 // Host taps "Empezar partida": seeds a fresh local `state` (the same engine
@@ -3149,23 +3288,31 @@ function netTeardown(){
 // join order, any remaining seats filled by AI — then publishes that
 // initial state so every joined device can load it (see enterOnlineGame).
 async function startOnlineGame(){
-  const code = lobbyRoomCode;
-  const ref = fbDb.collection('rooms').doc(code);
-  const doc = await ref.get();
-  const data = doc.data();
-  const players = data.players || [];
-  newGame(500, data.gameType, 'medium', players.length, 'penalty');
-  players.forEach((p,i)=>{ state.seatNames[i] = p.name; });
-  state.stake = data.stake || null;
-  state.online = { code, isHost:true, uid:onlineUid, mySeat:0, players };
-  // newGame() already rendered a few times above (startAuction/bidTick etc.)
-  // before state.online existed, so the pass-and-play "Pásale el móvil a…"
-  // overlay could've been shown by mistake — re-render now that it's set.
-  render();
-  await ref.set({ status:'playing' }, {merge:true});
-  attachHostActionsListener(code);
-  document.getElementById('launcherOverlay').classList.add('hidden');
-  netPush(true);
+  const btn = document.getElementById('onlineLobbyStartBtn');
+  if(btn.disabled) return; // already in flight — ignore a fast double-tap
+  btn.disabled = true;
+  try{
+    const code = lobbyRoomCode;
+    const ref = fbDb.collection('rooms').doc(code);
+    const doc = await ref.get();
+    const data = doc.data();
+    const players = data.players || [];
+    newGame(500, data.gameType, 'medium', players.length, 'penalty');
+    players.forEach((p,i)=>{ state.seatNames[i] = p.name; });
+    state.stake = data.stake || null;
+    const hostSeat = Math.max(0, players.findIndex(p=>p.sessionId===onlineUid));
+    state.online = { code, isHost:true, uid:onlineUid, authUid:onlineAuthUid, mySeat:hostSeat, players };
+    // newGame() already rendered a few times above (startAuction/bidTick etc.)
+    // before state.online existed, so the pass-and-play "Pásale el móvil a…"
+    // overlay could've been shown by mistake — re-render now that it's set.
+    render();
+    await ref.set({ status:'playing' }, {merge:true});
+    attachHostActionsListener(code);
+    document.getElementById('launcherOverlay').classList.add('hidden');
+    netPush(true);
+  }finally{
+    btn.disabled = false;
+  }
 }
 
 // Non-host, first time seeing status:'playing' — load the state the host
@@ -3173,8 +3320,14 @@ async function startOnlineGame(){
 function enterOnlineGame(data, isHost){
   if(isHost || !data.stateJson) return;
   state = deserializeState(data.stateJson);
-  const mySeat = (data.players||[]).findIndex(p=>p.uid===onlineUid);
-  state.online = { code: lobbyRoomCode, isHost:false, uid:onlineUid, mySeat, players:data.players };
+  const mySeat = (data.players||[]).findIndex(p=>p.sessionId===onlineUid);
+  state.online = { code: lobbyRoomCode, isHost:false, uid:onlineUid, authUid:onlineAuthUid, mySeat, players:data.players };
+  // Joining/rejoining a game already under way can mean the synced state
+  // already carries a backlog of past effects (trick wins, cantes...) — mark
+  // them all as already-seen so this device doesn't replay the whole game's
+  // worth of animations in one burst; only effects pushed from here on play.
+  lastEffectEpoch = state.epoch;
+  lastEffectId = (state.effects && state.effects.length) ? state.effects[state.effects.length-1].id : 0;
   document.getElementById('launcherOverlay').classList.add('hidden');
   document.getElementById('logoWord1').textContent = state.gameType==='pocha' ? 'Pocha' : 'Subastao';
   document.getElementById('logoWord2').classList.toggle('hidden', state.gameType==='pocha');
@@ -3194,13 +3347,20 @@ function attachHostActionsListener(code){
   if(actionsUnsub) actionsUnsub();
   actionsUnsub = fbDb.collection('rooms').doc(code).collection('actions').orderBy('ts')
     .onSnapshot(snap=>{
+      setConnError('actions', false);
       snap.docChanges().forEach(change=>{
         if(change.type!=='added') return;
+        // A dropped connection can make the delete() below fail to reach the
+        // server; Firestore then redelivers the same doc as "added" once
+        // reconnected. Skip it if we've already applied this id, so a flaky
+        // connection can't replay the same bid/card play twice.
+        if(appliedActionIds.has(change.doc.id)) return;
+        markActionApplied(change.doc.id);
         const action = change.doc.data();
         change.doc.ref.delete().catch(()=>{});
         applyNetAction(action);
       });
-    });
+    }, ()=>setConnError('actions', true));
 }
 function applyNetAction(action){
   switch(action.type){
@@ -3218,8 +3378,11 @@ function applyNetAction(action){
 }
 function netShouldForward(){ return !!(state.online && !state.online.isHost); }
 function netSendAction(type, payload){
+  // firestore.rules ties this write to request.auth.uid, so it must be the
+  // real Firebase Auth uid — not state.online.uid, which is this tab's own
+  // session id (see ensureSessionId) and may be shared with other tabs.
   fbDb.collection('rooms').doc(state.online.code).collection('actions').add({
-    type, ...payload, uid: state.online.uid, ts: firebase.firestore.FieldValue.serverTimestamp()
+    type, ...payload, uid: state.online.authUid, ts: firebase.firestore.FieldValue.serverTimestamp()
   }).catch(e=>console.error('netSendAction failed', e));
 }
 
