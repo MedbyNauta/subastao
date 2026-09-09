@@ -1889,9 +1889,11 @@ function confirmHumanPochaBid(){
   recordPochaBid(state.pocha.bidTurnSeat, val);
 }
 function recordPochaBid(seat, amount){
+  console.log('recordPochaBid called:', {seat, amount, isHost: state.online?.isHost, bidTurnSeat: state.pocha.bidTurnSeat, numPlayers: state.numPlayers, bidsArray: [...state.pocha.bids]});
   state.pocha.bids[seat] = amount;
   state.log.push(`${state.seatNames[seat]} canta ${amount}.`);
   const remaining = seatRange().filter(s=>state.pocha.bids[s]===null);
+  console.log('remaining bids:', remaining, 'bids now:', [...state.pocha.bids]);
   if(remaining.length===0){ startPochaPlay(); return; }
   state.pocha.bidTurnSeat = nextSeat(seat);
   pochaBidTick();
@@ -3354,10 +3356,12 @@ function attachHostActionsListener(code){
         // server; Firestore then redelivers the same doc as "added" once
         // reconnected. Skip it if we've already applied this id, so a flaky
         // connection can't replay the same bid/card play twice.
+        const action = change.doc.data();
+        console.log('Host received action:', action.type, action, 'already applied?', appliedActionIds.has(change.doc.id));
         if(appliedActionIds.has(change.doc.id)) return;
         markActionApplied(change.doc.id);
-        const action = change.doc.data();
         change.doc.ref.delete().catch(()=>{});
+        console.log('Applying action:', action.type);
         applyNetAction(action);
       });
     }, ()=>setConnError('actions', true));
@@ -3381,9 +3385,10 @@ function netSendAction(type, payload){
   // firestore.rules ties this write to request.auth.uid, so it must be the
   // real Firebase Auth uid — not state.online.uid, which is this tab's own
   // session id (see ensureSessionId) and may be shared with other tabs.
+  console.log('netSendAction:', type, payload, 'from seat:', state.online.mySeat);
   fbDb.collection('rooms').doc(state.online.code).collection('actions').add({
     type, ...payload, uid: state.online.authUid, ts: firebase.firestore.FieldValue.serverTimestamp()
-  }).catch(e=>console.error('netSendAction failed', e));
+  }).then(()=>console.log('netSendAction success:', type)).catch(e=>console.error('netSendAction failed', type, e));
 }
 
 // Sets/Maps aren't JSON-safe (state.passed, state.cantedSuits[seat],
