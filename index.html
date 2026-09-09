@@ -80,6 +80,15 @@
     color:var(--piedra); margin-top:1px;
   }
   .score-row{display:flex; align-items:center; justify-content:center; gap:8px; padding:0 4px; margin-top:6px;}
+  /* Discreet stake readout — only shown for all-human games with a stake set
+     (see renderScores()); sits quietly under the score chips, same muted
+     tone as the rest of the header chrome, no visual weight of its own. */
+  .stake-row{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    margin-top:6px; font-size:0.68rem; color:var(--piedra); letter-spacing:0.01em;
+  }
+  .stake-row b{color:var(--oro); font-weight:600;}
+  .stake-row .stake-dot{opacity:0.5;}
   .scores{display:flex; justify-content:center; gap:6px; flex:1; min-width:0;}
   .score-chip{
     position:relative;
@@ -533,6 +542,11 @@
     <div class="score-row">
       <div class="scores" id="scoresRow"></div>
     </div>
+    <div class="stake-row hidden" id="stakeRow">
+      <span>Apuesta <b id="stakeAmt"></b></span>
+      <span class="stake-dot">·</span>
+      <span>Bote <b id="stakeTotal"></b></span>
+    </div>
   </header>
 
   <div class="players" id="players"></div>
@@ -621,7 +635,9 @@
     <select id="playersSelect" onchange="updateHumanPlayersOptions()">
       <option value="3" selected>Subastao a 3</option>
       <option value="4">Subastao a 4</option>
-      <option value="pocha">Pocha</option>
+      <option value="pocha3">Pocha a 3</option>
+      <option value="pocha4">Pocha a 4</option>
+      <option value="pocha5">Pocha a 5</option>
     </select>
     <label class="set-lbl">Jugadores</label>
     <select id="humanPlayersSelect">
@@ -629,6 +645,7 @@
       <option value="2">2</option>
       <option value="3">3</option>
       <option value="4">4</option>
+      <option value="5">5</option>
     </select>
     <div id="targetRow">
       <label class="set-lbl">Objetivo de puntos</label>
@@ -690,8 +707,8 @@
           <p><b>A 3 jugadores</b>: se juega con 36 cartas (sin doses), 12 por jugador. Quien gana la subasta juega solo contra los otros dos. Si se baña, los dos rivales se reparten la puja a medias; si es impar, el que iba de mano en esa mano se lleva 5 puntos más.</p>
         </div>
         <div id="pochaRulesBox" class="hidden">
-          <p><b>Jugadores</b>: 4 (Hector, Miguel, Leticia y Nala), baraja española de 40 cartas.</p>
-          <p><b>Rondas</b>: se juegan 15 rondas seguidas, con un número de cartas por jugador que primero sube y luego baja: 1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1.</p>
+          <p><b>Jugadores</b>: de 3 a 5, baraja española de 40 cartas.</p>
+          <p><b>Rondas</b>: se juegan varias rondas seguidas, con un número de cartas por jugador que primero sube y luego baja hasta volver a 1 — el máximo depende de cuántos juguéis (10 a 3 jugadores, 8 a 4, 6 a 5).</p>
           <p><b>Triunfo</b>: al repartir se destapa la siguiente carta del mazo sobrante — su palo es el triunfo de la ronda. En la ronda de 8 cartas no sobra ninguna, así que esa ronda se juega sin triunfo.</p>
           <p><b>Puja</b>: por turnos, cada jugador canta cuántas bazas cree que va a hacer esa ronda (de 0 al total de cartas repartidas). El último en cantar no puede pedir el número que haría que la suma de todas las pujas cuadre exactamente con las cartas repartidas — así siempre falla alguien.</p>
           <p><b>Al jugar</b>: igual que en el Subastao — si tienes el palo pedido, tienes que jugarlo y superarlo si puedes; si no, tienes que triunfar y superarlo si puedes (cuando hay triunfo esa ronda); si no tienes ni palo ni triunfo, puedes echar cualquier carta.</p>
@@ -741,11 +758,20 @@
       <div class="launcher-list">
         <div class="launcher-item" onclick="pickLauncherType('3')"><div><b>Subastao a 3</b><span>Uno solo contra dos</span></div><div class="chev">›</div></div>
         <div class="launcher-item" onclick="pickLauncherType('4')"><div><b>Subastao a 4</b><span>Por parejas</span></div><div class="chev">›</div></div>
-        <div class="launcher-item" onclick="pickLauncherType('pocha')"><div><b>Pocha</b><span>4 jugadores, sin parejas</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="goLauncherPochaCount()"><div><b>Pocha</b><span>3 a 5 jugadores, sin parejas</span></div><div class="chev">›</div></div>
+      </div>
+    </div>
+    <div class="launcher-screen" id="launcherStepPochaCount">
+      <button class="launcher-back" onclick="launcherGo(1)">‹ Atrás</button>
+      <div class="launcher-title">¿Cuántos en la mesa?</div>
+      <div class="launcher-list">
+        <div class="launcher-item" onclick="pickPochaTableSize(3)"><div><b>3 jugadores</b></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="pickPochaTableSize(4)"><div><b>4 jugadores</b></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="pickPochaTableSize(5)"><div><b>5 jugadores</b></div><div class="chev">›</div></div>
       </div>
     </div>
     <div class="launcher-screen" id="launcherStep2">
-      <button class="launcher-back" onclick="launcherGo(1)">‹ Atrás</button>
+      <button class="launcher-back" onclick="launcherBackFromStep2()">‹ Atrás</button>
       <div class="launcher-title" id="launcherStep2Title"></div>
       <div class="launcher-list">
         <div class="launcher-item" onclick="finishLauncher(1)"><div><b>Solo</b><span>Tú + IA en este móvil</span></div><div class="chev">›</div></div>
@@ -872,14 +898,19 @@ const RANK_SHORT = {As:'A','3':'3',Rey:'R',Caballo:'C',Sota:'S','7':'7','6':'6',
 const POINTS = {As:11,'3':10,Rey:4,Caballo:3,Sota:2,'7':0,'6':0,'5':0,'4':0,'2':0};
 const TEAM_OF_4 = {0:'A',1:'B',2:'A',3:'B'};
 
-// La Pocha: a separate 4-player, no-partners game (see the POCHA GAME FLOW
-// section far below) — everyone bids how many tricks they'll take each
-// round, using the same 40-card deck/trick-taking rules as 4-player
-// Subastao. Hand size follows a "pyramid": 1 card up to 8 per player, then
-// back down to 1 — 15 rounds in total (4 players, 40-card deck, 8 left over
-// for the last trump reveal on the biggest round).
-const POCHA_SEAT_NAMES = ['Hector','Miguel','Leticia','Nala'];
-const POCHA_ROUND_SIZES = [1,2,3,4,5,6,7,8,7,6,5,4,3,2,1];
+// La Pocha: a separate no-partners game for 3 to 5 players (see the POCHA
+// GAME FLOW section far below) — everyone bids how many tricks they'll take
+// each round, using the same 40-card deck/trick-taking rules as 4-player
+// Subastao. Hand size follows a "pyramid": 1 card up to a per-table-size max,
+// then back down to 1 (see pochaRoundSizesFor) — always leaving enough of
+// the 40-card deck unspent to reveal a trump card each round.
+const POCHA_SEAT_NAMES = ['Hector','Miguel','Leticia','Nala','Xoel'];
+const POCHA_MAX_ROUND_SIZE = {3:10, 4:8, 5:6};
+function pochaRoundSizesFor(numPlayers){
+  const max = POCHA_MAX_ROUND_SIZE[numPlayers] || 8;
+  const up = Array.from({length:max}, (_,i)=>i+1);
+  return up.concat(up.slice(0,-1).reverse());
+}
 
 // Inline SVG paths for each suit's icon (used on cards, trump-choice buttons, etc).
 // Original artwork — see CONTEXT.md for why (no reused copyrighted deck art).
@@ -1188,14 +1219,15 @@ function rolloutFromCandidate(seat, candidate, assigned){
     let bonus=0;
     if(isDeclarerSide(wSeat)){
       biddingTeamPoints+=trickPts;
-      for(const suit of SUITS){
-        if(!cantedSuits[wSeat].has(suit)){
-          const hh=hands[wSeat];
-          if(hh.some(c=>c.suit===suit&&c.rank==='Rey') && hh.some(c=>c.suit===suit&&c.rank==='Caballo')){
-            cantedSuits[wSeat].add(suit);
-            const p=suit===trump?40:20;
-            biddingTeamPoints+=p; bonus+=p;
-          }
+      const wonWith = trick.find(t=>t.seat===wSeat).card;
+      const suit = wonWith.suit;
+      if((wonWith.rank==='Rey' || wonWith.rank==='Caballo') && !cantedSuits[wSeat].has(suit)){
+        const partnerRank = wonWith.rank==='Rey' ? 'Caballo' : 'Rey';
+        const hh=hands[wSeat];
+        if(hh.some(c=>c.suit===suit && c.rank===partnerRank)){
+          cantedSuits[wSeat].add(suit);
+          const p=suit===trump?40:20;
+          biddingTeamPoints+=p; bonus+=p;
         }
       }
     }
@@ -1256,9 +1288,21 @@ function aiChooseCard(seat){
    GAME FLOW section further down). Each individual Subastao hand within
    the match is (re)started by startNewHand() below, which deals cards and
    kicks off the auction; Pocha instead loops through startPochaRound(). */
+// Parses the raw value of a game-type selector (playersSelect, launcherType,
+// or a Firestore room's stored gameType) into {gameType, numPlayers}. Plain
+// '3'/'4' means Subastao at that size; 'pocha3'/'pocha4'/'pocha5' means Pocha
+// at that table size — Pocha's own selector values are prefixed since it has
+// no fixed player count the way Subastao does.
+function parseGameSelector(sel){
+  sel = String(sel);
+  if(sel.startsWith('pocha')){
+    const n = parseInt(sel.slice(5));
+    return {gameType:'pocha', numPlayers:(n>=3&&n<=5)?n:4};
+  }
+  return {gameType:'subastao', numPlayers: parseInt(sel)||4};
+}
 function newGame(target, playerType, aiLevel, humanPlayers, pochaScoring){
-  const gameType = playerType==='pocha' ? 'pocha' : 'subastao';
-  const numPlayers = gameType==='pocha' ? 4 : (parseInt(playerType)||4);
+  const {gameType, numPlayers} = parseGameSelector(playerType);
   humanPlayers = parseInt(humanPlayers)||numPlayers; // default: all players are human
   gameEpoch++; // invalidate any setTimeout callbacks still pending from the previous game
   state = {
@@ -1268,7 +1312,7 @@ function newGame(target, playerType, aiLevel, humanPlayers, pochaScoring){
     numPlayers,
     humanPlayers, // how many humans play on this mobile device
     aiLevel: aiLevel || 'medium',
-    seatNames: gameType==='pocha' ? POCHA_SEAT_NAMES.slice()
+    seatNames: gameType==='pocha' ? POCHA_SEAT_NAMES.slice(0,numPlayers)
       : (numPlayers===4 ? ['Hector','Miguel','Leticia','Nala'] : ['Hector','Miguel','Leticia']),
     scores: gameType==='pocha' ? {} : (numPlayers===4 ? {A:0,B:0} : {0:0,1:0,2:0}),
     dealerIndex:0,
@@ -1292,7 +1336,7 @@ function updateHumanPlayersOptions(keepValue){
   const select = document.getElementById('humanPlayersSelect');
   const prev = keepValue!==undefined ? String(keepValue) : select.value;
   select.innerHTML = '';
-  const maxHumans = type==='3' ? 3 : (type==='pocha' ? 4 : 4);
+  const maxHumans = parseGameSelector(type).numPlayers;
   for(let n=1;n<=maxHumans;n++) select.innerHTML += `<option value="${n}">${n}</option>`;
   // keep the previous choice if it's still valid for this game type, else default to solo+IA
   const opts=[...select.options].map(o=>o.value);
@@ -1303,7 +1347,7 @@ function updateHumanPlayersOptions(keepValue){
 // the two games — Objetivo de puntos and the Subastao rules vs. Puntuación
 // al fallar and the Pocha rules.
 function updateSettingsForGameType(){
-  const isPocha = document.getElementById('playersSelect').value==='pocha';
+  const isPocha = document.getElementById('playersSelect').value.startsWith('pocha');
   document.getElementById('targetRow').classList.toggle('hidden', isPocha);
   document.getElementById('pochaScoringRow').classList.toggle('hidden', !isPocha);
   document.getElementById('subastaoRulesBox').classList.toggle('hidden', isPocha);
@@ -1321,7 +1365,7 @@ function openSettings(){
   document.getElementById('aiLevelSelect').value = state.aiLevel || 'medium';
   renderResultHistory();
   if(state.numPlayers){
-    document.getElementById('playersSelect').value = state.gameType==='pocha' ? 'pocha' : String(state.numPlayers);
+    document.getElementById('playersSelect').value = state.gameType==='pocha' ? 'pocha'+state.numPlayers : String(state.numPlayers);
     if(state.gameType==='pocha') document.getElementById('pochaScoringSelect').value = state.pocha.scoringMode;
     updateHumanPlayersOptions(state.humanPlayers); // also syncs the Objetivo/Puntuación/Reglas visibility
   }
@@ -1579,17 +1623,22 @@ function resolveTrick(){
   let bonusThisTrick=0;
   if(isDeclarerSide(winnerSeat)){
     state.biddingTeamPoints+=trickPts;
-    for(const suit of SUITS){
-      if(!state.cantedSuits[winnerSeat].has(suit)){
-        const h=state.hands[winnerSeat];
-        if(h.some(c=>c.suit===suit&&c.rank==='Rey') && h.some(c=>c.suit===suit&&c.rank==='Caballo')){
-          state.cantedSuits[winnerSeat].add(suit);
-          const pts=suit===state.trumpSuit?40:20;
-          state.biddingTeamPoints+=pts;
-          bonusThisTrick+=pts;
-          state.log.push(`${state.seatNames[winnerSeat]} canta ${pts} en ${SUIT_LABEL[suit]}.`);
-          queueCanteAnimation(state.seatNames[winnerSeat], suit, pts);
-        }
+    // Cante only fires when the card that actually won the trick was the King
+    // or the Knight, and its partner (same suit) is still unplayed in hand —
+    // just holding an untouched pair while winning with an unrelated card
+    // doesn't count.
+    const wonWith = trick.find(t=>t.seat===winnerSeat).card;
+    const suit = wonWith.suit;
+    if((wonWith.rank==='Rey' || wonWith.rank==='Caballo') && !state.cantedSuits[winnerSeat].has(suit)){
+      const partnerRank = wonWith.rank==='Rey' ? 'Caballo' : 'Rey';
+      const h=state.hands[winnerSeat];
+      if(h.some(c=>c.suit===suit && c.rank===partnerRank)){
+        state.cantedSuits[winnerSeat].add(suit);
+        const pts=suit===state.trumpSuit?40:20;
+        state.biddingTeamPoints+=pts;
+        bonusThisTrick+=pts;
+        state.log.push(`${state.seatNames[winnerSeat]} canta ${pts} en ${SUIT_LABEL[suit]}.`);
+        queueCanteAnimation(state.seatNames[winnerSeat], suit, pts);
       }
     }
   }
@@ -1690,9 +1739,11 @@ function showOverlay(key){
 }
 
 /* ---------- POCHA GAME FLOW ----------
-   La Pocha: 4 seats, no partners, 40-card deck (RANKS_4P). Each of the 15
-   rounds in POCHA_ROUND_SIZES deals a different number of cards; everyone
-   bids how many tricks they'll take that round (state.pocha.bids), plays
+   La Pocha: 3 to 5 seats (state.numPlayers), no partners, 40-card deck
+   (RANKS_4P). Each round in state.pocha.roundSizes (built by
+   pochaRoundSizesFor, sized to the table's player count) deals a different
+   number of cards; everyone bids how many tricks they'll take that round
+   (state.pocha.bids), plays
    the round out with the SAME generic trick-taking engine Subastao uses
    (beats/trickWinnerSeat/legalMoves — trump=null for a no-trump round is
    already handled correctly by those, since no card's suit ever equals
@@ -1710,12 +1761,12 @@ function onAdvanceClicked(){
 
 function startPochaGame(scoringMode){
   state.pocha = {
-    roundSizes: POCHA_ROUND_SIZES,
+    roundSizes: pochaRoundSizesFor(state.numPlayers),
     roundIndex: 0,
-    scores: new Array(4).fill(0),
+    scores: new Array(state.numPlayers).fill(0),
     scoringMode: scoringMode==='zero' ? 'zero' : 'penalty',
-    bids: new Array(4).fill(null),
-    tricksWon: new Array(4).fill(0),
+    bids: new Array(state.numPlayers).fill(null),
+    tricksWon: new Array(state.numPlayers).fill(0),
     bidTurnSeat: null,
     trumpCard: null,
   };
@@ -1728,23 +1779,23 @@ function startPochaGame(scoringMode){
 function startPochaRound(){
   const roundSize = state.pocha.roundSizes[state.pocha.roundIndex];
   const deck = shuffle(buildDeck(RANKS_4P));
-  state.hands = Array.from({length:4}, ()=>[]);
-  for(let s=0;s<4;s++){
+  state.hands = Array.from({length:state.numPlayers}, ()=>[]);
+  for(let s=0;s<state.numPlayers;s++){
     for(let i=0;i<roundSize;i++) state.hands[s].push(deck.shift());
   }
   const trumpCard = deck.shift() || null;
   state.trumpSuit = trumpCard ? trumpCard.suit : null;
   state.pocha.trumpCard = trumpCard;
-  for(let s=0;s<4;s++) sortHand(state.hands[s], state.trumpSuit);
-  state.pocha.bids = new Array(4).fill(null);
-  state.pocha.tricksWon = new Array(4).fill(0);
+  for(let s=0;s<state.numPlayers;s++) sortHand(state.hands[s], state.trumpSuit);
+  state.pocha.bids = new Array(state.numPlayers).fill(null);
+  state.pocha.tricksWon = new Array(state.numPlayers).fill(0);
   state.currentTrick = [];
   state.leader = null;
   state.turn = null;
   // memory tracking fields playCard() always touches, regardless of game
   state.seenCards = [];
   state.voidSuits = {};
-  for(let s=0;s<4;s++) state.voidSuits[s] = new Set();
+  for(let s=0;s<state.numPlayers;s++) state.voidSuits[s] = new Set();
   state.log = [`Ronda ${state.pocha.roundIndex+1}/${state.pocha.roundSizes.length}: ${roundSize} carta${roundSize===1?'':'s'} por jugador. ${
     trumpCard ? `Triunfo: ${SUIT_LABEL[trumpCard.suit]} (${cardLabel(trumpCard)}).` : 'Sin triunfo esta ronda.'
   }`];
@@ -1894,7 +1945,7 @@ function lowChoosePochaCard(seat, hand, trick, trump, tricksWonArr){
 // by help mode) — since Pocha has no partners, this is already framed from
 // `seat`'s own point of view, no need for Subastao's declarer-side flip.
 function rolloutFromPochaCandidate(seat, candidate, assigned){
-  const numPlayers=5, trump=state.trumpSuit;
+  const numPlayers=state.numPlayers, trump=state.trumpSuit;
   const hands=[];
   for(let s=0;s<numPlayers;s++){
     hands[s] = s===seat ? state.hands[seat].filter(c=>c.id!==candidate.id) : assigned[s].slice();
@@ -2086,7 +2137,7 @@ function renderResultHistory(){
   if(list.length===0){ box.innerHTML = `<span style="color:var(--piedra);">Aún no has guardado ninguna partida.</span>`; return; }
   const levelLabel = {low:'Bajo', medium:'Medio', high:'Alto'};
   box.innerHTML = list.map(e=>{
-    const type = e.gameType==='pocha' ? 'Pocha' : (e.numPlayers===4 ? 'Subastao a 4' : 'Subastao a 3');
+    const type = e.gameType==='pocha' ? `Pocha a ${e.numPlayers}` : (e.numPlayers===4 ? 'Subastao a 4' : 'Subastao a 3');
     const human = e.humanPlayers>=e.numPlayers ? `${e.numPlayers} personas` : `${e.humanPlayers} persona${e.humanPlayers===1?'':'s'}+IA`;
     const meta = e.gameType==='pocha' ? '' : `meta ${e.target} · `;
     const scoreStr = Object.entries(e.scores||{}).map(([k,v])=>`${k}:${v}`).join(' · ');
@@ -2544,6 +2595,17 @@ function currentHandPoints(seat){
   return (state.phase==='playing' && state.playerTrickPoints) ? state.playerTrickPoints[seat] : 0;
 }
 function renderScores(){
+  const stakeRow=document.getElementById('stakeRow');
+  const noAI = state.humanPlayers!==undefined && state.numPlayers!==undefined && state.humanPlayers>=state.numPlayers;
+  if(stakeRow){
+    if(state.stake && noAI){
+      document.getElementById('stakeAmt').textContent = `${state.stake}€`;
+      document.getElementById('stakeTotal').textContent = `${(state.stake*state.numPlayers).toLocaleString('es-ES',{maximumFractionDigits:2})}€`;
+      stakeRow.classList.remove('hidden');
+    } else {
+      stakeRow.classList.add('hidden');
+    }
+  }
   const row=document.getElementById('scoresRow');
   if(state.gameType==='pocha'){
     row.innerHTML = state.seatNames.map((nm,i)=>`
@@ -2686,7 +2748,7 @@ function render(){
   const grid=document.getElementById('trickGrid');
   grid.style.gridTemplateColumns = `repeat(${state.numPlayers},1fr)`;
   grid.innerHTML='';
-  const mesaOrder = state.gameType==='pocha' ? [0,1,2,3] : (state.numPlayers===4 ? [0,2,1,3] : [0,1,2]);
+  const mesaOrder = state.gameType==='pocha' ? seatRange() : (state.numPlayers===4 ? [0,2,1,3] : [0,1,2]);
   mesaOrder.forEach(s=>{
     const played=(state.currentTrick||[]).find(t=>t.seat===s);
     const slot=document.createElement('div');
@@ -2768,6 +2830,7 @@ function render(){
 let turnTimerHandle = null, turnTimerTurnKey = null, turnTimerTimeoutHandle = null;
 function updateTurnTimer(activeSeat){
   const el = document.getElementById('turnTimer');
+  if(!state.online) activeSeat=null; // countdown only makes sense online — pass-and-play/solo have no one to time out
   if(activeSeat===null){
     el.classList.add('hidden'); el.classList.remove('low','timeout');
     if(turnTimerHandle){ clearInterval(turnTimerHandle); turnTimerHandle=null; }
@@ -2857,8 +2920,21 @@ function launcherGo(step){
 }
 function pickLauncherType(type){
   launcherType = type;
-  document.getElementById('launcherStep2Title').textContent = type==='pocha' ? 'Pocha' : `Subastao a ${type}`;
+  document.getElementById('launcherStep2Title').textContent = `Subastao a ${type}`;
   launcherGo(2);
+}
+function goLauncherPochaCount(){ launcherGo('PochaCount'); }
+function pickPochaTableSize(n){
+  launcherType = 'pocha'+n;
+  document.getElementById('launcherStep2Title').textContent = `Pocha a ${n}`;
+  launcherGo(2);
+}
+// Step2 (Solo/Multi en móvil/Multi Online) is shared by both games — its
+// back button needs to return to wherever the player actually came from:
+// step1 for Subastao, the table-size screen for Pocha.
+function launcherBackFromStep2(){
+  if(launcherType && launcherType.startsWith('pocha')) launcherGo('PochaCount');
+  else launcherGo(1);
 }
 // "Nueva partida" (side drawer) goes back to the launcher instead of
 // silently reapplying whatever was last chosen in Ajustes — hides any
@@ -2871,11 +2947,11 @@ function goToLauncher(){
   document.getElementById('launcherOverlay').classList.remove('hidden');
 }
 // "Varios en este móvil" — list how many humans can share the phone, capped
-// by the chosen game type's own seat count (3 or 4, Pocha is always 4); the rest
+// by the chosen game type's own seat count (3 or 4 for Subastao, 3 to 5 for Pocha); the rest
 // of the seats are filled in by AI, same as the humanPlayers setting in
 // Ajustes always worked, just surfaced up front here instead of buried.
 function goLauncherMultiplayer(){
-  const max = launcherType==='pocha' ? 4 : parseInt(launcherType);
+  const max = parseGameSelector(launcherType).numPlayers;
   const list = document.getElementById('launcherHumanList');
   list.innerHTML = '';
   for(let n=2; n<=max; n++){
@@ -2943,7 +3019,8 @@ function renderOpenRoomsList(rooms){
   if(!open.length){ list.innerHTML = '<p class="toggle-hint">No hay salas abiertas ahora mismo — crea una o introduce un código.</p>'; return; }
   list.innerHTML = open.map(r=>{
     const max = maxSeatsFor(r.gameType);
-    const gameLabel = r.gameType==='pocha' ? 'Pocha' : `Subastao a ${r.gameType}`;
+    const {gameType:rGameType} = parseGameSelector(r.gameType);
+    const gameLabel = rGameType==='pocha' ? `Pocha a ${max}` : `Subastao a ${max}`;
     const host = (r.players||[]).find(p=>p.uid===r.hostUid);
     return `<div class="launcher-item" onclick="joinOpenRoom('${r.code}')"><div><b>${gameLabel} · ${r.code}</b><span>Anfitrión ${host?host.name:'?'} · ${(r.players||[]).length}/${max} jugadores</span></div><div class="chev">›</div></div>`;
   }).join('');
@@ -2959,7 +3036,7 @@ function genRoomCode(){
   for(let i=0;i<5;i++) code += chars[Math.floor(Math.random()*chars.length)];
   return code;
 }
-function maxSeatsFor(gameType){ return gameType==='pocha' ? 4 : parseInt(gameType); }
+function maxSeatsFor(gameType){ return parseGameSelector(gameType).numPlayers; }
 
 function ensureFirebaseAuth(){
   return new Promise((resolve,reject)=>{
