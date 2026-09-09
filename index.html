@@ -1811,11 +1811,9 @@ function endPochaRound(){
 }
 function renderPochaSummary(results, isLastRound){
   document.getElementById('summaryTitle').textContent = `Ronda ${state.pocha.roundIndex+1} de ${state.pocha.roundSizes.length}`;
-  const rows = results.map(r=>
-    `<div class="summary-row"><span>${state.seatNames[r.seat]}</span><span>Pedía ${r.bid} · Hizo ${r.won} · ${r.score>=0?'+':''}${r.score}</span></div>`
+  document.getElementById('summaryBody').innerHTML = results.map(r=>
+    `<div class="summary-row"><span>${state.seatNames[r.seat]}</span><span>${r.bid} · ${r.won} · ${r.score>=0?'+':''}${r.score}</span></div>`
   ).join('');
-  const totals = `<div class="summary-row total"><span>Total</span><span>${seatRange().map(s=>`${state.seatNames[s]}: ${state.pocha.scores[s]}`).join(' · ')}</span></div>`;
-  document.getElementById('summaryBody').innerHTML = rows + totals;
   document.getElementById('summaryAdvanceBtn').textContent = isLastRound ? 'Ver resultado final' : 'Siguiente ronda';
 }
 function advancePochaRound(){
@@ -2310,9 +2308,9 @@ function pochaChipNote(seat){
   const bid=state.pocha.bids[seat];
   if(bid===null || bid===undefined) return '';
   if(state.phase==='playing' || state.phase==='handover'){
-    return `<div class="ct">Puja ${bid} · ${state.pocha.tricksWon[seat]}</div>`;
+    return `<div class="ct">${bid} · ${state.pocha.tricksWon[seat]}</div>`;
   }
-  return `<div class="ct">Puja ${bid}</div>`;
+  return `<div class="ct">${bid}</div>`;
 }
 
 // Live points for the hand in progress — 0 outside the 'playing' phase, so
