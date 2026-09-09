@@ -3023,6 +3023,10 @@ async function startOnlineGame(){
   newGame(500, data.gameType, 'medium', players.length, 'penalty');
   players.forEach((p,i)=>{ state.seatNames[i] = p.name; });
   state.online = { code, isHost:true, uid:onlineUid, mySeat:0, players };
+  // newGame() already rendered a few times above (startAuction/bidTick etc.)
+  // before state.online existed, so the pass-and-play "Pásale el móvil a…"
+  // overlay could've been shown by mistake — re-render now that it's set.
+  render();
   await ref.set({ status:'playing' }, {merge:true});
   attachHostActionsListener(code);
   document.getElementById('launcherOverlay').classList.add('hidden');
