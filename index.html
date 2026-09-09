@@ -350,8 +350,7 @@
     text-align:center; font-family:'Fraunces', serif; font-style:italic; font-weight:700;
     font-size:1.5rem; color:var(--oro); margin-bottom:20px;
   }
-  .launcher-title{color:var(--text); font-family:'Fraunces', serif; font-weight:600; font-size:1.2rem; font-style:italic; margin-bottom:4px;}
-  .launcher-sub{font-size:0.8rem; color:var(--piedra); margin-bottom:6px;}
+  .launcher-title{color:var(--text); font-family:'Fraunces', serif; font-weight:600; font-size:1.2rem; font-style:italic; margin-bottom:16px;}
   .launcher-back{
     background:none; border:none; color:var(--piedra); font-size:0.8rem;
     font-family:'Inter', sans-serif; cursor:pointer; padding:0 0 14px; display:block;
@@ -729,8 +728,7 @@
     </div>
     <div class="launcher-screen" id="launcherStep2">
       <button class="launcher-back" onclick="launcherGo(1)">‹ Atrás</button>
-      <div class="launcher-title">¿Cómo jugáis?</div>
-      <div class="launcher-sub" id="launcherStep2Sub"></div>
+      <div class="launcher-title" id="launcherStep2Title"></div>
       <div class="launcher-list">
         <div class="launcher-item" onclick="finishLauncher(1)"><div><b>Solo</b><span>Tú + IA en este móvil</span></div><div class="chev">›</div></div>
         <div class="launcher-item" onclick="goLauncherMultiplayer()"><div><b>Varios en este móvil</b><span>Os vais pasando el teléfono</span></div><div class="chev">›</div></div>
@@ -739,7 +737,6 @@
     <div class="launcher-screen" id="launcherStep3">
       <button class="launcher-back" onclick="launcherGo(2)">‹ Atrás</button>
       <div class="launcher-title">¿Cuántas personas?</div>
-      <div class="launcher-sub">El resto de asientos los completa la IA</div>
       <div class="launcher-list" id="launcherHumanList"></div>
     </div>
   </div>
@@ -751,7 +748,7 @@
 <div class="side-drawer" id="sideDrawer">
   <div class="side-scrim" onclick="closeSideDrawer()"></div>
   <div class="side-drawer-panel">
-    <button title="Nueva partida" onclick="closeSideDrawer(); changeSetup();">+</button>
+    <button title="Nueva partida" onclick="closeSideDrawer(); goToLauncher();">+</button>
     <button title="Ajustes" onclick="closeSideDrawer(); openSettings();">⚙</button>
     <button class="side-help-btn" id="sideHelpBtn" title="Ayuda" onclick="toggleHelpFromDrawer()">i</button>
   </div>
@@ -2698,8 +2695,17 @@ function launcherGo(step){
 }
 function pickLauncherType(type){
   launcherType = type;
-  document.getElementById('launcherStep2Sub').textContent = type==='pocha' ? 'Pocha' : `Subastao a ${type}`;
+  document.getElementById('launcherStep2Title').textContent = type==='pocha' ? 'Pocha' : `Subastao a ${type}`;
   launcherGo(2);
+}
+// "Nueva partida" (side drawer) goes back to the launcher instead of
+// silently reapplying whatever was last chosen in Ajustes — hides any
+// mid-game overlay first so nothing else shows through behind it.
+function goToLauncher(){
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('settingsOverlay').classList.add('hidden');
+  launcherGo(1);
+  document.getElementById('launcherOverlay').classList.remove('hidden');
 }
 // "Varios en este móvil" — list how many humans can share the phone, capped
 // by the chosen game type's own seat count (3, 4, or 5 for Pocha); the rest
