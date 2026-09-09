@@ -332,16 +332,32 @@
     background:transparent; color:var(--text); border:1px solid var(--linea);
     border-radius:10px; padding:12px 16px; font-size:0.9rem; font-weight:500;
   }
-  /* Launcher buttons: a translucent oro tint instead of big-btn's solid
-     fill — three equally-weighted choices read as bold/heavy solid, so
-     this stays in the game's own oro-soft tinting language (same as
-     .pchip.turn) for a lighter, cleaner first screen. */
-  .launcher-btn{
-    display:block; width:100%; background:var(--oro-soft); border:1px solid var(--oro);
-    color:var(--oro); border-radius:10px; padding:12px 16px; margin-bottom:10px;
-    font-family:'Inter', sans-serif; font-weight:700; font-size:0.92rem;
+  /* LAUNCHER — a plain minimal list (no big solid buttons/cards) across 3
+     steps: game type, Solo/Multijugador, then how many people if
+     Multijugador. Same fixed light-paper surface as the rest of .card-panel,
+     so text uses the ink tokens (tinta/piedra) rather than the theme-flipping
+     ones, matching .settings-panel's convention. */
+  .launcher-panel{text-align:left; max-width:340px; width:100%;}
+  .launcher-screen{display:none;}
+  .launcher-screen.active{display:block;}
+  .launcher-hero{
+    text-align:center; font-family:'Fraunces', serif; font-style:italic; font-weight:700;
+    font-size:1.5rem; color:var(--oro); margin-bottom:20px;
   }
-  .launcher-btn:last-child{margin-bottom:0;}
+  .launcher-title{color:var(--tinta); font-size:1.2rem; font-style:italic; margin-bottom:4px;}
+  .launcher-sub{font-size:0.8rem; color:var(--piedra); margin-bottom:6px;}
+  .launcher-back{
+    background:none; border:none; color:var(--piedra); font-size:0.8rem;
+    font-family:'Inter', sans-serif; cursor:pointer; padding:0 0 14px; display:block;
+  }
+  .launcher-list{border-top:1px solid rgba(31,42,61,0.14);}
+  .launcher-item{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:14px 2px; border-bottom:1px solid rgba(31,42,61,0.14); cursor:pointer;
+  }
+  .launcher-item b{font-family:'Fraunces', serif; font-size:0.96rem; font-weight:600; display:block; color:var(--tinta);}
+  .launcher-item span{font-size:0.74rem; color:var(--piedra);}
+  .launcher-item .chev{color:var(--oro); font-size:1.15rem; flex-shrink:0;}
   .trump-choices{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;}
   .trump-choice{
     flex:1; min-width:100px; padding:16px 10px; text-align:center; border-radius:10px;
@@ -691,15 +707,35 @@
   </div>
 </div>
 
-<!-- LAUNCHER: shown on every fresh load, before any game state exists — pick
-     which game to play. Visible by default (no "hidden" class), unlike every
-     other overlay here. -->
+<!-- LAUNCHER: shown on every fresh load, before any game state exists — a
+     3-step flow (game → Solo/Multijugador → how many people) using a plain
+     minimal list rather than big buttons, like the rest of Ajustes. Visible
+     by default (no "hidden" class), unlike every other overlay here. -->
 <div class="overlay" id="launcherOverlay">
-  <div class="card-panel">
-    <h2 style="margin-bottom:20px;">Apuestas de bazas</h2>
-    <button class="launcher-btn" onclick="startFromLauncher('3')">Subastao a 3</button>
-    <button class="launcher-btn" onclick="startFromLauncher('4')">Subastao a 4</button>
-    <button class="launcher-btn" onclick="startFromLauncher('pocha')">Pocha</button>
+  <div class="card-panel launcher-panel">
+    <div class="launcher-screen active" id="launcherStep1">
+      <div class="launcher-hero">Apuestas de bazas</div>
+      <div class="launcher-list">
+        <div class="launcher-item" onclick="pickLauncherType('3')"><div><b>Subastao a 3</b><span>Uno solo contra dos</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="pickLauncherType('4')"><div><b>Subastao a 4</b><span>Por parejas</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="pickLauncherType('pocha')"><div><b>Pocha</b><span>5 jugadores, sin parejas</span></div><div class="chev">›</div></div>
+      </div>
+    </div>
+    <div class="launcher-screen" id="launcherStep2">
+      <button class="launcher-back" onclick="launcherGo(1)">‹ Atrás</button>
+      <h2 class="launcher-title">¿Cómo jugáis?</h2>
+      <div class="launcher-sub" id="launcherStep2Sub"></div>
+      <div class="launcher-list">
+        <div class="launcher-item" onclick="finishLauncher(1)"><div><b>Solo</b><span>Tú + IA en este móvil</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="goLauncherMultiplayer()"><div><b>Varios en este móvil</b><span>Os vais pasando el teléfono</span></div><div class="chev">›</div></div>
+      </div>
+    </div>
+    <div class="launcher-screen" id="launcherStep3">
+      <button class="launcher-back" onclick="launcherGo(2)">‹ Atrás</button>
+      <h2 class="launcher-title">¿Cuántas personas?</h2>
+      <div class="launcher-sub">El resto de asientos los completa la IA</div>
+      <div class="launcher-list" id="launcherHumanList"></div>
+    </div>
   </div>
 </div>
 
@@ -2647,11 +2683,39 @@ document.getElementById('logBoxDetails').addEventListener('toggle', updateHandVi
 
 /* ---------- INIT ----------
    No auto-start — the LAUNCHER overlay (visible by default in the HTML)
-   picks the game type first; newGame() only runs once the player taps one
-   of its three buttons. */
-function startFromLauncher(type){
+   walks through game type → Solo/Multijugador → how many people before
+   newGame() ever runs (see finishLauncher()). */
+let launcherType = null;
+function launcherGo(step){
+  document.querySelectorAll('.launcher-screen').forEach(el=>el.classList.remove('active'));
+  document.getElementById('launcherStep'+step).classList.add('active');
+}
+function pickLauncherType(type){
+  launcherType = type;
+  document.getElementById('launcherStep2Sub').textContent = type==='pocha' ? 'Pocha' : `Subastao a ${type}`;
+  launcherGo(2);
+}
+// "Varios en este móvil" — list how many humans can share the phone, capped
+// by the chosen game type's own seat count (3, 4, or 5 for Pocha); the rest
+// of the seats are filled in by AI, same as the humanPlayers setting in
+// Ajustes always worked, just surfaced up front here instead of buried.
+function goLauncherMultiplayer(){
+  const max = launcherType==='pocha' ? 5 : parseInt(launcherType);
+  const list = document.getElementById('launcherHumanList');
+  list.innerHTML = '';
+  for(let n=2; n<=max; n++){
+    const item=document.createElement('div');
+    item.className='launcher-item';
+    item.onclick=()=>finishLauncher(n);
+    const aiLeft = max-n;
+    item.innerHTML = `<div><b>${n} personas</b><span>${aiLeft>0?`+ ${aiLeft} IA`:'sin IA'}</span></div><div class="chev">›</div>`;
+    list.appendChild(item);
+  }
+  launcherGo(3);
+}
+function finishLauncher(humanPlayers){
   document.getElementById('launcherOverlay').classList.add('hidden');
-  newGame(500, type, 'medium', 1);
+  newGame(500, launcherType, 'medium', humanPlayers, 'penalty');
 }
 </script>
 </body>
