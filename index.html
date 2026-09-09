@@ -763,7 +763,7 @@
       <div class="launcher-title">Multi Online</div>
       <div class="launcher-list">
         <div class="launcher-item" onclick="launcherGo('OnlineCreate')"><div><b>Crear partida</b><span>Genera un código para invitar</span></div><div class="chev">›</div></div>
-        <div class="launcher-item" onclick="launcherGo('OnlineJoin')"><div><b>Unirse a partida</b><span>Introduce un código</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="goLauncherOnlineJoin()"><div><b>Unirse a partida</b><span>Introduce un código o elige una sala</span></div><div class="chev">›</div></div>
       </div>
     </div>
     <div class="launcher-screen" id="launcherStepOnlineCreate">
@@ -772,12 +772,14 @@
       <div style="padding:0 4px;">
         <input type="text" id="onlineCreateName" placeholder="Tu nombre" maxlength="8"
           style="width:100%; box-sizing:border-box; background:rgba(31,42,61,0.05); color:var(--tinta); border:1px solid rgba(31,42,61,0.2); border-radius:8px; padding:10px 11px; font-size:0.88rem; font-family:'Inter',sans-serif;">
+        <input type="number" id="onlineCreateStake" placeholder="Valor aportado (opcional)" min="0" step="0.5"
+          style="width:100%; box-sizing:border-box; background:rgba(31,42,61,0.05); color:var(--tinta); border:1px solid rgba(31,42,61,0.2); border-radius:8px; padding:10px 11px; font-size:0.88rem; font-family:'Inter',sans-serif; margin-top:8px;">
         <button class="big-btn" style="width:100%; margin-top:12px;" onclick="startCreateOnlineRoom()">Crear sala</button>
         <p class="toggle-hint" id="onlineCreateError" style="color:#b33;"></p>
       </div>
     </div>
     <div class="launcher-screen" id="launcherStepOnlineJoin">
-      <button class="launcher-back" onclick="launcherGo('OnlineMenu')">‹ Atrás</button>
+      <button class="launcher-back" onclick="leaveOnlineJoinScreen()">‹ Atrás</button>
       <div class="launcher-title">Unirse a partida</div>
       <div style="padding:0 4px;">
         <input type="text" id="onlineJoinName" placeholder="Tu nombre" maxlength="8"
@@ -787,11 +789,14 @@
         <button class="big-btn" style="width:100%; margin-top:12px;" onclick="joinOnlineRoom()">Unirse</button>
         <p class="toggle-hint" id="onlineJoinError" style="color:#b33;"></p>
       </div>
+      <label class="set-lbl" style="margin-top:14px; display:block;">Salas abiertas</label>
+      <div class="launcher-list" id="openRoomsList"><p class="toggle-hint">Buscando salas…</p></div>
     </div>
     <div class="launcher-screen" id="launcherStepOnlineLobby">
       <button class="launcher-back" onclick="leaveOnlineLobby()">‹ Salir</button>
       <div class="launcher-title">Sala de espera</div>
       <p class="toggle-hint">Código de la partida: <b id="onlineLobbyCode" style="font-size:1.3rem; letter-spacing:3px; color:var(--oro);"></b></p>
+      <p class="toggle-hint hidden" id="onlineLobbyStake"></p>
       <div class="launcher-list" id="onlineLobbyPlayers"></div>
       <button class="big-btn hidden" id="onlineLobbyStartBtn" style="width:100%; margin-top:14px;" onclick="startOnlineGame()">Empezar partida</button>
       <p class="toggle-hint" id="onlineLobbyWaitMsg">Esperando a que el anfitrión empiece la partida…</p>
@@ -1676,7 +1681,7 @@ function showOverlay(key){
   const amount=state.scores[key];
   const isYou = (state.numPlayers===4 && key==='A') || (state.numPlayers===3 && key==='0');
   document.getElementById('overlayTitle').textContent = isYou ? '¡Has ganado la partida!' : `Gana ${label}`;
-  document.getElementById('overlayBody').textContent = `${label} llega a ${amount} puntos.`;
+  document.getElementById('overlayBody').textContent = `${label} llega a ${amount} puntos.` + (state.stake ? ` Se jugaba: ${state.stake}€.` : '');
   document.getElementById('overlay').classList.remove('hidden');
   document.getElementById('resultNameInput').value = '';
   document.getElementById('saveResultConfirm').classList.add('hidden');
@@ -2017,7 +2022,7 @@ function showPochaOverlay(winnerSeat){
   document.getElementById('overlayTitle').textContent = isYou ? '¡Has ganado la partida!' : `Gana ${state.seatNames[winnerSeat]}`;
   const ranking = seatRange().slice().sort((a,b)=>state.pocha.scores[b]-state.pocha.scores[a])
     .map(s=>`${state.seatNames[s]}: ${state.pocha.scores[s]}`).join(' · ');
-  document.getElementById('overlayBody').textContent = ranking;
+  document.getElementById('overlayBody').textContent = ranking + (state.stake ? ` · Se jugaba: ${state.stake}€.` : '');
   document.getElementById('overlay').classList.remove('hidden');
   document.getElementById('resultNameInput').value = '';
   document.getElementById('saveResultConfirm').classList.add('hidden');
@@ -2057,6 +2062,8 @@ function saveResultFromOverlay(){
     humanPlayers: state.humanPlayers,
     aiLevel: state.aiLevel,
     winner: winnerKey,
+    players: state.seatNames.slice(0, state.humanPlayers),
+    stake: state.stake || null,
     scores: state.gameType==='pocha'
       ? Object.fromEntries(state.seatNames.map((nm,i)=>[nm, state.pocha.scores[i]]))
       : {...state.scores}
@@ -2083,9 +2090,12 @@ function renderResultHistory(){
     const human = e.humanPlayers>=e.numPlayers ? `${e.numPlayers} personas` : `${e.humanPlayers} persona${e.humanPlayers===1?'':'s'}+IA`;
     const meta = e.gameType==='pocha' ? '' : `meta ${e.target} · `;
     const scoreStr = Object.entries(e.scores||{}).map(([k,v])=>`${k}:${v}`).join(' · ');
+    const stakeStr = e.stake ? ` · Se jugó: ${e.stake}€` : '';
+    const playersStr = (e.players && e.players.length) ? `<div style="color:var(--piedra); font-size:0.74rem; margin-top:1px;">Jugadores: ${e.players.join(', ')}</div>` : '';
     return `<div style="padding:7px 0; border-bottom:1px solid rgba(31,42,61,0.12);">
       <div style="display:flex; justify-content:space-between;"><b>${e.name}</b><span style="color:var(--piedra); font-size:0.74rem;">${fmtHistoryDate(e.date)}</span></div>
-      <div style="color:var(--piedra); font-size:0.76rem; margin-top:1px;">Gana ${e.winner} · ${meta}${type} · ${human} · IA ${levelLabel[e.aiLevel]||e.aiLevel}</div>
+      <div style="color:var(--piedra); font-size:0.76rem; margin-top:1px;">Gana ${e.winner} · ${meta}${type} · ${human} · IA ${levelLabel[e.aiLevel]||e.aiLevel}${stakeStr}</div>
+      ${playersStr}
       <div style="font-size:0.76rem; margin-top:1px;">${scoreStr}</div>
     </div>`;
   }).join('');
@@ -2903,6 +2913,45 @@ let onlineUid = null;
 let roomUnsub = null, actionsUnsub = null, lobbyRoomCode = null;
 
 function goLauncherOnlineMenu(){ launcherGo('OnlineMenu'); }
+function goLauncherOnlineJoin(){ launcherGo('OnlineJoin'); watchOpenRooms(); }
+function leaveOnlineJoinScreen(){ stopWatchingOpenRooms(); launcherGo('OnlineMenu'); }
+
+// Live list of rooms still in their lobby (not started, not full) — lets a
+// guest tap straight into one instead of having to type its code.
+let openRoomsUnsub = null;
+async function watchOpenRooms(){
+  const list = document.getElementById('openRoomsList');
+  try{
+    await ensureFirebaseAuth();
+  }catch(e){
+    list.innerHTML = '<p class="toggle-hint">No se pudo comprobar las salas abiertas.</p>';
+    return;
+  }
+  if(openRoomsUnsub) openRoomsUnsub();
+  openRoomsUnsub = fbDb.collection('rooms').where('status','==','lobby').onSnapshot(snap=>{
+    const rooms=[];
+    snap.forEach(doc=>rooms.push({code:doc.id, ...doc.data()}));
+    renderOpenRoomsList(rooms);
+  }, ()=>{ list.innerHTML = '<p class="toggle-hint">No se pudo comprobar las salas abiertas.</p>'; });
+}
+function stopWatchingOpenRooms(){
+  if(openRoomsUnsub){ openRoomsUnsub(); openRoomsUnsub=null; }
+}
+function renderOpenRoomsList(rooms){
+  const list = document.getElementById('openRoomsList');
+  const open = rooms.filter(r=>(r.players||[]).length < maxSeatsFor(r.gameType));
+  if(!open.length){ list.innerHTML = '<p class="toggle-hint">No hay salas abiertas ahora mismo — crea una o introduce un código.</p>'; return; }
+  list.innerHTML = open.map(r=>{
+    const max = maxSeatsFor(r.gameType);
+    const gameLabel = r.gameType==='pocha' ? 'Pocha' : `Subastao a ${r.gameType}`;
+    const host = (r.players||[]).find(p=>p.uid===r.hostUid);
+    return `<div class="launcher-item" onclick="joinOpenRoom('${r.code}')"><div><b>${gameLabel} · ${r.code}</b><span>Anfitrión ${host?host.name:'?'} · ${(r.players||[]).length}/${max} jugadores</span></div><div class="chev">›</div></div>`;
+  }).join('');
+}
+function joinOpenRoom(code){
+  document.getElementById('onlineJoinCode').value = code;
+  joinOnlineRoom();
+}
 
 function genRoomCode(){
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // skips 0/O/1/I — easier to read aloud
@@ -2922,8 +2971,10 @@ function ensureFirebaseAuth(){
 
 async function startCreateOnlineRoom(){
   const nameEl = document.getElementById('onlineCreateName');
+  const stakeEl = document.getElementById('onlineCreateStake');
   const errEl = document.getElementById('onlineCreateError');
   const name = (nameEl.value||'').trim().slice(0,8) || 'Anfitrión';
+  const stake = stakeEl.value ? parseFloat(stakeEl.value) : null;
   errEl.textContent = '';
   try{
     const uid = await ensureFirebaseAuth();
@@ -2933,6 +2984,7 @@ async function startCreateOnlineRoom(){
       gameType: launcherType,
       hostUid: uid,
       status: 'lobby',
+      stake: (stake!==null && !isNaN(stake) && stake>0) ? stake : null,
       players: [{uid, name, seat:0}],
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -2968,6 +3020,7 @@ async function joinOnlineRoom(){
       }
     });
     lobbyRoomCode = code;
+    stopWatchingOpenRooms();
     openOnlineLobby(code, false);
   }catch(e){
     errEl.textContent = e.message || 'No se pudo unir a la sala.';
@@ -2983,6 +3036,9 @@ function openOnlineLobby(code, isHost){
   roomUnsub = fbDb.collection('rooms').doc(code).onSnapshot(snap=>{
     if(!snap.exists) return;
     const data = snap.data();
+    const stakeEl = document.getElementById('onlineLobbyStake');
+    stakeEl.classList.toggle('hidden', !data.stake);
+    if(data.stake) stakeEl.textContent = `Se juega: ${data.stake}€`;
     if(data.status==='lobby'){
       renderOnlineLobbyPlayers(data);
     } else if(data.status==='playing'){
@@ -3007,6 +3063,7 @@ function leaveOnlineLobby(){
 function netTeardown(){
   if(roomUnsub){ roomUnsub(); roomUnsub=null; }
   if(actionsUnsub){ actionsUnsub(); actionsUnsub=null; }
+  stopWatchingOpenRooms();
   lobbyRoomCode = null;
 }
 
@@ -3022,6 +3079,7 @@ async function startOnlineGame(){
   const players = data.players || [];
   newGame(500, data.gameType, 'medium', players.length, 'penalty');
   players.forEach((p,i)=>{ state.seatNames[i] = p.name; });
+  state.stake = data.stake || null;
   state.online = { code, isHost:true, uid:onlineUid, mySeat:0, players };
   // newGame() already rendered a few times above (startAuction/bidTick etc.)
   // before state.online existed, so the pass-and-play "Pásale el móvil a…"
