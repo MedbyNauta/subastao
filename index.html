@@ -903,7 +903,7 @@
       <div class="launcher-list">
         <div class="launcher-item" onclick="pickLauncherType('3')"><div><b>Subastao a 3</b><span>Uno solo contra dos</span></div><div class="chev">›</div></div>
         <div class="launcher-item" onclick="pickLauncherType('4')"><div><b>Subastao a 4</b><span>Por parejas</span></div><div class="chev">›</div></div>
-        <div class="launcher-item" onclick="goLauncherPochaCount()"><div><b>Pocha</b><span>3 a 5 jugadores, sin parejas</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="goLauncherPochaCount()"><div><b>La Pocha</b><span>3 a 5 jugadores, sin parejas</span></div><div class="chev">›</div></div>
       </div>
     </div>
     <div class="launcher-screen" id="launcherStepPochaCount">
@@ -1539,7 +1539,7 @@ function newGame(target, playerType, aiLevel, humanPlayers, pochaVariantName, po
     dealerIndex:0,
     revealedSeat:null, // pass-and-play: which human seat has tapped "ver mis cartas" and is currently displayed
   };
-  document.getElementById('logoWord1').textContent = gameType==='pocha' ? 'Pocha' : 'Subastao';
+  document.getElementById('logoWord1').textContent = gameType==='pocha' ? 'La Pocha' : 'Subastao';
   document.getElementById('logoWord2').classList.toggle('hidden', gameType==='pocha');
   document.getElementById('overlay').classList.add('hidden');
   // Both games' bidding panels are only ever shown/hidden explicitly (by
@@ -3413,7 +3413,7 @@ function goLauncherPochaCount(){ launcherGo('PochaCount'); }
 function pickPochaTableSize(n){
   launcherType = 'pocha'+n;
   pochaTableSize = n;
-  document.getElementById('launcherStep2Title').textContent = `Pocha a ${n}`;
+  document.getElementById('launcherStep2Title').textContent = `La Pocha a ${n}`;
   launcherGo(2);
 }
 /* Pocha asks for the variant right after Solo / Multi en móvil / Multi Online
@@ -3771,7 +3771,7 @@ function enterOnlineGame(data, isHost){
   lastEffectEpoch = state.epoch;
   lastEffectId = (state.effects && state.effects.length) ? state.effects[state.effects.length-1].id : 0;
   document.getElementById('launcherOverlay').classList.add('hidden');
-  document.getElementById('logoWord1').textContent = state.gameType==='pocha' ? 'Pocha' : 'Subastao';
+  document.getElementById('logoWord1').textContent = state.gameType==='pocha' ? 'La Pocha' : 'Subastao';
   document.getElementById('logoWord2').classList.toggle('hidden', state.gameType==='pocha');
   render();
 }
