@@ -846,10 +846,10 @@
         <div id="pochaRulesBox" class="hidden">
           <p><b>Jugadores</b>: de 3 a 5, baraja española de 40 cartas. El máximo de cartas por mano es el mazo repartido entero: 13 a 3 jugadores, 10 a 4 y 8 a 5.</p>
           <p><b>Modalidades</b> (se eligen al empezar la partida, y también en Ajustes):</p>
-          <p style="margin-left:10px;"><b>· Tradicional</b>: sube de 1 carta hasta el máximo, se juegan tantas manos al máximo como jugadores haya, y se baja de vuelta hasta 1. A 4 jugadores: 1 → 2 → … → 9 → 10 → 10 → 10 → 10 → 9 → … → 1.</p>
+          <p style="margin-left:10px;"><b>· Tradicional</b>: cada número de cartas se juega tantas veces como jugadores haya, para que todos repartan una vez en cada tamaño de mano. Se sube de 1 hasta el máximo y se baja de vuelta a 1. A 4 jugadores son 76 manos: cuatro de 1 carta, cuatro de 2… hasta cuatro de 10, y de vuelta hasta cuatro de 1.</p>
           <p style="margin-left:10px;"><b>· Olímpica</b>: la misma pirámide, pero en las manos del máximo no se destapa triunfo: la puja hace de subasta y quien más bazas canta elige el palo.</p>
           <p style="margin-left:10px;"><b>· Corta a 5 cartas</b>: diez manos seguidas de 5 cartas, sin subida ni bajada.</p>
-          <p style="margin-left:10px;"><b>· Corta Normal</b>: de 1 carta hasta 10 y ahí acaba, sin fase descendente.</p>
+          <p style="margin-left:10px;"><b>· Corta Normal</b>: una sola mano de cada número, de 1 carta hasta 10, y ahí acaba: sin repeticiones y sin fase descendente.</p>
           <p><b>Triunfo</b>: al repartir se destapa la siguiente carta del mazo sobrante — su palo es el triunfo de la mano. Si el reparto gasta las 40 cartas y no sobra ninguna, el repartidor enseña la última carta que recibe y la conserva en su mano: ese palo es el triunfo.</p>
           <p><b>Puja</b>: por turnos, cada jugador canta cuántas bazas cree que va a hacer esa ronda (de 0 al total de cartas repartidas). Por defecto, el último en cantar no puede pedir el número que haría que la suma de todas las pujas cuadre exactamente con las cartas repartidas — así siempre falla alguien; esto se puede desactivar en Ajustes ("Puja del último en cantar").</p>
           <p><b>Al jugar</b>: igual que en el Subastao — si tienes el palo pedido, tienes que jugarlo y superarlo si puedes; si no, tienes que triunfar y superarlo si puedes (cuando hay triunfo esa ronda); si no tienes ni palo ni triunfo, puedes echar cualquier carta.</p>
@@ -1065,16 +1065,20 @@ function pochaMaxRoundSize(numPlayers){ return Math.floor(40/numPlayers); }
 const POCHA_VARIANTS = {
   tradicional: {
     label: 'Pocha Tradicional',
-    hint: n=>`Sube de 1 a ${pochaMaxRoundSize(n)}, ${n} manos al máximo y baja de vuelta a 1`,
+    hint: n=>`Cada número de cartas ${n} veces, subiendo de 1 a ${pochaMaxRoundSize(n)} y bajando a 1`,
+    // Every hand size is played as many times as there are players, so each
+    // player deals once at every size — on the way up and on the way down.
     roundSizes(n){
       const max = pochaMaxRoundSize(n);
-      const up = Array.from({length:max-1}, (_,i)=>i+1);
-      return up.concat(new Array(n).fill(max), up.slice().reverse());
+      const sizes = [];
+      for(let k=1; k<=max; k++) for(let i=0; i<n; i++) sizes.push(k);
+      for(let k=max-1; k>=1; k--) for(let i=0; i<n; i++) sizes.push(k);
+      return sizes;
     },
   },
   olimpica: {
     label: 'Pocha Olímpica',
-    hint: n=>`Como la tradicional, pero las ${n} manos al máximo se juegan subastando el triunfo`,
+    hint: n=>`Como la tradicional, pero las manos de ${pochaMaxRoundSize(n)} cartas se subastan`,
     roundSizes(n){ return POCHA_VARIANTS.tradicional.roundSizes(n); },
     // The hands at the top of the pyramid are the auctioned ones.
     isAuctionRound(n, roundSize){ return roundSize===pochaMaxRoundSize(n); },
