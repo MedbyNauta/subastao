@@ -220,9 +220,12 @@
     display:flex; justify-content:space-between; font-size:0.75rem;
     color:var(--felt-dim); margin-bottom:8px;
   }
+  /* This is what sets the cloth's height: a fixed playing area, with the cards
+     centred in it. Bumping this number is how the mesa grows or shrinks — it
+     stays a fixed size either way, the same in every phase of the hand. */
   .trick-grid{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
-    min-height:66px; align-items:center;
+    min-height:94px; align-items:center;
   }
   .trick-slot{text-align:center;}
   .trick-slot .who{font-size:0.63rem; color:var(--felt-dim); margin-top:3px;}
