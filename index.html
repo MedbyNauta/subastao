@@ -711,11 +711,13 @@
         <option value="1000">1000</option>
       </select>
     </div>
-    <div id="pochaScoringRow" class="hidden">
-      <label class="set-lbl">Puntuación al fallar la puja</label>
-      <select id="pochaScoringSelect">
-        <option value="zero">0 puntos</option>
-        <option value="penalty" selected>Resta la diferencia</option>
+    <div id="pochaOptionsRow" class="hidden">
+      <label class="set-lbl">Modalidad</label>
+      <select id="pochaVariantSelect">
+        <option value="tradicional" selected>Pocha Tradicional</option>
+        <option value="olimpica">Pocha Olímpica</option>
+        <option value="corta5">Pocha Corta a 5 cartas</option>
+        <option value="cortanormal">Pocha Corta Normal</option>
       </select>
       <label class="set-lbl">Puja del último en cantar</label>
       <select id="pochaForbidSelect">
@@ -768,13 +770,17 @@
           <p><b>A 3 jugadores</b>: se juega con 36 cartas (sin doses), 12 por jugador. Quien gana la subasta juega solo contra los otros dos. Si se baña, los dos rivales se reparten la puja a medias; si es impar, el que iba de mano en esa mano se lleva 5 puntos más.</p>
         </div>
         <div id="pochaRulesBox" class="hidden">
-          <p><b>Jugadores</b>: de 3 a 5, baraja española de 40 cartas.</p>
-          <p><b>Rondas</b>: se juegan varias rondas seguidas, con un número de cartas por jugador que primero sube y luego baja hasta volver a 1 — el máximo depende de cuántos juguéis (10 a 3 jugadores, 8 a 4, 6 a 5).</p>
-          <p><b>Triunfo</b>: al repartir se destapa la siguiente carta del mazo sobrante — su palo es el triunfo de la ronda. En la ronda de 8 cartas no sobra ninguna, así que esa ronda se juega sin triunfo.</p>
+          <p><b>Jugadores</b>: de 3 a 5, baraja española de 40 cartas. El máximo de cartas por mano es el mazo repartido entero: 13 a 3 jugadores, 10 a 4 y 8 a 5.</p>
+          <p><b>Modalidades</b> (se eligen al empezar la partida, y también en Ajustes):</p>
+          <p style="margin-left:10px;"><b>· Tradicional</b>: sube de 1 carta hasta el máximo, se juegan tantas manos al máximo como jugadores haya, y se baja de vuelta hasta 1. A 4 jugadores: 1 → 2 → … → 9 → 10 → 10 → 10 → 10 → 9 → … → 1.</p>
+          <p style="margin-left:10px;"><b>· Olímpica</b>: la misma pirámide, pero en las manos del máximo no se destapa triunfo: la puja hace de subasta y quien más bazas canta elige el palo.</p>
+          <p style="margin-left:10px;"><b>· Corta a 5 cartas</b>: diez manos seguidas de 5 cartas, sin subida ni bajada.</p>
+          <p style="margin-left:10px;"><b>· Corta Normal</b>: de 1 carta hasta 10 y ahí acaba, sin fase descendente.</p>
+          <p><b>Triunfo</b>: al repartir se destapa la siguiente carta del mazo sobrante — su palo es el triunfo de la mano. Si el reparto gasta las 40 cartas y no sobra ninguna, el repartidor enseña la última carta que recibe y la conserva en su mano: ese palo es el triunfo.</p>
           <p><b>Puja</b>: por turnos, cada jugador canta cuántas bazas cree que va a hacer esa ronda (de 0 al total de cartas repartidas). Por defecto, el último en cantar no puede pedir el número que haría que la suma de todas las pujas cuadre exactamente con las cartas repartidas — así siempre falla alguien; esto se puede desactivar en Ajustes ("Puja del último en cantar").</p>
           <p><b>Al jugar</b>: igual que en el Subastao — si tienes el palo pedido, tienes que jugarlo y superarlo si puedes; si no, tienes que triunfar y superarlo si puedes (cuando hay triunfo esa ronda); si no tienes ni palo ni triunfo, puedes echar cualquier carta.</p>
-          <p><b>Puntuación</b>: si aciertas tu puja exacta, sumas 10 + tantos puntos como bazas pedidas. Si fallas, según el ajuste "Puntuación al fallar la puja": no sumas nada, o restas la diferencia entre lo pedido y lo conseguido.</p>
-          <p><b>Ganador</b>: quien tenga más puntos al terminar la ronda de 1 carta final.</p>
+          <p><b>Puntuación</b> (Fournier): si aciertas tu puja exacta, sumas 10 puntos + 5 por cada baza conseguida. Si fallas, restas 5 por cada baza de diferencia, te hayas quedado corto o largo. Pides 3 y haces 3 → 25 puntos; pides 3 y haces 1 → −10; pides 1 y haces 3 → −10.</p>
+          <p><b>Ganador</b>: quien tenga más puntos al terminar la última mano de la modalidad elegida.</p>
         </div>
       </div>
     </div>
@@ -835,18 +841,23 @@
       <button class="launcher-back" onclick="launcherBackFromStep2()">‹ Atrás</button>
       <div class="launcher-title" id="launcherStep2Title"></div>
       <div class="launcher-list">
-        <div class="launcher-item" onclick="finishLauncher(1)"><div><b>Solo</b><span>Tú + IA en este móvil</span></div><div class="chev">›</div></div>
-        <div class="launcher-item" onclick="goLauncherMultiplayer()"><div><b>Multi en móvil</b><span>Os vais pasando el teléfono</span></div><div class="chev">›</div></div>
-        <div class="launcher-item" onclick="goLauncherOnlineMenu()"><div><b>Multi Online</b><span>Cada uno desde su móvil</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="pochaStep2Pick(()=>finishLauncher(1))"><div><b>Solo</b><span>Tú + IA en este móvil</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="pochaStep2Pick(goLauncherMultiplayer)"><div><b>Multi en móvil</b><span>Os vais pasando el teléfono</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="pochaStep2Pick(goLauncherOnlineMenu)"><div><b>Multi Online</b><span>Cada uno desde su móvil</span></div><div class="chev">›</div></div>
       </div>
     </div>
-    <div class="launcher-screen" id="launcherStep3">
+    <div class="launcher-screen" id="launcherStepPochaVariant">
       <button class="launcher-back" onclick="launcherGo(2)">‹ Atrás</button>
+      <div class="launcher-title">Modalidad</div>
+      <div class="launcher-list" id="launcherVariantList"></div>
+    </div>
+    <div class="launcher-screen" id="launcherStep3">
+      <button class="launcher-back" onclick="launcherBackToModality()">‹ Atrás</button>
       <div class="launcher-title">¿Cuántas personas?</div>
       <div class="launcher-list" id="launcherHumanList"></div>
     </div>
     <div class="launcher-screen" id="launcherStepOnlineMenu">
-      <button class="launcher-back" onclick="launcherGo(2)">‹ Atrás</button>
+      <button class="launcher-back" onclick="launcherBackToModality()">‹ Atrás</button>
       <div class="launcher-title">Multi Online</div>
       <div class="launcher-list">
         <div class="launcher-item" onclick="launcherGo('OnlineCreate')"><div><b>Crear partida</b><span>Genera un código para invitar</span></div><div class="chev">›</div></div>
@@ -962,12 +973,62 @@ const TEAM_OF_4 = {0:'A',1:'B',2:'A',3:'B'};
 // Subastao. Hand size follows a "pyramid": 1 card up to a per-table-size max,
 // then back down to 1 (see pochaRoundSizesFor) — always leaving enough of
 // the 40-card deck unspent to reveal a trump card each round.
-const POCHA_SEAT_NAMES = ['Hector','Miguel','Leticia','Nala','Xoel'];
-const POCHA_MAX_ROUND_SIZE = {3:10, 4:8, 5:6};
-function pochaRoundSizesFor(numPlayers){
-  const max = POCHA_MAX_ROUND_SIZE[numPlayers] || 8;
-  const up = Array.from({length:max}, (_,i)=>i+1);
-  return up.concat(up.slice(0,-1).reverse());
+const SEAT_NAMES = ['Gervasio','Nemesio','Isidro','Jacinto','Avelino'];
+const POCHA_SEAT_NAMES = SEAT_NAMES;
+// Biggest hand the table can be dealt: the whole 40-card deck split evenly.
+// When the deal uses every card there's none left to turn up for trump, so
+// the dealer shows the last card dealt to themselves and keeps it (Fournier)
+// — see startPochaRound.
+function pochaMaxRoundSize(numPlayers){ return Math.floor(40/numPlayers); }
+
+/* The four ways a Pocha match can be laid out. Each variant just describes
+   the sequence of hand sizes (roundSizes) plus, for the Olympic one, which
+   of those hands are auctioned instead of having a trump turned up.
+     tradicional   1..max, then `numPlayers` hands at max, then max..1
+     olimpica      same shape, but the max-size hands auction the trump
+     corta5        ten hands of five cards, no ramp at all
+     cortanormal   1..10 and the match ends there, no way back down */
+const POCHA_VARIANTS = {
+  tradicional: {
+    label: 'Pocha Tradicional',
+    hint: n=>`Sube de 1 a ${pochaMaxRoundSize(n)}, ${n} manos al máximo y baja de vuelta a 1`,
+    roundSizes(n){
+      const max = pochaMaxRoundSize(n);
+      const up = Array.from({length:max-1}, (_,i)=>i+1);
+      return up.concat(new Array(n).fill(max), up.slice().reverse());
+    },
+  },
+  olimpica: {
+    label: 'Pocha Olímpica',
+    hint: n=>`Como la tradicional, pero las ${n} manos al máximo se juegan subastando el triunfo`,
+    roundSizes(n){ return POCHA_VARIANTS.tradicional.roundSizes(n); },
+    // The hands at the top of the pyramid are the auctioned ones.
+    isAuctionRound(n, roundSize){ return roundSize===pochaMaxRoundSize(n); },
+  },
+  corta5: {
+    label: 'Pocha Corta a 5 cartas',
+    hint: ()=>'Diez manos seguidas de 5 cartas, sin subida ni bajada',
+    roundSizes(){ return new Array(10).fill(5); },
+  },
+  cortanormal: {
+    label: 'Pocha Corta Normal',
+    hint: n=>`Sube de 1 a ${Math.min(10, pochaMaxRoundSize(n))} y ahí acaba la partida, sin bajada`,
+    roundSizes(n){
+      const max = Math.min(10, pochaMaxRoundSize(n));
+      return Array.from({length:max}, (_,i)=>i+1);
+    },
+  },
+};
+const POCHA_DEFAULT_VARIANT = 'tradicional';
+function pochaVariant(name){ return POCHA_VARIANTS[name] || POCHA_VARIANTS[POCHA_DEFAULT_VARIANT]; }
+function pochaRoundSizesFor(numPlayers, variant){
+  return pochaVariant(variant).roundSizes(numPlayers);
+}
+// Fournier scoring: hitting your bid pays 10 plus 5 per trick taken; missing
+// it costs 5 per trick of difference, in either direction. (Bid 3 take 3 → 25;
+// bid 3 take 1 → −10; bid 1 take 3 → −10.)
+function pochaScoreFor(bid, won){
+  return won===bid ? 10 + 5*won : -5*Math.abs(won-bid);
 }
 
 // Inline SVG paths for each suit's icon (used on cards, trump-choice buttons, etc).
@@ -1351,16 +1412,25 @@ function aiChooseCard(seat){
 // '3'/'4' means Subastao at that size; 'pocha3'/'pocha4'/'pocha5' means Pocha
 // at that table size — Pocha's own selector values are prefixed since it has
 // no fixed player count the way Subastao does.
+// Game selector strings: "3"/"4" for Subastao, "pocha4" for Pocha, and
+// "pocha4:olimpica" to pin a Pocha variant. Keeping the variant inside the
+// selector means it rides along everywhere the selector already goes — the
+// Ajustes dropdown, the saved result history, and the online room doc the
+// guests read.
 function parseGameSelector(sel){
   sel = String(sel);
   if(sel.startsWith('pocha')){
-    const n = parseInt(sel.slice(5));
-    return {gameType:'pocha', numPlayers:(n>=3&&n<=5)?n:4};
+    const [seats, variant] = sel.slice(5).split(':');
+    const n = parseInt(seats);
+    return {gameType:'pocha', numPlayers:(n>=3&&n<=5)?n:4,
+            pochaVariant: POCHA_VARIANTS[variant] ? variant : POCHA_DEFAULT_VARIANT};
   }
-  return {gameType:'subastao', numPlayers: parseInt(sel)||4};
+  return {gameType:'subastao', numPlayers: parseInt(sel)||4, pochaVariant:null};
 }
-function newGame(target, playerType, aiLevel, humanPlayers, pochaScoring, pochaForbidLastMatch){
-  const {gameType, numPlayers} = parseGameSelector(playerType);
+function newGame(target, playerType, aiLevel, humanPlayers, pochaVariantName, pochaForbidLastMatch){
+  const {gameType, numPlayers, pochaVariant} = parseGameSelector(playerType);
+  // An explicit variant argument wins; otherwise take whatever the selector carried.
+  pochaVariantName = POCHA_VARIANTS[pochaVariantName] ? pochaVariantName : pochaVariant;
   humanPlayers = parseInt(humanPlayers)||numPlayers; // default: all players are human
   gameEpoch++; // invalidate any setTimeout callbacks still pending from the previous game
   state = {
@@ -1370,8 +1440,7 @@ function newGame(target, playerType, aiLevel, humanPlayers, pochaScoring, pochaF
     numPlayers,
     humanPlayers, // how many humans play on this mobile device
     aiLevel: aiLevel || 'medium',
-    seatNames: gameType==='pocha' ? POCHA_SEAT_NAMES.slice(0,numPlayers)
-      : (numPlayers===4 ? ['Hector','Miguel','Leticia','Nala'] : ['Hector','Miguel','Leticia']),
+    seatNames: SEAT_NAMES.slice(0,numPlayers),
     scores: gameType==='pocha' ? {} : (numPlayers===4 ? {A:0,B:0} : {0:0,1:0,2:0}),
     dealerIndex:0,
     revealedSeat:null, // pass-and-play: which human seat has tapped "ver mis cartas" and is currently displayed
@@ -1387,7 +1456,7 @@ function newGame(target, playerType, aiLevel, humanPlayers, pochaScoring, pochaF
   document.getElementById('humanBidArea').classList.add('hidden');
   document.getElementById('pochaBidPanel').classList.add('hidden');
   document.getElementById('humanPochaBidArea').classList.add('hidden');
-  if(gameType==='pocha') startPochaGame(pochaScoring, pochaForbidLastMatch); else startNewHand();
+  if(gameType==='pocha') startPochaGame(pochaVariantName, pochaForbidLastMatch); else startNewHand();
 }
 function updateHumanPlayersOptions(keepValue){
   const type = document.getElementById('playersSelect').value;
@@ -1407,7 +1476,7 @@ function updateHumanPlayersOptions(keepValue){
 function updateSettingsForGameType(){
   const isPocha = document.getElementById('playersSelect').value.startsWith('pocha');
   document.getElementById('targetRow').classList.toggle('hidden', isPocha);
-  document.getElementById('pochaScoringRow').classList.toggle('hidden', !isPocha);
+  document.getElementById('pochaOptionsRow').classList.toggle('hidden', !isPocha);
   document.getElementById('subastaoRulesBox').classList.toggle('hidden', isPocha);
   document.getElementById('pochaRulesBox').classList.toggle('hidden', !isPocha);
 }
@@ -1416,9 +1485,9 @@ function changeSetup(){
   const n=document.getElementById('playersSelect').value;
   const h=document.getElementById('humanPlayersSelect').value;
   const lvl=document.getElementById('aiLevelSelect').value;
-  const ps=document.getElementById('pochaScoringSelect').value;
+  const pv=document.getElementById('pochaVariantSelect').value;
   const pf=document.getElementById('pochaForbidSelect').value;
-  newGame(t,n,lvl,h,ps,pf);
+  newGame(t,n,lvl,h,pv,pf);
 }
 function openSettings(){
   document.getElementById('aiLevelSelect').value = state.aiLevel || 'medium';
@@ -1426,7 +1495,7 @@ function openSettings(){
   if(state.numPlayers){
     document.getElementById('playersSelect').value = state.gameType==='pocha' ? 'pocha'+state.numPlayers : String(state.numPlayers);
     if(state.gameType==='pocha'){
-      document.getElementById('pochaScoringSelect').value = state.pocha.scoringMode;
+      document.getElementById('pochaVariantSelect').value = state.pocha.variant || POCHA_DEFAULT_VARIANT;
       document.getElementById('pochaForbidSelect').value = state.pocha.forbidLastMatch===false ? 'off' : 'on';
     }
     updateHumanPlayersOptions(state.humanPlayers); // also syncs the Objetivo/Puntuación/Reglas visibility
@@ -1602,7 +1671,10 @@ function renderTrumpChoices(){
     div.className='trump-choice '+suit;
     div.style.cursor='pointer';
     div.innerHTML=`${suitIcon(suit)}<div>${SUIT_LABEL[suit]}</div>`;
-    div.onclick=()=>{ document.getElementById('trumpPanel').classList.add('hidden'); chooseTrump(suit); };
+    div.onclick=()=>{
+      document.getElementById('trumpPanel').classList.add('hidden');
+      if(state.gameType==='pocha') choosePochaTrump(suit); else chooseTrump(suit);
+    };
     el.appendChild(div);
   });
 }
@@ -1869,36 +1941,67 @@ function onAdvanceClicked(){
   if(state.gameType==='pocha') advancePochaRound(); else advanceToNextHand();
 }
 
-function startPochaGame(scoringMode, forbidLastMatch){
+function startPochaGame(variant, forbidLastMatch){
+  variant = POCHA_VARIANTS[variant] ? variant : POCHA_DEFAULT_VARIANT;
   state.pocha = {
-    roundSizes: pochaRoundSizesFor(state.numPlayers),
+    variant,
+    roundSizes: pochaRoundSizesFor(state.numPlayers, variant),
     roundIndex: 0,
     scores: new Array(state.numPlayers).fill(0),
-    scoringMode: scoringMode==='zero' ? 'zero' : 'penalty',
     forbidLastMatch: forbidLastMatch!=='off', // default true — "hay que fastidiar": the last bidder can't make every bid add up exactly
     bids: new Array(state.numPlayers).fill(null),
     tricksWon: new Array(state.numPlayers).fill(0),
     bidTurnSeat: null,
+    bidOrder: [],
     trumpCard: null,
+    trumpFromDealer: false, // the deal used all 40 cards, so the dealer showed their own last card
+    auctionRound: false,    // Olímpica: this hand's trump is auctioned, not turned up
+    trumpChooser: null,
   };
   startPochaRound();
 }
+// Is the hand about to be played one where the trump gets auctioned instead
+// of turned up? Only the Olympic variant has any (its max-size hands).
+function isPochaAuctionRound(){
+  const v = pochaVariant(state.pocha.variant);
+  if(!v.isAuctionRound) return false;
+  return v.isAuctionRound(state.numPlayers, state.pocha.roundSizes[state.pocha.roundIndex]);
+}
 
-// Deals the current round's cards to all 4 seats, reveals the next card of
-// the leftover deck as trump (or leaves the round trump-less if the deal
-// used every card), and opens bidding.
+// Deals the current round's cards, settles the trump, and opens bidding.
+// Three ways the trump can come out:
+//   · normal hand — turn up the next card of the leftover deck;
+//   · the deal used all 40 cards — no leftovers, so (Fournier) the dealer
+//     shows the last card dealt to themselves and keeps it in hand;
+//   · Olímpica's max-size hands — nothing is turned up at all, the bidding
+//     doubles as an auction and its winner names the suit (see recordPochaBid).
 function startPochaRound(){
   const roundSize = state.pocha.roundSizes[state.pocha.roundIndex];
+  const auction = isPochaAuctionRound();
   const deck = shuffle(buildDeck(RANKS_4P));
   state.hands = Array.from({length:state.numPlayers}, ()=>[]);
   for(let s=0;s<state.numPlayers;s++){
     for(let i=0;i<roundSize;i++) state.hands[s].push(deck.shift());
   }
-  const trumpCard = deck.shift() || null;
+  let trumpCard = null, fromDealer = false;
+  if(!auction){
+    trumpCard = deck.shift() || null;
+    if(!trumpCard){
+      // Nothing left to turn up: the dealer's own last card sets the trump
+      // and stays in their hand.
+      const dealerHand = state.hands[state.dealerIndex];
+      trumpCard = dealerHand[dealerHand.length-1] || null;
+      fromDealer = !!trumpCard;
+    }
+  }
   state.trumpSuit = trumpCard ? trumpCard.suit : null;
   state.pocha.trumpCard = trumpCard;
+  state.pocha.trumpFromDealer = fromDealer;
+  state.pocha.auctionRound = auction;
+  state.pocha.trumpChooser = null;
   for(let s=0;s<state.numPlayers;s++) sortHand(state.hands[s], state.trumpSuit);
   state.pocha.bids = new Array(state.numPlayers).fill(null);
+  state.pocha.bidOrder = [];
   state.pocha.tricksWon = new Array(state.numPlayers).fill(0);
   state.currentTrick = [];
   state.leader = null;
@@ -1907,9 +2010,12 @@ function startPochaRound(){
   state.seenCards = [];
   state.voidSuits = {};
   for(let s=0;s<state.numPlayers;s++) state.voidSuits[s] = new Set();
-  state.log = [`Ronda ${state.pocha.roundIndex+1}/${state.pocha.roundSizes.length}: ${roundSize} carta${roundSize===1?'':'s'} por jugador. ${
-    trumpCard ? `Triunfo: ${SUIT_LABEL[trumpCard.suit]} (${cardLabel(trumpCard)}).` : 'Sin triunfo esta ronda.'
-  }`];
+  const trumpNote = auction
+    ? 'Subasta: el que más bazas cante elige el triunfo.'
+    : trumpCard
+      ? `Triunfo: ${SUIT_LABEL[trumpCard.suit]} (${cardLabel(trumpCard)}${fromDealer?`, de la mano de ${state.seatNames[state.dealerIndex]}`:''}).`
+      : 'Sin triunfo esta ronda.';
+  state.log = [`Ronda ${state.pocha.roundIndex+1}/${state.pocha.roundSizes.length}: ${roundSize} carta${roundSize===1?'':'s'} por jugador. ${trumpNote}`];
   document.getElementById('summaryPanel').classList.add('hidden');
   document.getElementById('pochaBidPanel').classList.remove('hidden');
   state.phase = 'pocha-bidding';
@@ -1968,10 +2074,15 @@ function confirmHumanPochaBid(){
 function recordPochaBid(seat, amount){
   console.log('recordPochaBid called:', {seat, amount, isHost: state.online?.isHost, bidTurnSeat: state.pocha.bidTurnSeat, numPlayers: state.numPlayers, bidsArray: [...state.pocha.bids]});
   state.pocha.bids[seat] = amount;
+  if(!state.pocha.bidOrder) state.pocha.bidOrder = [];
+  state.pocha.bidOrder.push(seat);
   state.log.push(`${state.seatNames[seat]} canta ${amount}.`);
   const remaining = seatRange().filter(s=>state.pocha.bids[s]===null);
   console.log('remaining bids:', remaining, 'bids now:', [...state.pocha.bids]);
-  if(remaining.length===0){ startPochaPlay(); return; }
+  if(remaining.length===0){
+    if(state.pocha.auctionRound) startPochaTrumpChoice(); else startPochaPlay();
+    return;
+  }
   state.pocha.bidTurnSeat = nextSeat(seat);
   pochaBidTick();
 }
@@ -1987,7 +2098,10 @@ function aiPochaBidAction(seat){
 // scaled by AI level (low is erratic, high is tightly calibrated) — the
 // same "aggressiveness spread" idea as Subastao's low/medium/high bidding.
 function aiPochaBidEstimate(seat){
-  const hand=state.hands[seat], trump=state.trumpSuit;
+  const hand=state.hands[seat];
+  // In an Olímpica auction round nothing is turned up yet, so the AI bids on
+  // the assumption that it might win the auction and name its own best suit.
+  const trump = state.trumpSuit || (state.pocha.auctionRound ? aiPochaChooseTrump(seat) : null);
   const roundSize = state.pocha.roundSizes[state.pocha.roundIndex];
   let expected=0;
   hand.forEach(c=>{
@@ -2001,6 +2115,50 @@ function aiPochaBidEstimate(seat){
   const spread = level==='low' ? 1.5 : level==='high' ? 0.4 : 0.9;
   const bid = Math.round(expected + (Math.random()*2-1)*spread);
   return Math.min(Math.max(bid,0), roundSize);
+}
+
+/* Olímpica only: everyone has bid, so the highest bid wins the auction and
+   names the trump. Ties go to whoever bid it first — i.e. the seat closest to
+   the dealer's left, since that's the order bids are taken in. */
+function startPochaTrumpChoice(){
+  const order = (state.pocha.bidOrder && state.pocha.bidOrder.length) ? state.pocha.bidOrder : seatRange();
+  let winner = order[0];
+  for(const s of order) if(state.pocha.bids[s] > state.pocha.bids[winner]) winner = s;
+  state.pocha.trumpChooser = winner;
+  state.phase = 'pocha-trump';
+  state.log.push(`${state.seatNames[winner]} gana la subasta con ${state.pocha.bids[winner]} y elige triunfo.`);
+  document.getElementById('pochaBidPanel').classList.add('hidden');
+  render();
+  if(!isHumanSeat(winner)){
+    const epoch = state.epoch;
+    setTimeout(()=>{
+      if(state.epoch!==epoch || state.phase!=='pocha-trump' || state.pocha.trumpChooser!==winner) return;
+      choosePochaTrump(aiPochaChooseTrump(winner));
+    }, 800);
+  }
+  // else: the human who won the auction picks from trumpPanel (see render())
+}
+// The auction winner's suit: whichever one they hold most of, breaking ties
+// on raw card strength — the same "longest and strongest" idea the Subastao
+// AI uses when it wins the bidding.
+function aiPochaChooseTrump(seat){
+  const hand = state.hands[seat];
+  let best = SUITS[0], bestScore = -Infinity;
+  for(const suit of SUITS){
+    const cards = hand.filter(c=>c.suit===suit);
+    const score = cards.length*10 + cards.reduce((sum,c)=>sum+c.pts,0);
+    if(score > bestScore){ bestScore = score; best = suit; }
+  }
+  return best;
+}
+function choosePochaTrump(suit){
+  if(state.phase!=='pocha-trump') return;
+  state.trumpSuit = suit;
+  state.pocha.trumpCard = null;
+  for(let s=0;s<state.numPlayers;s++) sortHand(state.hands[s], suit);
+  state.log.push(`Triunfo: ${SUIT_LABEL[suit]}.`);
+  document.getElementById('trumpPanel').classList.add('hidden');
+  startPochaPlay();
 }
 
 function startPochaPlay(){
@@ -2098,7 +2256,7 @@ function rolloutFromPochaCandidate(seat, candidate, assigned){
     simPlayCard(s,mv);
   }
   const bid=state.pocha.bids[seat], won=tricksWon[seat];
-  const score = won===bid ? 10+bid : (state.pocha.scoringMode==='zero' ? 0 : -Math.abs(won-bid));
+  const score = pochaScoreFor(bid, won);
   return {score, firstTrickWinner};
 }
 function monteCarloChoosePochaCard(seat, hand, trick, trump){
@@ -2147,7 +2305,7 @@ function endPochaRound(){
   state.phase='handover';
   const results = seatRange().map(s=>{
     const bid=state.pocha.bids[s], won=state.pocha.tricksWon[s];
-    const score = won===bid ? 10+bid : (state.pocha.scoringMode==='zero' ? 0 : -Math.abs(won-bid));
+    const score = pochaScoreFor(bid, won);
     state.pocha.scores[s]+=score;
     return {seat:s, bid, won, score};
   });
@@ -2313,7 +2471,7 @@ function closeOverlay(){
     document.getElementById('playersSelect').value,
     document.getElementById('aiLevelSelect').value,
     undefined,
-    document.getElementById('pochaScoringSelect').value
+    document.getElementById('pochaVariantSelect').value
   );
 }
 
@@ -2329,6 +2487,7 @@ function currentActorSeat(){
   if(state.phase==='trump') return state.auctionWinner;
   if(state.phase==='playing') return state.turn;
   if(state.phase==='pocha-bidding') return state.pocha.bidTurnSeat;
+  if(state.phase==='pocha-trump') return state.pocha.trumpChooser;
   return null;
 }
 // Returns the seat whose controls (bid buttons, trump choices, playable
@@ -2363,7 +2522,8 @@ function updatePassScreen(){
   // between doesn't count as the phone changing hands, so the same human
   // stays revealed (just non-interactive) across their AI's turns.
   if(isHumanSeat(actor) && actor!==state.revealedSeat){
-    const what = state.phase==='trump' ? 'para elegir el triunfo' : state.phase==='bidding' ? 'para pujar' : 'para jugar su carta';
+    const what = (state.phase==='trump' || state.phase==='pocha-trump') ? 'para elegir el triunfo'
+      : (state.phase==='bidding' || state.phase==='pocha-bidding') ? 'para pujar' : 'para jugar su carta';
     document.getElementById('passOverlayTitle').textContent = `Pásale el móvil a ${state.seatNames[actor]}`;
     document.getElementById('passOverlaySubtitle').textContent = `Toca cuando lo tenga ${what}. Nadie más debería ver esta pantalla.`;
     overlay.classList.remove('hidden');
@@ -2878,7 +3038,8 @@ function render(){
   }
 
   // trump choice — same idea: only the revealed human auction-winner sees it
-  if(state.phase==='trump' && activeSeat!==null){
+  // ('trump' is Subastao's phase, 'pocha-trump' the Olímpica auction's)
+  if((state.phase==='trump' || state.phase==='pocha-trump') && activeSeat!==null){
     renderTrumpChoices();
     document.getElementById('trumpPanel').classList.remove('hidden');
   } else {
@@ -2897,7 +3058,8 @@ function render(){
 
   // mesa info
   if(state.gameType==='pocha'){
-    document.getElementById('trumpInfo').textContent = state.trumpSuit ? `Triunfo: ${SUIT_LABEL[state.trumpSuit]}` : 'Sin triunfo esta ronda';
+    document.getElementById('trumpInfo').textContent = state.trumpSuit ? `Triunfo: ${SUIT_LABEL[state.trumpSuit]}`
+      : state.pocha.auctionRound ? 'Triunfo: a subasta' : 'Sin triunfo esta ronda';
     const roundSize = state.pocha.roundSizes[state.pocha.roundIndex];
     document.getElementById('bidInfo').textContent = `Ronda ${state.pocha.roundIndex+1}/${state.pocha.roundSizes.length} · ${roundSize} carta${roundSize===1?'':'s'}`;
   } else {
@@ -3095,8 +3257,35 @@ function pickLauncherType(type){
 function goLauncherPochaCount(){ launcherGo('PochaCount'); }
 function pickPochaTableSize(n){
   launcherType = 'pocha'+n;
+  pochaTableSize = n;
   document.getElementById('launcherStep2Title').textContent = `Pocha a ${n}`;
   launcherGo(2);
+}
+/* Pocha asks for the variant right after Solo / Multi en móvil / Multi Online
+   is picked, because the variant is a property of the match, not of how the
+   players are sitting. Whatever step2 was going to do next is parked in
+   afterVariantPicked and runs once the modality is chosen. */
+let pochaTableSize = 4, afterVariantPicked = null;
+function pochaStep2Pick(next){
+  if(!(launcherType && launcherType.startsWith('pocha'))){ next(); return; }
+  afterVariantPicked = next;
+  const list = document.getElementById('launcherVariantList');
+  list.innerHTML = '';
+  Object.entries(POCHA_VARIANTS).forEach(([key, v])=>{
+    const item = document.createElement('div');
+    item.className = 'launcher-item';
+    item.onclick = ()=>pickPochaVariant(key);
+    const sizes = v.roundSizes(pochaTableSize);
+    item.innerHTML = `<div><b>${v.label}</b><span>${v.hint(pochaTableSize)} · ${sizes.length} manos</span></div><div class="chev">›</div>`;
+    list.appendChild(item);
+  });
+  launcherGo('PochaVariant');
+}
+function pickPochaVariant(key){
+  launcherType = 'pocha' + pochaTableSize + ':' + key;
+  const next = afterVariantPicked;
+  afterVariantPicked = null;
+  if(next) next();
 }
 // Step2 (Solo/Multi en móvil/Multi Online) is shared by both games — its
 // back button needs to return to wherever the player actually came from:
@@ -3104,6 +3293,12 @@ function pickPochaTableSize(n){
 function launcherBackFromStep2(){
   if(launcherType && launcherType.startsWith('pocha')) launcherGo('PochaCount');
   else launcherGo(1);
+}
+// Going back from "¿Cuántas personas?" or the online menu: Pocha slots the
+// modality screen in between, Subastao doesn't have one.
+function launcherBackToModality(){
+  if(launcherType && launcherType.startsWith('pocha')) pochaStep2Pick(()=>{});
+  else launcherGo(2);
 }
 // "Nueva partida" (side drawer) goes back to the launcher instead of
 // silently reapplying whatever was last chosen in Ajustes — hides any
@@ -3135,7 +3330,7 @@ function goLauncherMultiplayer(){
 }
 function finishLauncher(humanPlayers){
   document.getElementById('launcherOverlay').classList.add('hidden');
-  newGame(500, launcherType, 'medium', humanPlayers, 'penalty');
+  newGame(500, launcherType, 'medium', humanPlayers); // the variant rides inside launcherType
 }
 
 /* =====================================================================
@@ -3226,8 +3421,8 @@ function renderOpenRoomsList(rooms){
   if(!open.length){ list.innerHTML = '<p class="toggle-hint">No hay salas abiertas ahora mismo — crea una o introduce un código.</p>'; return; }
   list.innerHTML = open.map(r=>{
     const max = maxSeatsFor(r.gameType);
-    const {gameType:rGameType} = parseGameSelector(r.gameType);
-    const gameLabel = rGameType==='pocha' ? `Pocha a ${max}` : `Subastao a ${max}`;
+    const {gameType:rGameType, pochaVariant:rVariant} = parseGameSelector(r.gameType);
+    const gameLabel = rGameType==='pocha' ? `${pochaVariant(rVariant).label} a ${max}` : `Subastao a ${max}`;
     const host = (r.players||[]).find(p=>p.uid===r.hostUid);
     return `<div class="launcher-item" onclick="joinOpenRoom('${r.code}')"><div><b>${gameLabel} · ${r.code}</b><span>Anfitrión ${host?host.name:'?'} · ${(r.players||[]).length}/${max} jugadores</span></div><div class="chev">›</div></div>`;
   }).join('');
@@ -3389,7 +3584,7 @@ async function startOnlineGame(){
     const doc = await ref.get();
     const data = doc.data();
     const players = data.players || [];
-    newGame(500, data.gameType, 'medium', players.length, 'penalty');
+    newGame(500, data.gameType, 'medium', players.length);
     players.forEach((p,i)=>{ state.seatNames[i] = p.name; });
     state.stake = data.stake || null;
     const hostSeat = Math.max(0, players.findIndex(p=>p.sessionId===onlineUid));
@@ -3468,6 +3663,7 @@ function applyNetAction(action){
     }
     case 'pochaBid': recordPochaBid(action.seat, action.amount); break;
     case 'cante': declareCante(action.seat, action.suit); break;
+    case 'pochaTrump': choosePochaTrump(action.suit); break;
     case 'advance': onAdvanceClicked(); break;
   }
 }
@@ -3531,7 +3727,7 @@ render = function(){
 // above); the host applies them the normal way via applyNetAction().
 const _localRecordBid = recordBid, _localRecordPass = recordPass, _localChooseTrump = chooseTrump,
       _localPlayCard = playCard, _localRecordPochaBid = recordPochaBid, _localOnAdvanceClicked = onAdvanceClicked,
-      _localDeclareCante = declareCante;
+      _localDeclareCante = declareCante, _localChoosePochaTrump = choosePochaTrump;
 recordBid = function(seat, amount){
   if(netShouldForward()){ netSendAction('bid', {seat, amount}); return; }
   _localRecordBid(seat, amount);
@@ -3559,6 +3755,10 @@ onAdvanceClicked = function(){
 declareCante = function(seat, suit){
   if(netShouldForward()){ netSendAction('cante', {seat, suit}); return; }
   _localDeclareCante(seat, suit);
+};
+choosePochaTrump = function(suit){
+  if(netShouldForward()){ netSendAction('pochaTrump', {suit}); return; }
+  _localChoosePochaTrump(suit);
 };
 </script>
 </body>
