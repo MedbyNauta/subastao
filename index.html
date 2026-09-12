@@ -256,6 +256,24 @@
     animation: win-flash-fade 1.3s ease-out forwards;
   }
 
+  /* The "puedes cantar" prompt that sits just above your hand whenever you've
+     won a trick holding a rey+caballo pair — deliberately loud, since missing
+     the window costs 20 or 40 points. */
+  .cante-offer{margin:10px 0 4px;}
+  .cante-offer-btns{display:flex; gap:8px; flex-wrap:wrap;}
+  .cante-offer-btn{
+    flex:1 1 auto; min-width:120px; display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:12px 14px; border:none; border-radius:12px; cursor:pointer;
+    font-family:inherit; font-size:1rem; font-weight:800; color:#fff;
+    background:linear-gradient(135deg,#2E6FE0,#7FD8FF);
+    box-shadow:0 4px 14px rgba(46,111,224,0.35);
+    animation: cante-offer-throb 1.4s ease-in-out infinite;
+  }
+  .cante-offer-btn.pts-40{ background:linear-gradient(135deg,#FF4B1F,#FFC93F); box-shadow:0 4px 14px rgba(255,75,31,0.4); }
+  .cante-offer-btn svg{width:22px; height:22px; flex-shrink:0;}
+  @keyframes cante-offer-throb{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.03);} }
+  @media (prefers-reduced-motion: reduce){ .cante-offer-btn{animation:none;} }
+
   /* CANTE ANIMATION — a big, theatrical, full-screen slam for the
      rey+caballo bonus (see queueCanteAnimation in the JS): a color wash
      across the entire viewport (blue for cantar 20, fire for cantar 40),
@@ -597,6 +615,13 @@
     <button class="big-btn" id="summaryAdvanceBtn" style="margin-top:14px; width:100%;" onclick="onAdvanceClicked()">Siguiente mano</button>
   </div>
 
+  <!-- CANTE BUTTONS — only shown to the seat that just won a trick while
+       holding an uncanted rey+caballo pair (see renderCanteOffer). -->
+  <div class="cante-offer hidden" id="cantePanel">
+    <div class="lbl">Puedes cantar</div>
+    <div class="cante-offer-btns" id="canteBtns"></div>
+  </div>
+
   <div class="hand-wrap" id="handWrap">
     <div class="lbl" id="handLbl">Tu mano</div>
     <div class="hand" id="handRow"></div>
@@ -737,7 +762,7 @@
             <div class="rank-chip"><span class="rk">2</span><span class="pt">0</span></div>
           </div>
           <p class="toggle-hint" style="margin:2px 0 10px;">De más a menos fuerte, izquierda a derecha; el número pequeño es lo que vale esa carta al ganar la baza. El 2 solo existe en la partida a 4 jugadores. En total hay 40 puntos en juego por mano, sin contar cantes ni últimas.</p>
-          <p><b>Cantes</b>: rey + caballo del mismo palo, al ganar una baza, dan 40 puntos si es de triunfo o 20 si es de otro palo — solo cuentan para quien se llevó la subasta, y se detectan solos aquí.</p>
+          <p><b>Cantes</b>: si te reparten el rey y el caballo del mismo palo y los conservas sin jugar, puedes cantarlos justo después de ganar una baza: 40 puntos si es el palo de triunfo, 20 si es otro. Solo cuentan para quien se llevó la subasta. Aparecerá un botón sobre tu mano — si no lo tocas antes de que acabe la baza siguiente, pierdes la ocasión (aunque vuelve a salir si ganas otra baza y sigues teniendo la pareja).</p>
           <p><b>Últimas</b>: quien gana la última baza suma 10 puntos si es del bando que subastó.</p>
           <p><b>Resultado</b>: si el bando subastador reúne lo que pujó, anota esa cifra; si no, la anota el bando contrario.</p>
           <p><b>A 3 jugadores</b>: se juega con 36 cartas (sin doses), 12 por jugador. Quien gana la subasta juega solo contra los otros dos. Si se baña, los dos rivales se reparten la puja a medias; si es impar, el que iba de mano en esa mano se lleva 5 puntos más.</p>
@@ -1252,14 +1277,14 @@ function rolloutFromCandidate(seat, candidate, assigned){
     let bonus=0;
     if(isDeclarerSide(wSeat)){
       biddingTeamPoints+=trickPts;
-      const wonWith = trick.find(t=>t.seat===wSeat).card;
-      const suit = wonWith.suit;
-      if((wonWith.rank==='Rey' || wonWith.rank==='Caballo') && !cantedSuits[wSeat].has(suit)){
-        const partnerRank = wonWith.rank==='Rey' ? 'Caballo' : 'Rey';
-        const hh=hands[wSeat];
-        if(hh.some(c=>c.suit===suit && c.rank===partnerRank)){
-          cantedSuits[wSeat].add(suit);
-          const p=suit===trump?40:20;
+      // Mirror the real rule (see canteSuitsFor): winning the trick lets the
+      // winner declare every rey+caballo pair still unplayed in their hand.
+      const hh=hands[wSeat];
+      for(const su of SUITS){
+        if(cantedSuits[wSeat].has(su)) continue;
+        if(hh.some(c=>c.suit===su && c.rank==='Rey') && hh.some(c=>c.suit===su && c.rank==='Caballo')){
+          cantedSuits[wSeat].add(su);
+          const p=su===trump?40:20;
           biddingTeamPoints+=p; bonus+=p;
         }
       }
@@ -1444,6 +1469,7 @@ function startNewHand(){
   for(let s=0;s<state.numPlayers;s++) sortHand(state.hands[s]); // every seat's hand needs sorting now, not just seat 0 — several may be human
   state.trumpSuit=null;
   state.currentTrick=[];
+  state.canteOffer=null;
   state.log=[];
   document.getElementById('summaryPanel').classList.add('hidden');
   document.getElementById('trumpPanel').classList.add('hidden');
@@ -1594,6 +1620,7 @@ function chooseTrump(suit){
   state.playerTrickPoints=new Array(state.numPlayers).fill(0);
   state.cantedSuits={};
   for(let s=0;s<state.numPlayers;s++) state.cantedSuits[s]=new Set();
+  state.canteOffer=null;
   // memory tracking for help mode
   state.seenCards=[];
   state.voidSuits={};
@@ -1647,6 +1674,61 @@ function playCard(seat,card){
     },900);
   }
 }
+/* ---------- CANTE (las 20 / las 40) ----------
+   Rey + caballo of the same suit, both dealt into your hand and still
+   unplayed. Holding the pair isn't enough on its own: you may only declare it
+   right after winning a trick, and only the side that took the auction scores
+   for it (40 if it's the trump suit, 20 otherwise). A human seat declares by
+   tapping the button that resolveTrick() puts above their hand; AI seats
+   declare automatically the moment they win a trick. */
+function canteSuitsFor(seat){
+  const h = state.hands[seat];
+  return SUITS.filter(su =>
+    !state.cantedSuits[seat].has(su) &&
+    h.some(c=>c.suit===su && c.rank==='Rey') &&
+    h.some(c=>c.suit===su && c.rank==='Caballo'));
+}
+// Actually books the cante. Returns the points scored (0 if it wasn't legal),
+// so resolveTrick can fold an AI's cante into that trick's bonus tally.
+function doCanteLocal(seat, suit){
+  if(!state.cantedSuits[seat] || state.cantedSuits[seat].has(suit)) return 0;
+  if(!isDeclarerSide(seat)) return 0;
+  if(!canteSuitsFor(seat).includes(suit)) return 0;
+  state.cantedSuits[seat].add(suit);
+  const pts = suit===state.trumpSuit ? 40 : 20;
+  state.biddingTeamPoints += pts;
+  state.log.push(`${state.seatNames[seat]} canta ${pts} en ${SUIT_LABEL[suit]}.`);
+  pushEffect('cante', {seatName:state.seatNames[seat], suit, pts});
+  return pts;
+}
+// What the on-screen button calls (wrapped further down so an online guest
+// forwards it to the host instead of scoring it locally).
+function declareCante(seat, suit){
+  if(!state.canteOffer || state.canteOffer.seat!==seat) return;
+  if(!state.canteOffer.suits.includes(suit)) return;
+  const pts = doCanteLocal(seat, suit);
+  if(!pts) return;
+  state.playerTrickPoints[seat] += pts;
+  state.canteOffer.suits = state.canteOffer.suits.filter(su=>su!==suit);
+  if(!state.canteOffer.suits.length) state.canteOffer = null;
+  render();
+}
+// Shows the pending cante buttons to the seat they belong to, and to nobody
+// else — online that's your own seat, pass-and-play the seat whose cards are
+// currently revealed.
+function renderCanteOffer(){
+  const panel = document.getElementById('cantePanel');
+  const offer = state.canteOffer;
+  const mine = offer && state.phase==='playing' && offer.seat===handDisplaySeat();
+  panel.classList.toggle('hidden', !mine);
+  if(!mine) return;
+  document.getElementById('canteBtns').innerHTML = offer.suits.map(su=>{
+    const pts = su===state.trumpSuit ? 40 : 20;
+    return `<button class="cante-offer-btn${pts===40?' pts-40':''}" onclick="declareCante(${offer.seat},'${su}')">`
+      + `${suitIcon(su)}<span>Cantar ${pts} en ${SUIT_LABEL[su]}</span></button>`;
+  }).join('');
+}
+
 // Scores the just-completed trick: awards its points to the bidding side if
 // they won it, detects and scores any cante (rey+caballo of the same suit
 // held by the winner) not already counted, and adds the 10-de-últimas bonus
@@ -1660,28 +1742,23 @@ function resolveTrick(){
   let bonusThisTrick=0;
   if(isDeclarerSide(winnerSeat)){
     state.biddingTeamPoints+=trickPts;
-    // Cante only fires when the card that actually won the trick was the King
-    // or the Knight, and its partner (same suit) is still unplayed in hand —
-    // just holding an untouched pair while winning with an unrelated card
-    // doesn't count.
-    const wonWith = trick.find(t=>t.seat===winnerSeat).card;
-    const suit = wonWith.suit;
-    if((wonWith.rank==='Rey' || wonWith.rank==='Caballo') && !state.cantedSuits[winnerSeat].has(suit)){
-      const partnerRank = wonWith.rank==='Rey' ? 'Caballo' : 'Rey';
-      const h=state.hands[winnerSeat];
-      if(h.some(c=>c.suit===suit && c.rank===partnerRank)){
-        state.cantedSuits[winnerSeat].add(suit);
-        const pts=suit===state.trumpSuit?40:20;
-        state.biddingTeamPoints+=pts;
-        bonusThisTrick+=pts;
-        state.log.push(`${state.seatNames[winnerSeat]} canta ${pts} en ${SUIT_LABEL[suit]}.`);
-        pushEffect('cante', {seatName:state.seatNames[winnerSeat], suit, pts});
-      }
-    }
   }
   state.log.push(`${state.seatNames[winnerSeat]} gana la baza (${trickPts} pts).`);
   state.currentTrick=[];
   const isLastTrick = state.hands[0].length===0;
+  // Winning a trick is what opens the cante window: the winner may now declare
+  // any rey+caballo pair still sitting in their hand from the deal. An AI seat
+  // takes it immediately; a human seat gets the buttons (see renderCanteOffer)
+  // and keeps the option until the NEXT trick is resolved, which is where this
+  // same line replaces the offer.
+  state.canteOffer = null;
+  if(!isLastTrick && isDeclarerSide(winnerSeat)){
+    const suits = canteSuitsFor(winnerSeat);
+    if(suits.length){
+      if(isHumanSeat(winnerSeat)) state.canteOffer = {seat:winnerSeat, suits};
+      else suits.forEach(su=>{ bonusThisTrick += doCanteLocal(winnerSeat, su); });
+    }
+  }
   if(isLastTrick && isDeclarerSide(winnerSeat)){
     state.biddingTeamPoints+=10;
     bonusThisTrick+=10;
@@ -2077,6 +2154,9 @@ function endPochaRound(){
   state.log.push(`Fin de la ronda ${state.pocha.roundIndex+1}.`);
   const isLastRound = state.pocha.roundIndex >= state.pocha.roundSizes.length-1;
   pushEffect('pochaScorePulse', {results});
+  // Part of the synced state so an online guest (which never runs this
+  // function) can render the exact same round summary — see render().
+  state.lastSummary = {pocha:true, results, isLastRound};
   render();
   renderPochaSummary(results, isLastRound);
   document.getElementById('summaryPanel').classList.remove('hidden');
@@ -2774,6 +2854,14 @@ function render(){
 
   document.getElementById('mesaBox').classList.toggle('hidden', state.phase==='handover');
   document.getElementById('summaryPanel').classList.toggle('hidden', state.phase!=='handover');
+  // The panel's CONTENTS are filled by endHand()/endPochaRound(), which only
+  // ever run on the device driving the engine — an online guest would
+  // otherwise see the panel pop up empty (or still showing the previous
+  // hand). state.lastSummary is synced, so rebuild it from there too.
+  if(state.phase==='handover' && state.lastSummary){
+    if(state.lastSummary.pocha) renderPochaSummary(state.lastSummary.results, state.lastSummary.isLastRound);
+    else renderSummary();
+  }
   // These containers are also opened explicitly by startAuction()/startPochaRound()
   // for whichever device actually runs the engine (host, or a solo/pass-and-play
   // device) — kept in sync here too so an online guest's device (which never runs
@@ -2796,6 +2884,8 @@ function render(){
   } else {
     document.getElementById('trumpPanel').classList.add('hidden');
   }
+
+  renderCanteOffer();
 
   // pocha bidding controls — same "only once revealed" rule as the Subastao ones
   if(state.gameType==='pocha' && state.phase==='pocha-bidding' && activeSeat!==null && state.pocha.bidTurnSeat===activeSeat){
@@ -3377,6 +3467,7 @@ function applyNetAction(action){
       break;
     }
     case 'pochaBid': recordPochaBid(action.seat, action.amount); break;
+    case 'cante': declareCante(action.seat, action.suit); break;
     case 'advance': onAdvanceClicked(); break;
   }
 }
@@ -3439,7 +3530,8 @@ render = function(){
 // actions instead of local mutations (see netShouldForward/netSendAction
 // above); the host applies them the normal way via applyNetAction().
 const _localRecordBid = recordBid, _localRecordPass = recordPass, _localChooseTrump = chooseTrump,
-      _localPlayCard = playCard, _localRecordPochaBid = recordPochaBid, _localOnAdvanceClicked = onAdvanceClicked;
+      _localPlayCard = playCard, _localRecordPochaBid = recordPochaBid, _localOnAdvanceClicked = onAdvanceClicked,
+      _localDeclareCante = declareCante;
 recordBid = function(seat, amount){
   if(netShouldForward()){ netSendAction('bid', {seat, amount}); return; }
   _localRecordBid(seat, amount);
@@ -3463,6 +3555,10 @@ recordPochaBid = function(seat, amount){
 onAdvanceClicked = function(){
   if(netShouldForward()){ netSendAction('advance', {}); return; }
   _localOnAdvanceClicked();
+};
+declareCante = function(seat, suit){
+  if(netShouldForward()){ netSendAction('cante', {seat, suit}); return; }
+  _localDeclareCante(seat, suit);
 };
 </script>
 </body>
