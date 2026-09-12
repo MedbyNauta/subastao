@@ -73,11 +73,7 @@
   .wrap{
     max-width:520px; margin:0 auto; padding:0 0 30px;
     height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain;
-    /* A flex column so .mesa can claim the leftover height (see .mesa). Every
-       other child keeps its natural size — only the cloth grows. */
-    display:flex; flex-direction:column;
   }
-  .wrap > *{flex-shrink:0;}
 
   header{
     padding:16px 16px 12px;
@@ -196,25 +192,6 @@
     vertical-align:middle; letter-spacing:0.03em;
   }
 
-  /* PANEL SLOT — the auction, the trump choice, the Pocha bidding and the
-     cante prompt rest ON the cloth instead of taking a slice of the screen
-     below it. That is what lets the mesa keep every spare pixel AND stay the
-     same size from the first deal to the last: nothing above or below it ever
-     appears or disappears, so there is nothing to give back. They're stacked
-     in one grid cell and the inactive ones are hidden with visibility, so the
-     tray doesn't resize as the bidding goes round either. */
-  .panel-slot{
-    position:absolute; left:0; right:0; bottom:0; z-index:5;
-    display:grid; padding:0 8px 8px; max-height:100%; overflow:auto;
-    pointer-events:none; /* the empty tray must not swallow taps on the cloth */
-  }
-  .panel-slot > *{grid-area:1/1; align-self:end; margin:0; pointer-events:auto;}
-  .panel-slot .hidden{display:block !important; visibility:hidden; pointer-events:none;}
-  /* On green cloth these have to read as a solid tray, not a translucent wash. */
-  .panel-slot .panel, .panel-slot .cante-offer{
-    background:var(--panel); border:1px solid var(--linea); border-radius:14px;
-    padding:12px; box-shadow:0 8px 22px rgba(0,0,0,0.34);
-  }
 
   /* A card on its way from its owner to the cloth — a clone flown above the
      page while the real one waits hidden in its slot (see flyCardToTable). */
@@ -225,15 +202,9 @@
   /* The mesa is the bar's green baize: a cloth laid on the table rather than
      another panel. The weave is one tileable feTurbulence square kept inside
      this stylesheet as a data URI — no image file to ship or load. */
-  /* The cloth absorbs whatever vertical space the rest of the screen doesn't
-     use: as tall as the phone allows, and — since it's the leftover — never
-     tall enough to push anything off the bottom. .wrap is the flex column
-     that hands it out; min-height is the floor on a very short screen, and
-     min-height:0 lets it shrink to that instead of to its content. */
   .mesa{
     margin:12px 12px 0; border-radius:16px;
     padding:12px 14px; min-height:80px; position:relative; isolation:isolate;
-    flex:1 1 auto; display:flex; flex-direction:column;
     background:
       radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,0.09), rgba(0,0,0,0) 60%),
       linear-gradient(168deg, var(--felt-a) 0%, var(--felt-b) 100%);
@@ -252,7 +223,6 @@
   .trick-grid{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
     min-height:66px; align-items:center;
-    flex:1 1 auto; align-content:center;
   }
   .trick-slot{text-align:center;}
   .trick-slot .who{font-size:0.63rem; color:var(--felt-dim); margin-top:3px;}
@@ -312,12 +282,7 @@
      bottom row (.offset, added in JS) is nudged right by half a card+gap so
      its cards sit visually between two top cards, like a fanned-out hand.
      A slight negative gap lets the rows overlap just a touch. */
-  /* Two rows' worth of height is always reserved, so the hand doesn't shrink
-     (and hand the mesa extra room) when you're down to your last card. */
-  .hand{
-    display:flex; flex-direction:column; align-items:center; padding:6px 6px 14px;
-    min-height:120px;
-  }
+  .hand{display:flex; flex-direction:column; align-items:center; padding:6px 6px 14px;}
   .hand-row{display:flex; gap:7px; position:relative;}
   .hand-row.top{z-index:2;}
   .hand-row.bottom{z-index:1; margin-top:-8px;}
@@ -362,8 +327,7 @@
   /* The "puedes cantar" prompt that sits just above your hand whenever you've
      won a trick holding a rey+caballo pair — deliberately loud, since missing
      the window costs 20 or 40 points. */
-  .cante-offer{margin:12px 12px 0;}
-  .cante-offer .lbl{font-size:0.78rem; color:var(--oro); margin-bottom:8px;}
+  .cante-offer{margin:10px 0 4px;}
   .cante-offer-btns{display:flex; gap:8px; flex-wrap:wrap;}
   .cante-offer-btn{
     flex:1 1 auto; min-width:120px; display:flex; align-items:center; justify-content:center; gap:8px;
@@ -471,7 +435,7 @@
   .panel h3{font-size:0.95rem; color:var(--oro); margin-bottom:8px; font-weight:600;}
   /* Fixed height, not max-height: the log used to grow bid by bid, and the
      mesa gave up a little more room with every one. It scrolls instead. */
-  .bidlog{font-size:0.82rem; height:92px; overflow-y:auto; margin-bottom:10px;}
+  .bidlog{font-size:0.82rem; max-height:110px; overflow-y:auto; margin-bottom:10px;}
   .bidlog div{padding:3px 0; border-bottom:1px solid var(--linea);}
   .bid-controls{display:flex; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap;}
   .stepper{display:flex; align-items:center; gap:6px;}
@@ -708,7 +672,36 @@
       <span id="bidInfo">Subasta en curso</span>
     </div>
     <div class="trick-grid" id="trickGrid"></div>
-  <div class="panel-slot" id="panelSlot">
+  </div>
+
+  <!-- HAND SUMMARY (replaces the mesa when a hand ends) -->
+  <div class="panel hidden" id="summaryPanel">
+    <h3 id="summaryTitle">Resultado de la mano</h3>
+    <div id="summaryBody"></div>
+    <button class="big-btn" id="summaryAdvanceBtn" style="margin-top:14px; width:100%;" onclick="onAdvanceClicked()">Siguiente mano</button>
+  </div>
+
+  <!-- CANTE BUTTONS — only shown to the seat that just won a trick while
+       holding an uncanted rey+caballo pair (see renderCanteOffer). -->
+  <div class="cante-offer hidden" id="cantePanel">
+    <div class="lbl">Puedes cantar</div>
+    <div class="cante-offer-btns" id="canteBtns"></div>
+  </div>
+
+  <div class="hand-wrap" id="handWrap">
+    <div class="lbl" id="handLbl">Tu mano</div>
+    <div class="hand" id="handRow"></div>
+  </div>
+
+  <!-- HELP PANEL -->
+  <div class="panel help-panel hidden" id="helpPanel">
+    <h3>💡 Ayuda</h3>
+    <div class="help-known" id="helpKnown"></div>
+    <div class="help-reasoning" id="helpReasoning"></div>
+    <div class="help-suggestion" id="helpSuggestion"></div>
+  </div>
+
+
   <!-- BIDDING PANEL -->
   <div class="panel hidden" id="biddingPanel">
     <h3>Subasta</h3>
@@ -748,36 +741,6 @@
     <h3>Elige el triunfo</h3>
     <div class="trump-choices" id="trumpChoices"></div>
   </div>
-
-  <!-- CANTE BUTTONS — only shown to the seat that just won a trick while
-       holding an uncanted rey+caballo pair (see renderCanteOffer). -->
-  <div class="cante-offer hidden" id="cantePanel">
-    <div class="lbl">Puedes cantar</div>
-    <div class="cante-offer-btns" id="canteBtns"></div>
-  </div>
-  </div><!-- /panel-slot -->
-  </div>
-
-  <!-- HAND SUMMARY (replaces the mesa when a hand ends) -->
-  <div class="panel hidden" id="summaryPanel">
-    <h3 id="summaryTitle">Resultado de la mano</h3>
-    <div id="summaryBody"></div>
-    <button class="big-btn" id="summaryAdvanceBtn" style="margin-top:14px; width:100%;" onclick="onAdvanceClicked()">Siguiente mano</button>
-  </div>
-
-  <div class="hand-wrap" id="handWrap">
-    <div class="lbl" id="handLbl">Tu mano</div>
-    <div class="hand" id="handRow"></div>
-  </div>
-
-  <!-- HELP PANEL -->
-  <div class="panel help-panel hidden" id="helpPanel">
-    <h3>💡 Ayuda</h3>
-    <div class="help-known" id="helpKnown"></div>
-    <div class="help-reasoning" id="helpReasoning"></div>
-    <div class="help-suggestion" id="helpSuggestion"></div>
-  </div>
-
 
   <details class="log-box" id="logBoxDetails">
     <summary>Historial de la mano</summary>
@@ -868,7 +831,7 @@
             <div class="rank-chip"><span class="rk">2</span><span class="pt">0</span></div>
           </div>
           <p class="toggle-hint" style="margin:2px 0 10px;">De más a menos fuerte, izquierda a derecha; el número pequeño es lo que vale esa carta al ganar la baza. El 2 solo existe en la partida a 4 jugadores. En total hay 40 puntos en juego por mano, sin contar cantes ni últimas.</p>
-          <p><b>Cantes</b>: si te reparten el rey y el caballo del mismo palo y los conservas sin jugar, puedes cantarlos justo después de ganar una baza: 40 puntos si es el palo de triunfo, 20 si es otro. Solo cuentan para quien se llevó la subasta. Aparecerá un botón bajo tu mano — si no lo tocas antes de que acabe la baza siguiente, pierdes la ocasión (aunque vuelve a salir si ganas otra baza y sigues teniendo la pareja).</p>
+          <p><b>Cantes</b>: si te reparten el rey y el caballo del mismo palo y los conservas sin jugar, puedes cantarlos justo después de ganar una baza: 40 puntos si es el palo de triunfo, 20 si es otro. Solo cuentan para quien se llevó la subasta. Aparecerá un botón sobre tu mano — si no lo tocas antes de que acabe la baza siguiente, pierdes la ocasión (aunque vuelve a salir si ganas otra baza y sigues teniendo la pareja).</p>
           <p><b>Últimas</b>: quien gana la última baza suma 10 puntos si es del bando que subastó.</p>
           <p><b>Resultado</b>: si el bando subastador reúne lo que pujó, anota esa cifra; si no, la anota el bando contrario.</p>
           <p><b>A 3 jugadores</b>: se juega con 36 cartas (sin doses), 12 por jugador. Quien gana la subasta juega solo contra los otros dos. Si se baña, los dos rivales se reparten la puja a medias; si es impar, el que iba de mano en esa mano se lleva 5 puntos más.</p>
@@ -3262,7 +3225,10 @@ function render(){
     const slot=document.createElement('div');
     slot.className='trick-slot';
     slot.dataset.slot=s;
-    slot.innerHTML = played ? cardHtml(played.card,'mini') + `<div class="who">${state.seatNames[s]}${seatAiTag(s)}</div>` : `<div style="height:52px;"></div><div class="who">${state.seatNames[s]}${seatAiTag(s)}</div>`;
+    // The empty spacer matches a mini card's height exactly (45px), so a slot
+    // is the same size whether or not a card has landed in it and the mesa
+    // never changes height mid-trick.
+    slot.innerHTML = played ? cardHtml(played.card,'mini') + `<div class="who">${state.seatNames[s]}${seatAiTag(s)}</div>` : `<div style="height:45px;"></div><div class="who">${state.seatNames[s]}${seatAiTag(s)}</div>`;
     grid.appendChild(slot);
   });
 
