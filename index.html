@@ -24,20 +24,37 @@
      both themes on purpose: card faces and popups are always a light "paper"
      surface with dark ink, like a real card, regardless of the app's own theme. */
   :root{
-    --bg:#F4F1EA; --panel:#FCFBF7;
-    --oro:#7C8B6F; --oro-soft:rgba(124,139,111,0.16);
-    --pergamino:#FFFFFF; --text:#33342E; --piedra:#96938A; --tinta:#2B2A28;
-    --linea:rgba(51,52,46,0.09);
-    --wash-rgb:51,52,46;
+    --bg:#F1F1E8; --panel:#F8F9F3;
+    --oro:#2F6B4B; --oro-soft:rgba(47,107,75,0.13);
+    --pergamino:#FFFFFF; --text:#2F332E; --piedra:#8D9186; --tinta:#2B2A28;
+    --linea:rgba(47,51,46,0.10);
+    --wash-rgb:47,51,46;
+    --glow-rgb:47,107,75;
     --c-oros:#8A6420; --c-copas:#7A2E3A; --c-espadas:#324A66; --c-bastos:#3A5029;
+    /* THE CLOTH — the mesa is a piece of bar baize, the same in both themes.
+       --felt-ink/-dim are the only text colors that read on it. */
+    --felt-a:#24694A; --felt-b:#1B5339;
+    --felt-ink:#F2EDE1; --felt-dim:rgba(242,237,225,0.66);
+    --felt-band:rgba(47,107,75,0.07);
+    /* Bar props watermarked into the hand band (see .hand-wrap), drawn in the
+       same simple line style as the suit icons further down. Stroked in the
+       theme's own accent and redefined in the dark block below — a plain
+       background-image, so if it ever fails to load nothing shows rather than
+       a coloured block. */
+    --art-canya:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='%232F6B4B' stroke-width='1.4' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M10 8 H22 L20.4 27.2 Q20.3 28.8 18.7 28.8 H13.3 Q11.7 28.8 11.6 27.2 Z'/%3E%3Cpath d='M10.34 12.2 H21.66'/%3E%3Cpath d='M10.2 8 Q11.6 4.8 14 6.4 Q16.2 3.9 18.4 6.2 Q20.6 4.9 21.8 8'/%3E%3C/g%3E%3C/svg%3E");
+    --art-tapa:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='%232F6B4B' stroke-width='1.3' stroke-linecap='round'%3E%3Cpath d='M20.8 17.6 L25.4 10.8'/%3E%3Cpath d='M4.6 20.6 H27.4 Q26.2 26.8 16 26.8 Q5.8 26.8 4.6 20.6 Z'/%3E%3Cellipse cx='16' cy='20.6' rx='11.4' ry='3.1'/%3E%3Cellipse cx='11.2' cy='19.4' rx='3.3' ry='2.9'/%3E%3Cellipse cx='20.8' cy='19.7' rx='3.2' ry='2.85'/%3E%3Cellipse cx='16' cy='18.4' rx='3.4' ry='3'/%3E%3C/g%3E%3C/svg%3E");
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --bg:#1C1B19; --panel:#242220;
-      --oro:#E3A98A; --oro-soft:rgba(227,169,138,0.15);
-      --pergamino:#EDE8E0; --text:#EDE8E0; --piedra:#938E85;
-      --linea:rgba(237,232,224,0.12);
-      --wash-rgb:237,232,224;
+      --bg:#191B18; --panel:#1F231F;
+      --oro:#7FC49B; --oro-soft:rgba(127,196,155,0.14);
+      --pergamino:#EDE8E0; --text:#E9E7DE; --piedra:#8B9088;
+      --linea:rgba(233,231,222,0.12);
+      --wash-rgb:233,231,222;
+      --glow-rgb:127,196,155;
+      --felt-band:rgba(127,196,155,0.07);
+      --art-canya:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='%237FC49B' stroke-width='1.4' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M10 8 H22 L20.4 27.2 Q20.3 28.8 18.7 28.8 H13.3 Q11.7 28.8 11.6 27.2 Z'/%3E%3Cpath d='M10.34 12.2 H21.66'/%3E%3Cpath d='M10.2 8 Q11.6 4.8 14 6.4 Q16.2 3.9 18.4 6.2 Q20.6 4.9 21.8 8'/%3E%3C/g%3E%3C/svg%3E");
+      --art-tapa:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cg fill='none' stroke='%237FC49B' stroke-width='1.3' stroke-linecap='round'%3E%3Cpath d='M20.8 17.6 L25.4 10.8'/%3E%3Cpath d='M4.6 20.6 H27.4 Q26.2 26.8 16 26.8 Q5.8 26.8 4.6 20.6 Z'/%3E%3Cellipse cx='16' cy='20.6' rx='11.4' ry='3.1'/%3E%3Cellipse cx='11.2' cy='19.4' rx='3.3' ry='2.9'/%3E%3Cellipse cx='20.8' cy='19.7' rx='3.2' ry='2.85'/%3E%3Cellipse cx='16' cy='18.4' rx='3.4' ry='3'/%3E%3C/g%3E%3C/svg%3E");
     }
   }
   *{box-sizing:border-box;}
@@ -132,9 +149,9 @@
   /* Brief pop when a chip's total actually changes at hand-end — see
      pulseScoreChips(), called right after endHand()'s render(). */
   @keyframes score-pop{
-    0%   { transform:scale(1); box-shadow:0 0 0 0 rgba(217,164,65,0); }
-    35%  { transform:scale(1.08); box-shadow:0 0 16px 3px rgba(217,164,65,0.5); border-color:var(--oro); background:var(--oro-soft); }
-    100% { transform:scale(1); box-shadow:0 0 0 0 rgba(217,164,65,0); }
+    0%   { transform:scale(1); box-shadow:0 0 0 0 rgba(var(--glow-rgb),0); }
+    35%  { transform:scale(1.08); box-shadow:0 0 16px 3px rgba(var(--glow-rgb),0.5); border-color:var(--oro); background:var(--oro-soft); }
+    100% { transform:scale(1); box-shadow:0 0 0 0 rgba(var(--glow-rgb),0); }
   }
   .score-chip.pop{animation:score-pop 0.9s ease-out;}
   button{cursor:pointer; font-family:'Inter', sans-serif;}
@@ -145,7 +162,7 @@
     flex:1; display:flex; flex-direction:column; gap:4px; padding:6px; border-radius:10px;
     border:1px solid var(--linea); background:rgba(var(--wash-rgb),0.03);
   }
-  .team-group.teamA{border-color:rgba(217,164,65,0.5);}
+  .team-group.teamA{border-color:rgba(var(--glow-rgb),0.5);}
   .team-row{display:flex; gap:6px;}
   .pchip{
     flex:1; text-align:center; padding:10px 4px; border-radius:8px;
@@ -177,21 +194,34 @@
   }
 
   /* MESA */
+  /* The mesa is the bar's green baize: a cloth laid on the table rather than
+     another panel. The weave is one tileable feTurbulence square kept inside
+     this stylesheet as a data URI — no image file to ship or load. */
   .mesa{
-    margin:12px 12px 0; background:var(--panel); border-radius:14px;
-    padding:12px 14px; min-height:80px; position:relative;
-    border:1px solid var(--linea);
+    margin:12px 12px 0; border-radius:16px;
+    padding:12px 14px; min-height:80px; position:relative; isolation:isolate;
+    background:
+      radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,0.09), rgba(0,0,0,0) 60%),
+      linear-gradient(168deg, var(--felt-a) 0%, var(--felt-b) 100%);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,0.24), 0 6px 18px rgba(27,83,57,0.26);
+  }
+  .mesa::before{
+    content:""; position:absolute; inset:0; border-radius:inherit; z-index:-1;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:160px 160px; opacity:0.2; mix-blend-mode:overlay;
+    pointer-events:none;
   }
   .mesa-info{
     display:flex; justify-content:space-between; font-size:0.75rem;
-    color:var(--oro); margin-bottom:8px;
+    color:var(--felt-dim); margin-bottom:8px;
   }
   .trick-grid{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
     min-height:66px; align-items:center;
   }
   .trick-slot{text-align:center;}
-  .trick-slot .who{font-size:0.63rem; color:var(--piedra); margin-top:3px;}
+  .trick-slot .who{font-size:0.63rem; color:var(--felt-dim); margin-top:3px;}
+  .mesa .ai-tag{color:var(--felt-dim); border-color:rgba(242,237,225,0.28);}
 
   /* LIVE POINTS — live under the match total in the header score chips
      instead of a separate panel; see .score-chip .mano near the top of
@@ -216,7 +246,30 @@
   .card.mini svg{width:11px; height:11px;}
 
   /* HAND */
-  .hand-wrap{margin:12px 6px 0;}
+  /* Your cards sit on a faint band of cloth, watermarked with a caña and a
+     plate of olives drawn as line art. Both are masks rather than images, so
+     they take the theme's accent color automatically and cost nothing to
+     load; they live behind the cards (z-index:-1) and ignore taps, so they
+     can never cover or block a card. */
+  .hand-wrap{
+    margin:12px 6px 0; padding:8px 6px 12px;
+    border-radius:12px; background:var(--felt-band);
+    position:relative; isolation:isolate; overflow:hidden;
+  }
+  .hand-wrap::before, .hand-wrap::after{
+    content:""; position:absolute; z-index:-1; pointer-events:none;
+    opacity:0.14; background-repeat:no-repeat; background-size:contain;
+  }
+  /* la caña */
+  .hand-wrap::before{
+    width:96px; height:96px; right:-14px; bottom:-26px; transform:rotate(8deg);
+    background-image:var(--art-canya);
+  }
+  /* la tapa de aceitunas */
+  .hand-wrap::after{
+    width:104px; height:104px; left:-18px; bottom:-34px; transform:rotate(-6deg);
+    background-image:var(--art-tapa);
+  }
   .hand-wrap .lbl{font-size:0.78rem; color:var(--oro); margin-bottom:8px; padding-left:6px;}
   /* Two rows instead of one scrolling line, so the whole hand is always
      visible at once, centered under the label. Even card count: both rows
@@ -245,12 +298,12 @@
     background: radial-gradient(circle, #FFF3D6 0%, var(--oro) 55%, transparent 78%);
     clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
     animation: sparkle-twinkle 1s ease-out forwards;
-    filter: drop-shadow(0 0 4px rgba(217,164,65,0.7));
+    filter: drop-shadow(0 0 4px rgba(var(--glow-rgb),0.7));
   }
   @keyframes pchip-glow {
-    0%   { box-shadow:0 0 0 0 rgba(217,164,65,0); }
-    30%  { box-shadow:0 0 22px 5px rgba(217,164,65,0.55); border-color:var(--oro); background:var(--oro-soft); }
-    100% { box-shadow:0 0 0 0 rgba(217,164,65,0); }
+    0%   { box-shadow:0 0 0 0 rgba(var(--glow-rgb),0); }
+    30%  { box-shadow:0 0 22px 5px rgba(var(--glow-rgb),0.55); border-color:var(--oro); background:var(--oro-soft); }
+    100% { box-shadow:0 0 0 0 rgba(var(--glow-rgb),0); }
   }
   .pchip.celebrate { animation: pchip-glow 1.05s ease-out; }
   @keyframes win-flash-fade {
@@ -260,7 +313,7 @@
   }
   .win-flash {
     position:fixed; inset:0; pointer-events:none; z-index:998;
-    background:radial-gradient(circle, rgba(217,164,65,0.32) 0%, rgba(217,164,65,0) 68%);
+    background:radial-gradient(circle, rgba(var(--glow-rgb),0.32) 0%, rgba(var(--glow-rgb),0) 68%);
     animation: win-flash-fade 1.3s ease-out forwards;
   }
 
@@ -519,14 +572,14 @@
   .toggle-hint{font-size:0.76rem; color:var(--piedra); margin:0 0 4px;}
 
   /* HELP PANEL */
-  .help-panel{border-color:rgba(217,164,65,0.45);}
+  .help-panel{border-color:rgba(var(--glow-rgb),0.45);}
   .help-panel h3{display:flex; align-items:center; gap:6px;}
   .help-known{font-size:0.78rem; line-height:1.6; color:var(--text); margin-bottom:10px;}
   .help-known b{color:var(--text);}
   .help-reasoning{font-size:0.82rem; line-height:1.55; color:var(--text); margin-bottom:10px;}
   .help-suggestion{
     display:flex; align-items:center; gap:10px; background:var(--oro-soft);
-    border:1px solid rgba(217,164,65,0.4); border-radius:10px; padding:10px;
+    border:1px solid rgba(var(--glow-rgb),0.4); border-radius:10px; padding:10px;
   }
   .help-suggestion .txt{font-size:0.82rem;}
   .help-suggestion .txt b{color:var(--oro); font-family:'Fraunces',serif; font-size:0.95rem;}
