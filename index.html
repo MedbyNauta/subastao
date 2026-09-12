@@ -491,6 +491,17 @@
   .launcher-input + .launcher-input{ margin-top:8px; }
   .launcher-screen{display:none;}
   .launcher-screen.active{display:block;}
+  /* Language switch, top-right of the opening screen. Two letters, quiet
+     until you're on the one you're using. */
+  .lang-switch{display:flex; justify-content:flex-end; gap:4px; margin-bottom:10px;}
+  .lang-switch button{
+    font-family:inherit; font-size:0.72rem; font-weight:700; letter-spacing:0.04em;
+    color:var(--piedra); background:transparent;
+    border:1px solid var(--linea); border-radius:8px; padding:5px 10px;
+  }
+  .lang-switch button[aria-pressed="true"]{background:var(--oro); color:var(--bg); border-color:var(--oro);}
+  .lang-switch button:focus-visible{outline:2px solid var(--oro); outline-offset:2px;}
+
   .launcher-hero{
     text-align:center; font-family:'Fraunces', serif; font-style:italic; font-weight:700;
     font-size:1.5rem; color:var(--oro); margin-bottom:20px;
@@ -795,6 +806,7 @@
         <option value="tradicional" selected>Pocha Tradicional</option>
         <option value="olimpica">Pocha Olímpica</option>
         <option value="corta5">Pocha Corta a 5 cartas</option>
+        <option value="ninos">Pocha Niños</option>
         <option value="cortanormal">Pocha Corta Normal</option>
       </select>
       <label class="set-lbl">Puja del último en cantar</label>
@@ -853,10 +865,11 @@
           <p style="margin-left:10px;"><b>· Tradicional</b>: cada número de cartas se juega tantas veces como jugadores haya, para que todos repartan una vez en cada tamaño de mano. Se sube de 1 hasta el máximo y se baja de vuelta a 1. A 4 jugadores son 76 manos: cuatro de 1 carta, cuatro de 2… hasta cuatro de 10, y de vuelta hasta cuatro de 1.</p>
           <p style="margin-left:10px;"><b>· Olímpica</b>: la misma pirámide y, al llegar al máximo de cartas, se juegan las manos normales de siempre y después otras tantas —una por jugador— en las que no se destapa triunfo: la puja hace de subasta y quien más bazas canta elige el palo. Luego se baja como en la tradicional.</p>
           <p style="margin-left:10px;"><b>· Corta a 5 cartas</b>: diez manos seguidas de 5 cartas, sin subida ni bajada.</p>
+          <p style="margin-left:10px;"><b>· Niños</b>: para empezar. Sube de 1 a 5 cartas y después se juegan cinco manos de 5, diez en total. El triunfo se destapa como siempre y, sobre todo, <b>no obliga a fallar</b>: si no tienes el palo que se ha pedido, puedes echar la carta que quieras en vez de estar obligado a poner triunfo.</p>
           <p style="margin-left:10px;"><b>· Corta Normal</b>: una sola mano de cada número, de 1 carta hasta 10, y ahí acaba: sin repeticiones y sin fase descendente.</p>
           <p><b>Triunfo</b>: al repartir se destapa la siguiente carta del mazo sobrante — su palo es el triunfo de la mano. Si el reparto gasta las 40 cartas y no sobra ninguna, el repartidor enseña la última carta que recibe y la conserva en su mano: ese palo es el triunfo.</p>
           <p><b>Puja</b>: por turnos, cada jugador canta cuántas bazas cree que va a hacer esa ronda (de 0 al total de cartas repartidas). Por defecto, el último en cantar no puede pedir el número que haría que la suma de todas las pujas cuadre exactamente con las cartas repartidas — así siempre falla alguien; esto se puede desactivar en Ajustes ("Puja del último en cantar").</p>
-          <p><b>Al jugar</b>: igual que en el Subastao — si tienes el palo pedido, tienes que jugarlo y superarlo si puedes; si no, tienes que triunfar y superarlo si puedes (cuando hay triunfo esa ronda); si no tienes ni palo ni triunfo, puedes echar cualquier carta.</p>
+          <p><b>Al jugar</b>: igual que en el Subastao — si tienes el palo pedido, tienes que jugarlo y superarlo si puedes; si no, tienes que triunfar y superarlo si puedes (cuando hay triunfo esa ronda); si no tienes ni palo ni triunfo, puedes echar cualquier carta. La excepción es la modalidad <b>Niños</b>, en la que sin el palo pedido puedes echar lo que quieras.</p>
           <p><b>Puntuación</b> (Fournier): si aciertas tu puja exacta, sumas 10 puntos + 5 por cada baza conseguida. Si fallas, restas 5 por cada baza de diferencia, te hayas quedado corto o largo. Pides 3 y haces 3 → 25 puntos; pides 3 y haces 1 → −10; pides 1 y haces 3 → −10.</p>
           <p><b>Ganador</b>: quien tenga más puntos al terminar la última mano de la modalidad elegida.</p>
         </div>
@@ -899,6 +912,10 @@
 <div class="overlay" id="launcherOverlay">
   <div class="launcher-panel">
     <div class="launcher-screen active" id="launcherStep1">
+      <div class="lang-switch" role="group" aria-label="Idioma">
+        <button type="button" data-lang-btn="es" aria-pressed="true" onclick="setLang('es')">ES</button>
+        <button type="button" data-lang-btn="fr" aria-pressed="false" onclick="setLang('fr')">FR</button>
+      </div>
       <div class="launcher-hero">Apuestas de bazas</div>
       <div class="launcher-list">
         <div class="launcher-item" onclick="pickLauncherType('3')"><div><b>Subastao a 3</b><span>Uno solo contra dos</span></div><div class="chev">›</div></div>
@@ -1038,6 +1055,292 @@ const fbDb = firebase.firestore();
 
 /* ---------- DATA ---------- */
 const SUITS = ['oros','copas','espadas','bastos'];
+/* =====================================================================
+   IDIOMAS — castellano (original) y francés.
+   The Spanish string IS the key, so anything not in the table simply stays
+   in Spanish instead of showing a missing-key placeholder. Two entry points:
+     t(es)          for a plain string
+     tf(es, ...a)   for one with {0}, {1}… holes filled from the arguments
+   Static markup isn't touched at all: translateStaticDom() walks the page
+   once per switch, swapping text nodes and placeholder/title attributes, and
+   remembers each node's Spanish so switching back is exact.
+   ===================================================================== */
+const FR_DICT = {
+  "Sin conexión — reintentando…": "Pas de connexion — nouvelle tentative…",
+  "Ourensano": "Ourensano",
+  "Apuesta": "Mise",
+  "Bote": "Cagnotte",
+  "Triunfo: por decidir": "Atout : à déterminer",
+  "Subasta en curso": "Enchères en cours",
+  "Resultado de la mano": "Résultat de la donne",
+  "Siguiente mano": "Donne suivante",
+  "Puedes cantar": "Tu peux annoncer",
+  "Tu mano": "Ta main",
+  "💡 Ayuda": "💡 Aide",
+  "Subasta": "Enchères",
+  "Pujar": "Enchérir",
+  "Pasar": "Passer",
+  "Puja de bazas": "Annonce de plis",
+  "Cantar": "Annoncer",
+  "Elige el triunfo": "Choisis l'atout",
+  "Historial de la mano": "Historique de la donne",
+  "Ajustes": "Réglages",
+  "Tipo de juego": "Type de jeu",
+  "Subastao a 3": "Subastao à 3",
+  "Subastao a 4": "Subastao à 4",
+  "Pocha a 3": "Pocha à 3",
+  "Pocha a 4": "Pocha à 4",
+  "Pocha a 5": "Pocha à 5",
+  "Jugadores": "Joueurs",
+  "Objetivo de puntos": "Objectif de points",
+  "Modalidad": "Variante",
+  "Pocha Tradicional": "Pocha Traditionnelle",
+  "Pocha Olímpica": "Pocha Olympique",
+  "Pocha Corta a 5 cartas": "Pocha Courte à 5 cartes",
+  "Pocha Niños": "Pocha Enfants",
+  "Pocha Corta Normal": "Pocha Courte Normale",
+  "Puja del último en cantar": "Annonce du dernier à parler",
+  "No puede cuadrar la puja total (obliga a fallar)": "Ne peut pas faire tomber le total juste (quelqu'un doit rater)",
+  "Puede cuadrar (puede acertar todo el mundo)": "Peut faire tomber juste (tout le monde peut réussir)",
+  "Nivel de juego": "Niveau de jeu",
+  "Bajo": "Faible",
+  "Medio": "Moyen",
+  "Alto": "Élevé",
+  "Aplicar y empezar de nuevo": "Appliquer et recommencer",
+  "Historial de partidas": "Historique des parties",
+  "Exportar": "Exporter",
+  "Importar": "Importer",
+  "Borrar": "Effacer",
+  "Reglas": "Règles",
+  "Puja": "Enchère",
+  "Al jugar": "Pendant le jeu",
+  "Valor y orden de las cartas": "Valeur et ordre des cartes",
+  "As": "As",
+  "Rey": "Roi",
+  "Caballo": "Cavalier",
+  "Sota": "Valet",
+  "Cantes": "Annonces",
+  "Últimas": "Dernier pli",
+  "Resultado": "Résultat",
+  "A 3 jugadores": "À 3 joueurs",
+  "Modalidades": "Variantes",
+  "(se eligen al empezar la partida, y también en Ajustes):": "(à choisir au lancement de la partie, et aussi dans Réglages) :",
+  "· Tradicional": "· Traditionnelle",
+  "· Olímpica": "· Olympique",
+  "· Corta a 5 cartas": "· Courte à 5 cartes",
+  "· Niños": "· Enfants",
+  "· Corta Normal": "· Courte Normale",
+  "no obliga a fallar": "elle n'oblige pas à couper",
+  "Triunfo": "Atout",
+  "Niños": "Enfants",
+  ", en la que sin el palo pedido puedes echar lo que quieras.": ", où sans la couleur demandée tu peux jouer ce que tu veux.",
+  "Puntuación": "Score",
+  "Ganador": "Vainqueur",
+  "¡Partida ganada!": "Partie gagnée !",
+  "Guardar este resultado como…": "Enregistrer ce résultat sous…",
+  "Guardar resultado": "Enregistrer le résultat",
+  "Guardado en el historial ✓": "Enregistré dans l'historique ✓",
+  "Jugar otra vez": "Rejouer",
+  "Pásale el móvil a...": "Passe le téléphone à…",
+  "👀 Ver mis cartas": "👀 Voir mes cartes",
+  "Apuestas de bazas": "Paris sur les plis",
+  "Uno solo contra dos": "Un seul contre deux",
+  "Por parejas": "Par équipes",
+  "La Pocha": "La Pocha",
+  "3 a 5 jugadores, sin parejas": "3 à 5 joueurs, sans équipes",
+  "‹ Atrás": "‹ Retour",
+  "¿Cuántos en la mesa?": "Combien à table ?",
+  "3 jugadores": "3 joueurs",
+  "4 jugadores": "4 joueurs",
+  "5 jugadores": "5 joueurs",
+  "Solo": "Solo",
+  "Tú + IA en este móvil": "Toi + IA sur ce téléphone",
+  "Multi en móvil": "Multi sur un téléphone",
+  "Os vais pasando el teléfono": "Vous vous passez le téléphone",
+  "Multi Online": "Multi en ligne",
+  "Cada uno desde su móvil": "Chacun depuis son téléphone",
+  "¿Cuántas personas?": "Combien de personnes ?",
+  "Crear partida": "Créer une partie",
+  "Genera un código para invitar": "Génère un code pour inviter",
+  "Unirse a partida": "Rejoindre une partie",
+  "Introduce un código o elige una sala": "Saisis un code ou choisis un salon",
+  "Crear sala": "Créer le salon",
+  "Unirse": "Rejoindre",
+  "Salas abiertas": "Salons ouverts",
+  "Buscando salas…": "Recherche de salons…",
+  "‹ Salir": "‹ Quitter",
+  "Sala de espera": "Salon d'attente",
+  "Código de la partida:": "Code de la partie :",
+  "Empezar partida": "Commencer la partie",
+  "Esperando a que el anfitrión empiece la partida…": "En attente que l'hôte lance la partie…",
+  "Nombre de la partida": "Nom de la partie",
+  "Tu nombre": "Ton nom",
+  "Valor aportado (opcional)": "Mise (facultatif)",
+  "Código de partida": "Code de la partie",
+  "Nueva partida": "Nouvelle partie",
+  "Ayuda": "Aide",
+  ": mínimo 60, sube de 5 en 5. Quien gana la subasta elige el triunfo y sale.": " : minimum 60, par paliers de 5. Qui remporte les enchères choisit l'atout et entame.",
+  ": si tienes el palo pedido, tienes que jugarlo y superarlo si puedes. Si no tienes, tienes que triunfar y superar el triunfo en mesa si puedes. Si no tienes ni palo ni triunfo, puedes echar cualquier carta.": " : si tu as la couleur demandée, tu dois la jouer et surcouper si tu peux. Sinon, tu dois couper et dépasser l'atout déjà posé si tu peux. Si tu n'as ni la couleur ni d'atout, tu joues la carte que tu veux.",
+  ": de más a menos fuerte. El triunfo manda siempre sobre los otros palos; dentro de un mismo palo gana la carta más fuerte de esta lista.": " : de la plus forte à la plus faible. L'atout l'emporte toujours sur les autres couleurs ; dans une même couleur, c'est la plus forte de cette liste qui gagne.",
+  "De más a menos fuerte, izquierda a derecha; el número pequeño es lo que vale esa carta al ganar la baza. El 2 solo existe en la partida a 4 jugadores. En total hay 40 puntos en juego por mano, sin contar cantes ni últimas.": "De la plus forte à la plus faible, de gauche à droite ; le petit chiffre est ce que vaut la carte quand on remporte le pli. Le 2 n'existe qu'à 4 joueurs. En tout, 40 points sont en jeu par donne, sans compter les annonces ni le dernier pli.",
+  ": si te reparten el rey y el caballo del mismo palo y los conservas sin jugar, puedes cantarlos justo después de ganar una baza: 40 puntos si es el palo de triunfo, 20 si es otro. Solo cuentan para quien se llevó la subasta. Aparecerá un botón sobre tu mano — si no lo tocas antes de que acabe la baza siguiente, pierdes la ocasión (aunque vuelve a salir si ganas otra baza y sigues teniendo la pareja).": " : si tu reçois le roi et le cavalier de la même couleur et que tu les gardes sans les jouer, tu peux les annoncer juste après avoir remporté un pli : 40 points si c'est la couleur d'atout, 20 sinon. Cela ne compte que pour qui a remporté les enchères. Un bouton apparaît au-dessus de ta main — si tu ne le touches pas avant la fin du pli suivant, l'occasion est perdue (elle revient si tu gagnes un autre pli avec la paire toujours en main).",
+  ": quien gana la última baza suma 10 puntos si es del bando que subastó.": " : qui remporte le dernier pli marque 10 points s'il est du camp qui a enchéri.",
+  ": si el bando subastador reúne lo que pujó, anota esa cifra; si no, la anota el bando contrario.": " : si le camp qui a enchéri réunit ce qu'il a annoncé, il marque ce total ; sinon, c'est le camp adverse qui le marque.",
+  ": se juega con 36 cartas (sin doses), 12 por jugador. Quien gana la subasta juega solo contra los otros dos. Si se baña, los dos rivales se reparten la puja a medias; si es impar, el que iba de mano en esa mano se lleva 5 puntos más.": " : on joue à 36 cartes (sans les 2), 12 par joueur. Qui remporte les enchères joue seul contre les deux autres. S'il chute, les deux adversaires se partagent l'enchère en deux ; si le total est impair, celui qui était premier à parler prend 5 points de plus.",
+  ": de 3 a 5, baraja española de 40 cartas. El máximo de cartas por mano es el mazo repartido entero: 13 a 3 jugadores, 10 a 4 y 8 a 5.": " : de 3 à 5, jeu espagnol de 40 cartes. Le maximum de cartes par donne, c'est tout le paquet distribué : 13 à 3 joueurs, 10 à 4 et 8 à 5.",
+  ": cada número de cartas se juega tantas veces como jugadores haya, para que todos repartan una vez en cada tamaño de mano. Se sube de 1 hasta el máximo y se baja de vuelta a 1. A 4 jugadores son 76 manos: cuatro de 1 carta, cuatro de 2… hasta cuatro de 10, y de vuelta hasta cuatro de 1.": " : chaque nombre de cartes se joue autant de fois qu'il y a de joueurs, pour que chacun donne une fois à chaque taille de main. On monte de 1 jusqu'au maximum et on redescend jusqu'à 1. À 4 joueurs, cela fait 76 donnes : quatre à 1 carte, quatre à 2… jusqu'à quatre à 10, puis retour jusqu'à quatre à 1.",
+  ": la misma pirámide y, al llegar al máximo de cartas, se juegan las manos normales de siempre y después otras tantas —una por jugador— en las que no se destapa triunfo: la puja hace de subasta y quien más bazas canta elige el palo. Luego se baja como en la tradicional.": " : la même pyramide et, arrivé au maximum de cartes, on joue les donnes normales habituelles puis autant d'autres — une par joueur — où aucun atout n'est retourné : l'annonce fait office d'enchère et qui annonce le plus de plis choisit la couleur. Ensuite on redescend comme dans la traditionnelle.",
+  ": para empezar. Sube de 1 a 5 cartas y después se juegan cinco manos de 5, diez en total. El triunfo se destapa como siempre y, sobre todo,": " : pour débuter. On monte de 1 à 5 cartes puis on joue cinq donnes de 5, dix en tout. L'atout se retourne comme d'habitude et, surtout,",
+  ": si no tienes el palo que se ha pedido, puedes echar la carta que quieras en vez de estar obligado a poner triunfo.": " : si tu n'as pas la couleur demandée, tu peux jouer la carte que tu veux au lieu d'être obligé de couper.",
+  ": una sola mano de cada número, de 1 carta hasta 10, y ahí acaba: sin repeticiones y sin fase descendente.": " : une seule donne de chaque nombre, de 1 carte jusqu'à 10, et c'est fini : sans répétitions ni descente.",
+  ": al repartir se destapa la siguiente carta del mazo sobrante — su palo es el triunfo de la mano. Si el reparto gasta las 40 cartas y no sobra ninguna, el repartidor enseña la última carta que recibe y la conserva en su mano: ese palo es el triunfo.": " : à la distribution, on retourne la carte suivante du talon — sa couleur est l'atout de la donne. Si la distribution épuise les 40 cartes et qu'il n'en reste aucune, le donneur montre la dernière carte qu'il reçoit et la garde en main : cette couleur est l'atout.",
+  ": por turnos, cada jugador canta cuántas bazas cree que va a hacer esa ronda (de 0 al total de cartas repartidas). Por defecto, el último en cantar no puede pedir el número que haría que la suma de todas las pujas cuadre exactamente con las cartas repartidas — así siempre falla alguien; esto se puede desactivar en Ajustes (\"Puja del último en cantar\").": " : à tour de rôle, chacun annonce combien de plis il pense faire dans la manche (de 0 au nombre de cartes distribuées). Par défaut, le dernier à parler ne peut pas demander le nombre qui ferait tomber le total des annonces exactement sur le nombre de cartes distribuées — ainsi quelqu'un rate toujours ; cela se désactive dans Réglages (« Annonce du dernier à parler »).",
+  ": igual que en el Subastao — si tienes el palo pedido, tienes que jugarlo y superarlo si puedes; si no, tienes que triunfar y superarlo si puedes (cuando hay triunfo esa ronda); si no tienes ni palo ni triunfo, puedes echar cualquier carta. La excepción es la modalidad": " : comme au Subastao — si tu as la couleur demandée, tu dois la jouer et la dépasser si tu peux ; sinon tu dois couper et surcouper si tu peux (quand il y a un atout dans la manche) ; si tu n'as ni la couleur ni d'atout, tu joues ce que tu veux. L'exception, c'est la variante",
+  "(Fournier): si aciertas tu puja exacta, sumas 10 puntos + 5 por cada baza conseguida. Si fallas, restas 5 por cada baza de diferencia, te hayas quedado corto o largo. Pides 3 y haces 3 → 25 puntos; pides 3 y haces 1 → −10; pides 1 y haces 3 → −10.": " (Fournier) : si tu réussis ton annonce exacte, tu marques 10 points + 5 par pli remporté. Si tu rates, tu perds 5 points par pli d'écart, que tu sois en dessous ou au-dessus. Tu annonces 3 et tu en fais 3 → 25 points ; tu annonces 3 et tu en fais 1 → −10 ; tu annonces 1 et tu en fais 3 → −10.",
+  ": quien tenga más puntos al terminar la última mano de la modalidad elegida.": " : celui qui a le plus de points à la fin de la dernière donne de la variante choisie.",
+  "Oros": "Deniers",
+  "Copas": "Coupes",
+  "Espadas": "Épées",
+  "Bastos": "Bâtons",
+  "{0} juega {1}.": "{0} joue {1}.",
+  "{0} de {1}": "{0} de {1}",
+  "Triunfo: {0}. Sale {1}.": "Atout : {0}. {1} entame.",
+  "Triunfo: {0}.": "Atout : {0}.",
+  "{0} canta {1} en {2}.": "{0} annonce {1} à {2}.",
+  "{0} gana la baza ({1} pts).": "{0} remporte le pli ({1} pts).",
+  "{0} gana la baza.": "{0} remporte le pli.",
+  "10 de últimas para el bando subastador.": "10 du dernier pli pour le camp qui a enchéri.",
+  "{0} canta {1}.": "{0} annonce {1}.",
+  "{0} gana la subasta con {1} y elige triunfo.": "{0} remporte l'enchère avec {1} et choisit l'atout.",
+  "Fin de la ronda {0}.": "Fin de la manche {0}.",
+  "Cantar {0} en {1}": "Annoncer {0} à {1}",
+  "¡Has ganado la partida!": "Tu as gagné la partie !",
+  "Gana {0}": "{0} gagne",
+  "{0} llega a {1} puntos.": "{0} atteint {1} points.",
+  " Se jugaba: {0}€.": " On jouait : {0} €.",
+  " · Se jugaba: {0}€.": " · On jouait : {0} €.",
+  "Se juega: {0}€": "On joue : {0} €",
+  "Ronda {0} de {1}": "Manche {0} sur {1}",
+  "Ver resultado final": "Voir le résultat final",
+  "Siguiente ronda": "Manche suivante",
+  "Mano cumplida": "Contrat réussi",
+  "Mano bañada": "Contrat chuté",
+  "Pareja subastadora": "Équipe qui a enchéri",
+  "Jugador solo": "Joueur seul",
+  "Puntos pujados": "Points annoncés",
+  "Puntos reunidos": "Points réunis",
+  "Anota": "Marque",
+  "Anotan": "Marquent",
+  "Aún no has guardado ninguna partida.": "Aucune partie enregistrée pour l'instant.",
+  "El fichero no es un historial válido.": "Ce fichier n'est pas un historique valide.",
+  "Historial importado: {0} partidas guardadas en total.": "Historique importé : {0} parties enregistrées au total.",
+  "Pásale el móvil a {0}": "Passe le téléphone à {0}",
+  "Toca cuando lo tenga {0}. Nadie más debería ver esta pantalla.": "Touche quand il l'a {0}. Personne d'autre ne doit voir cet écran.",
+  "para elegir el triunfo": "pour choisir l'atout",
+  "para pujar": "pour enchérir",
+  "para jugar su carta": "pour jouer sa carte",
+  "Esperando…": "En attente…",
+  "{0} (para decidir la puja)": "{0} (pour décider l'annonce)",
+  "Mano de {0}": "Main de {0}",
+  "En juego {0}": "En jeu {0}",
+  "reparte": "donne",
+  "sale": "entame",
+  "Ronda {0}/{1} · {2} carta": "Manche {0}/{1} · {2} carte",
+  "Ronda {0}/{1} · {2} cartas": "Manche {0}/{1} · {2} cartes",
+  "Puja: {0} ({1})": "Enchère : {0} ({1})",
+  "Puja: {0} de {1} · Lleva: {2}": "Enchère : {0} de {1} · A : {2}",
+  "Puja: {0} de {1} · Llevan: {2}": "Enchère : {0} de {1} · Ont : {2}",
+  "Sin triunfo esta ronda": "Sans atout cette manche",
+  "Triunfo: a subasta": "Atout : aux enchères",
+  "¡Tiempo!": "Temps écoulé !",
+  "¡Cante!": "Annonce !",
+  "Subastao a {0}": "Subastao à {0}",
+  "La Pocha a {0}": "La Pocha à {0}",
+  "{0} personas": "{0} personnes",
+  "+ {0} IA": "+ {0} IA",
+  "sin IA": "sans IA",
+  "{0} manos": "{0} donnes",
+  "No se pudo comprobar las salas abiertas.": "Impossible de consulter les salons ouverts.",
+  "No hay salas abiertas ahora mismo — crea una o introduce un código.": "Aucun salon ouvert pour le moment — crées-en un ou saisis un code.",
+  "No se pudo crear la sala: ": "Impossible de créer le salon : ",
+  "Introduce un código.": "Saisis un code.",
+  "Esa sala no existe.": "Ce salon n'existe pas.",
+  "Esa partida ya ha empezado.": "Cette partie a déjà commencé.",
+  "La sala ya está completa.": "Le salon est déjà complet.",
+  "No se pudo unir a la sala.": "Impossible de rejoindre le salon.",
+  "Anfitrión": "Hôte",
+  "Jugador": "Joueur",
+  "Anfitrión {0} · {1}/{2} jugadores": "Hôte {0} · {1}/{2} joueurs",
+  "Empezar ({0}/{1}, resto IA)": "Commencer ({0}/{1}, le reste en IA)",
+  "Sube de 1 a 5 cartas y luego cinco manos de 5, y no obliga a fallar": "Monte de 1 à 5 cartes puis cinq donnes de 5, et n'oblige pas à couper",
+  "Cada número de cartas {0} veces, subiendo de 1 a {1} y bajando a 1": "Chaque nombre de cartes {0} fois, en montant de 1 à {1} puis en redescendant à 1",
+  "Como la tradicional y, al llegar a {0} cartas, otras {1} manos subastando el triunfo": "Comme la traditionnelle et, arrivé à {0} cartes, {1} donnes de plus avec l'atout aux enchères",
+  "Diez manos seguidas de 5 cartas, sin subida ni bajada": "Dix donnes de suite à 5 cartes, sans montée ni descente",
+  ": diez manos seguidas de 5 cartas, sin subida ni bajada.": " : dix donnes de suite à 5 cartes, sans montée ni descente.",
+  "Sube de 1 a {0} y ahí acaba la partida, sin bajada": "Monte de 1 à {0} et la partie s'arrête là, sans descente",
+  "Sales tú. Probando cientos de repartos posibles de las cartas que no conoces, jugar {0} es lo que más suma a tu bando de media.": "C'est toi qui entames. En testant des centaines de distributions possibles des cartes que tu ne connais pas, jouer {0} est ce qui rapporte le plus à ton camp en moyenne.",
+  " Gana esta baza en el {0}% de las simulaciones": " Cela remporte le pli dans {0} % des simulations",
+  " — quedan {0} triunfo(s) sin ver, así que existe riesgo de que te la corten.": " — il reste {0} atout(s) non vus, donc tu risques de te faire couper.",
+  ", y no queda ningún triunfo por ahí que te la pueda quitar.": ", et il ne reste aucun atout dehors pour te la prendre.",
+  " Es triunfo, así que gana esta baza en el {0}% de las simulaciones.": " C'est un atout, donc cela remporte le pli dans {0} % des simulations.",
+  "La baza la va ganando tu compañero ({0}). Probando cientos de repartos, lo que más conviene a vuestro bando es soltar {1} — sumas sus puntos en vez de gastar una carta que podrías necesitar en otra baza.": "C'est ton partenaire ({0}) qui tient le pli. En testant des centaines de distributions, ce qui arrange le plus ton camp, c'est de lâcher {1} — tu encaisses ses points au lieu de dépenser une carte qui pourrait te servir sur un autre pli.",
+  "Probando cientos de repartos posibles, {0} es lo que más te conviene frente a {1} (de {2}): gana esta baza en el {3}% de las simulaciones sin gastar tus cartas más fuertes.": "En testant des centaines de distributions possibles, {0} est ce qui t'arrange le mieux face à {1} (de {2}) : cela remporte le pli dans {3} % des simulations sans dépenser tes plus fortes cartes.",
+  "No hay ninguna jugada que gane esta baza con garantías frente a {0} (de {1}) — la mejor opción solo se impone en el {2}% de las simulaciones. Jugando {3} es lo que más beneficia a tu bando a la larga, contando lo que puedes necesitar más adelante.": "Aucun coup ne remporte ce pli à coup sûr face à {0} (de {1}) — la meilleure option ne l'emporte que dans {2} % des simulations. Jouer {3} est ce qui profite le plus à ton camp sur la durée, compte tenu de ce dont tu peux avoir besoin ensuite."
+};
+let LANG = 'es';
+function t(es){
+  if(LANG!=='fr') return es;
+  const clave = String(es).trim();
+  const tr = FR_DICT[clave];
+  return tr===undefined ? es : String(es).replace(clave, tr);
+}
+function tf(es, ...args){
+  return t(es).replace(/\{(\d+)\}/g, (_,i)=> args[i]!==undefined ? args[i] : '');
+}
+// Suit names go through the same table (Oros → Deniers, …).
+function suitName(suit){ return t(SUIT_LABEL[suit]); }
+
+const textoOriginal = new WeakMap();
+function translateStaticDom(){
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const nodos = [];
+  for(let n=w.nextNode(); n; n=w.nextNode()) nodos.push(n);
+  nodos.forEach(n=>{
+    const padre = n.parentNode;
+    if(!padre || padre.nodeName==='SCRIPT' || padre.nodeName==='STYLE') return;
+    if(!textoOriginal.has(n)) textoOriginal.set(n, n.nodeValue);
+    const es = textoOriginal.get(n);
+    if(!es.trim()) return;
+    n.nodeValue = t(es);
+  });
+  document.querySelectorAll('[placeholder],[title],[aria-label]').forEach(el=>{
+    ['placeholder','title','aria-label'].forEach(a=>{
+      if(!el.hasAttribute(a)) return;
+      const clave = a+'|orig';
+      if(!el.dataset[clave]) el.dataset[clave] = el.getAttribute(a);
+      el.setAttribute(a, t(el.dataset[clave]));
+    });
+  });
+}
+function setLang(code){
+  LANG = code==='fr' ? 'fr' : 'es';
+  try{ localStorage.setItem('subastado_lang', LANG); }catch(e){}
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-lang-btn]').forEach(b=>
+    b.setAttribute('aria-pressed', String(b.dataset.langBtn===LANG)));
+  translateStaticDom();
+  // anything drawn from JS has to be drawn again in the new language
+  if(state && state.numPlayers) render();
+  if(typeof renderResultHistory==='function') renderResultHistory();
+  const vList = document.getElementById('launcherVariantList');
+  if(vList && vList.children.length) pochaStep2Pick(()=>{});
+}
+(function(){
+  let guardado=null;
+  try{ guardado = localStorage.getItem('subastado_lang'); }catch(e){}
+  if(guardado==='fr') LANG='fr';
+})();
+
 const SUIT_LABEL = {oros:'Oros',copas:'Copas',espadas:'Espadas',bastos:'Bastos'};
 const RANKS_4P = ['As','3','Rey','Caballo','Sota','7','6','5','4','2'];
 const RANKS_3P = ['As','3','Rey','Caballo','Sota','7','6','5','4'];
@@ -1069,7 +1372,7 @@ function pochaMaxRoundSize(numPlayers){ return Math.floor(40/numPlayers); }
 const POCHA_VARIANTS = {
   tradicional: {
     label: 'Pocha Tradicional',
-    hint: n=>`Cada número de cartas ${n} veces, subiendo de 1 a ${pochaMaxRoundSize(n)} y bajando a 1`,
+    hint: n=>tf('Cada número de cartas {0} veces, subiendo de 1 a {1} y bajando a 1', n, pochaMaxRoundSize(n)),
     // Every hand size is played as many times as there are players, so each
     // player deals once at every size — on the way up and on the way down.
     roundSizes(n){
@@ -1082,7 +1385,7 @@ const POCHA_VARIANTS = {
   },
   olimpica: {
     label: 'Pocha Olímpica',
-    hint: n=>`Como la tradicional y, al llegar a ${pochaMaxRoundSize(n)} cartas, otras ${n} manos subastando el triunfo`,
+    hint: n=>tf('Como la tradicional y, al llegar a {0} cartas, otras {1} manos subastando el triunfo', pochaMaxRoundSize(n), n),
     // Same pyramid, except that on reaching the full deal the table plays its
     // `n` hands as usual and then `n` more with the trump auctioned.
     roundSizes(n){
@@ -1099,14 +1402,22 @@ const POCHA_VARIANTS = {
       return roundIndex >= inicio && roundIndex < inicio + n;
     },
   },
+  ninos: {
+    label: 'Pocha Niños',
+    hint: ()=>t('Sube de 1 a 5 cartas y luego cinco manos de 5, y no obliga a fallar'),
+    // 1 → 5 and then five more hands of five.
+    roundSizes(){ return [1,2,3,4,5,5,5,5,5,5]; },
+    // Without a card of the led suit you may throw anything — see legalMoves.
+    libreSinPalo: true,
+  },
   corta5: {
     label: 'Pocha Corta a 5 cartas',
-    hint: ()=>'Diez manos seguidas de 5 cartas, sin subida ni bajada',
+    hint: ()=>t('Diez manos seguidas de 5 cartas, sin subida ni bajada'),
     roundSizes(){ return new Array(10).fill(5); },
   },
   cortanormal: {
     label: 'Pocha Corta Normal',
-    hint: n=>`Sube de 1 a ${Math.min(10, pochaMaxRoundSize(n))} y ahí acaba la partida, sin bajada`,
+    hint: n=>tf('Sube de 1 a {0} y ahí acaba la partida, sin bajada', Math.min(10, pochaMaxRoundSize(n))),
     roundSizes(n){
       const max = Math.min(10, pochaMaxRoundSize(n));
       return Array.from({length:max}, (_,i)=>i+1);
@@ -1181,7 +1492,7 @@ function sortHand(hand, trumpSuit){
     return a.rankIndex-b.rankIndex;
   });
 }
-function cardLabel(c){ return `${RANK_SHORT[c.rank]} de ${SUIT_LABEL[c.suit]}`; }
+function cardLabel(c){ return tf('{0} de {1}', RANK_SHORT[c.rank], suitName(c.suit)); }
 
 /* mode-aware helpers — 4 players are 2 fixed teams (A: seats 0+2, B: seats 1+3);
    3 players is everyone-for-themselves, so "the bidding side" is just one seat.
@@ -1234,6 +1545,12 @@ function trickWinnerSeat(trick,trump){
 // suit and beat the current best if possible; if you can't follow suit, must
 // trump and beat any trump on the table if possible; only when you have
 // neither the lead suit nor trump can you play anything.
+// True when the table is playing a variant that drops the obligation to trump:
+// you still have to follow suit if you can, but with no card of the led suit
+// you may throw anything instead of being forced to ruff. (Pocha Niños.)
+function sinObligacionDeFallar(){
+  return state.gameType==='pocha' && !!pochaVariant(state.pocha && state.pocha.variant).libreSinPalo;
+}
 function legalMoves(hand,trick,trump){
   if(trick.length===0) return hand.slice();
   const leadSuit=trick[0].card.suit;
@@ -1244,6 +1561,7 @@ function legalMoves(hand,trick,trump){
     const beating=sameSuit.filter(c=>beats(c,bestCard,leadSuit,trump));
     return beating.length?beating:sameSuit;
   }
+  if(sinObligacionDeFallar()) return hand.slice();
   const trumps=hand.filter(c=>c.suit===trump);
   if(trumps.length>0){
     const beating=trumps.filter(c=>beats(c,bestCard,leadSuit,trump));
@@ -1764,7 +2082,7 @@ function renderTrumpChoices(){
     const div=document.createElement('div');
     div.className='trump-choice '+suit;
     div.style.cursor='pointer';
-    div.innerHTML=`${suitIcon(suit)}<div>${SUIT_LABEL[suit]}</div>`;
+    div.innerHTML=`${suitIcon(suit)}<div>${suitName(suit)}</div>`;
     div.onclick=()=>{
       document.getElementById('trumpPanel').classList.add('hidden');
       if(state.gameType==='pocha') choosePochaTrump(suit); else chooseTrump(suit);
@@ -1792,7 +2110,7 @@ function chooseTrump(suit){
   state.voidSuits={};
   for(let s=0;s<state.numPlayers;s++) state.voidSuits[s]=new Set();
   for(let s=0;s<state.numPlayers;s++) sortHand(state.hands[s],suit);
-  state.log.push(`Triunfo: ${SUIT_LABEL[suit]}. Sale ${state.seatNames[state.leader]}.`);
+  state.log.push(tf('Triunfo: {0}. Sale {1}.', suitName(suit), state.seatNames[state.leader]));
   playTick();
 }
 // Re-entered after every card played (or when a new trick starts). Renders
@@ -1820,7 +2138,7 @@ function playCard(seat,card){
   const idx=hand.findIndex(c=>c.id===card.id);
   hand.splice(idx,1);
   state.currentTrick.push({seat,card});
-  state.log.push(`${state.seatNames[seat]} juega ${cardLabel(card)}.`);
+  state.log.push(tf('{0} juega {1}.', state.seatNames[seat], cardLabel(card)));
   // memory tracking: record card seen, and deduce a void suit if this player didn't follow the lead suit
   state.seenCards.push(card);
   if(state.currentTrick.length>1){
@@ -1864,7 +2182,7 @@ function doCanteLocal(seat, suit){
   state.cantedSuits[seat].add(suit);
   const pts = suit===state.trumpSuit ? 40 : 20;
   state.biddingTeamPoints += pts;
-  state.log.push(`${state.seatNames[seat]} canta ${pts} en ${SUIT_LABEL[suit]}.`);
+  state.log.push(tf('{0} canta {1} en {2}.', state.seatNames[seat], pts, suitName(suit)));
   pushEffect('cante', {seatName:state.seatNames[seat], suit, pts});
   return pts;
 }
@@ -1892,7 +2210,7 @@ function renderCanteOffer(){
   document.getElementById('canteBtns').innerHTML = offer.suits.map(su=>{
     const pts = su===state.trumpSuit ? 40 : 20;
     return `<button class="cante-offer-btn${pts===40?' pts-40':''}" onclick="declareCante(${offer.seat},'${su}')">`
-      + `${suitIcon(su)}<span>Cantar ${pts} en ${SUIT_LABEL[su]}</span></button>`;
+      + `${suitIcon(su)}<span>${tf('Cantar {0} en {1}', pts, suitName(su))}</span></button>`;
   }).join('');
 }
 
@@ -1910,7 +2228,7 @@ function resolveTrick(){
   if(isDeclarerSide(winnerSeat)){
     state.biddingTeamPoints+=trickPts;
   }
-  state.log.push(`${state.seatNames[winnerSeat]} gana la baza (${trickPts} pts).`);
+  state.log.push(tf('{0} gana la baza ({1} pts).', state.seatNames[winnerSeat], trickPts));
   state.currentTrick=[];
   const isLastTrick = state.hands[0].length===0;
   // Winning a trick is what opens the cante window: the winner may now declare
@@ -1929,7 +2247,7 @@ function resolveTrick(){
   if(isLastTrick && isDeclarerSide(winnerSeat)){
     state.biddingTeamPoints+=10;
     bonusThisTrick+=10;
-    state.log.push('10 de últimas para el bando subastador.');
+    state.log.push(t('10 de últimas para el bando subastador.'));
   }
   state.playerTrickPoints[winnerSeat]+=trickPts+bonusThisTrick;
 
@@ -2006,8 +2324,8 @@ function showOverlay(key){
   const label=scoreLabelFor(key);
   const amount=state.scores[key];
   const isYou = (state.numPlayers===4 && key==='A') || (state.numPlayers===3 && key==='0');
-  document.getElementById('overlayTitle').textContent = isYou ? '¡Has ganado la partida!' : `Gana ${label}`;
-  document.getElementById('overlayBody').textContent = `${label} llega a ${amount} puntos.` + (state.stake ? ` Se jugaba: ${state.stake}€.` : '');
+  document.getElementById('overlayTitle').textContent = isYou ? t('¡Has ganado la partida!') : tf('Gana {0}', label);
+  document.getElementById('overlayBody').textContent = tf('{0} llega a {1} puntos.', label, amount) + (state.stake ? tf(' Se jugaba: {0}€.', state.stake) : '');
   document.getElementById('overlay').classList.remove('hidden');
   document.getElementById('resultNameInput').value = '';
   document.getElementById('saveResultConfirm').classList.add('hidden');
@@ -2171,7 +2489,7 @@ function recordPochaBid(seat, amount){
   state.pocha.bids[seat] = amount;
   if(!state.pocha.bidOrder) state.pocha.bidOrder = [];
   state.pocha.bidOrder.push(seat);
-  state.log.push(`${state.seatNames[seat]} canta ${amount}.`);
+  state.log.push(tf('{0} canta {1}.', state.seatNames[seat], amount));
   const remaining = seatRange().filter(s=>state.pocha.bids[s]===null);
   console.log('remaining bids:', remaining, 'bids now:', [...state.pocha.bids]);
   if(remaining.length===0){
@@ -2221,7 +2539,7 @@ function startPochaTrumpChoice(){
   for(const s of order) if(state.pocha.bids[s] > state.pocha.bids[winner]) winner = s;
   state.pocha.trumpChooser = winner;
   state.phase = 'pocha-trump';
-  state.log.push(`${state.seatNames[winner]} gana la subasta con ${state.pocha.bids[winner]} y elige triunfo.`);
+  state.log.push(tf('{0} gana la subasta con {1} y elige triunfo.', state.seatNames[winner], state.pocha.bids[winner]));
   document.getElementById('pochaBidPanel').classList.add('hidden');
   render();
   if(!isHumanSeat(winner)){
@@ -2251,7 +2569,7 @@ function choosePochaTrump(suit){
   state.trumpSuit = suit;
   state.pocha.trumpCard = null;
   for(let s=0;s<state.numPlayers;s++) sortHand(state.hands[s], suit);
-  state.log.push(`Triunfo: ${SUIT_LABEL[suit]}.`);
+  state.log.push(tf('Triunfo: {0}.', suitName(suit)));
   document.getElementById('trumpPanel').classList.add('hidden');
   startPochaPlay();
 }
@@ -2384,7 +2702,7 @@ function resolvePochaTrick(){
   const trick=state.currentTrick;
   const winnerSeat=trickWinnerSeat(trick,state.trumpSuit);
   state.pocha.tricksWon[winnerSeat]++;
-  state.log.push(`${state.seatNames[winnerSeat]} gana la baza.`);
+  state.log.push(tf('{0} gana la baza.', state.seatNames[winnerSeat]));
   state.currentTrick=[];
   const isLastTrick = state.hands[0].length===0;
   pushEffect('trickWin', {winnerSeat});
@@ -2404,7 +2722,7 @@ function endPochaRound(){
     state.pocha.scores[s]+=score;
     return {seat:s, bid, won, score};
   });
-  state.log.push(`Fin de la ronda ${state.pocha.roundIndex+1}.`);
+  state.log.push(tf('Fin de la ronda {0}.', state.pocha.roundIndex+1));
   const isLastRound = state.pocha.roundIndex >= state.pocha.roundSizes.length-1;
   pushEffect('pochaScorePulse', {results});
   // Part of the synced state so an online guest (which never runs this
@@ -2423,11 +2741,11 @@ function endPochaRound(){
   }
 }
 function renderPochaSummary(results, isLastRound){
-  document.getElementById('summaryTitle').textContent = `Ronda ${state.pocha.roundIndex+1} de ${state.pocha.roundSizes.length}`;
+  document.getElementById('summaryTitle').textContent = tf('Ronda {0} de {1}', state.pocha.roundIndex+1, state.pocha.roundSizes.length);
   document.getElementById('summaryBody').innerHTML = results.map(r=>
     `<div class="summary-row pocha-row"><span>${state.seatNames[r.seat]}</span><span class="bw">${r.bid} · ${r.won}</span><span class="score">${r.score>=0?'+':''}${r.score}</span></div>`
   ).join('');
-  document.getElementById('summaryAdvanceBtn').textContent = isLastRound ? 'Ver resultado final' : 'Siguiente ronda';
+  document.getElementById('summaryAdvanceBtn').textContent = t(isLastRound ? 'Ver resultado final' : 'Siguiente ronda');
 }
 function advancePochaRound(){
   if(state.phase==='gameover') return;
@@ -2438,10 +2756,10 @@ function advancePochaRound(){
 }
 function showPochaOverlay(winnerSeat){
   const isYou = winnerSeat===0;
-  document.getElementById('overlayTitle').textContent = isYou ? '¡Has ganado la partida!' : `Gana ${state.seatNames[winnerSeat]}`;
+  document.getElementById('overlayTitle').textContent = isYou ? t('¡Has ganado la partida!') : tf('Gana {0}', state.seatNames[winnerSeat]);
   const ranking = seatRange().slice().sort((a,b)=>state.pocha.scores[b]-state.pocha.scores[a])
     .map(s=>`${state.seatNames[s]}: ${state.pocha.scores[s]}`).join(' · ');
-  document.getElementById('overlayBody').textContent = ranking + (state.stake ? ` · Se jugaba: ${state.stake}€.` : '');
+  document.getElementById('overlayBody').textContent = ranking + (state.stake ? tf(' · Se jugaba: {0}€.', state.stake) : '');
   document.getElementById('overlay').classList.remove('hidden');
   document.getElementById('resultNameInput').value = '';
   document.getElementById('saveResultConfirm').classList.add('hidden');
@@ -2502,7 +2820,7 @@ function renderResultHistory(){
   const box = document.getElementById('resultHistoryList');
   if(!box) return;
   const list = loadResultHistory();
-  if(list.length===0){ box.innerHTML = `<span style="color:var(--piedra);">Aún no has guardado ninguna partida.</span>`; return; }
+  if(list.length===0){ box.innerHTML = `<span style="color:var(--piedra);">${t('Aún no has guardado ninguna partida.')}</span>`; return; }
   const levelLabel = {low:'Bajo', medium:'Medio', high:'Alto'};
   box.innerHTML = list.map(e=>{
     const type = e.gameType==='pocha' ? `Pocha a ${e.numPlayers}` : (e.numPlayers===4 ? 'Subastao a 4' : 'Subastao a 3');
@@ -2543,8 +2861,8 @@ function importResultHistory(file){
   reader.onload = () => {
     let incoming;
     try{ incoming = JSON.parse(reader.result); }
-    catch(e){ alert('El fichero no es un historial válido.'); return; }
-    if(!Array.isArray(incoming)){ alert('El fichero no es un historial válido.'); return; }
+    catch(e){ alert(t('El fichero no es un historial válido.')); return; }
+    if(!Array.isArray(incoming)){ alert(t('El fichero no es un historial válido.')); return; }
     const existing = loadResultHistory();
     // merge by date+name to avoid duplicating entries already present
     const seen = new Set(existing.map(e=>e.date+'|'+e.name));
@@ -2553,7 +2871,7 @@ function importResultHistory(file){
     if(merged.length>200) merged.length=200;
     saveResultHistory(merged);
     renderResultHistory();
-    alert(`Historial importado: ${merged.length} partidas guardadas en total.`);
+    alert(tf('Historial importado: {0} partidas guardadas en total.', merged.length));
   };
   reader.readAsText(file);
   document.getElementById('importHistoryFile').value = '';
@@ -2617,10 +2935,10 @@ function updatePassScreen(){
   // between doesn't count as the phone changing hands, so the same human
   // stays revealed (just non-interactive) across their AI's turns.
   if(isHumanSeat(actor) && actor!==state.revealedSeat){
-    const what = (state.phase==='trump' || state.phase==='pocha-trump') ? 'para elegir el triunfo'
-      : (state.phase==='bidding' || state.phase==='pocha-bidding') ? 'para pujar' : 'para jugar su carta';
-    document.getElementById('passOverlayTitle').textContent = `Pásale el móvil a ${state.seatNames[actor]}`;
-    document.getElementById('passOverlaySubtitle').textContent = `Toca cuando lo tenga ${what}. Nadie más debería ver esta pantalla.`;
+    const what = t((state.phase==='trump' || state.phase==='pocha-trump') ? 'para elegir el triunfo'
+      : (state.phase==='bidding' || state.phase==='pocha-bidding') ? 'para pujar' : 'para jugar su carta');
+    document.getElementById('passOverlayTitle').textContent = tf('Pásale el móvil a {0}', state.seatNames[actor]);
+    document.getElementById('passOverlaySubtitle').textContent = tf('Toca cuando lo tenga {0}. Nadie más debería ver esta pantalla.', what);
     overlay.classList.remove('hidden');
   } else {
     overlay.classList.add('hidden');
@@ -2668,13 +2986,15 @@ function buildHelpReasoning(stats, trick, trump, outstanding, seat){
   const suggestion=top.card;
   const winPct=Math.round(top.winProb*100);
   if(trick.length===0){
-    let text=`Sales tú. Probando cientos de repartos posibles de las cartas que no conoces, jugar ${cardLabel(suggestion)} es lo que más suma a tu bando de media.`;
+    let text=tf('Sales tú. Probando cientos de repartos posibles de las cartas que no conoces, jugar {0} es lo que más suma a tu bando de media.', cardLabel(suggestion));
     if(suggestion.suit!==trump){
       const outTrumpsLeft=outstanding[trump].length;
-      text+=` Gana esta baza en el ${winPct}% de las simulaciones`;
-      text+= outTrumpsLeft>0 ? ` — quedan ${outTrumpsLeft} triunfo(s) sin ver, así que existe riesgo de que te la corten.` : ', y no queda ningún triunfo por ahí que te la pueda quitar.';
+      text+=tf(' Gana esta baza en el {0}% de las simulaciones', winPct);
+      text+= outTrumpsLeft>0
+        ? tf(' — quedan {0} triunfo(s) sin ver, así que existe riesgo de que te la corten.', outTrumpsLeft)
+        : t(', y no queda ningún triunfo por ahí que te la pueda quitar.');
     } else {
-      text+=` Es triunfo, así que gana esta baza en el ${winPct}% de las simulaciones.`;
+      text+=tf(' Es triunfo, así que gana esta baza en el {0}% de las simulaciones.', winPct);
     }
     return text;
   }
@@ -2682,12 +3002,12 @@ function buildHelpReasoning(stats, trick, trump, outstanding, seat){
   const bestCard=trick.find(t=>t.seat===wSeat).card;
   const winnerIsPartner = isDeclarerSide(wSeat)===isDeclarerSide(seat) && wSeat!==seat;
   if(winnerIsPartner && state.numPlayers===4){
-    return `La baza la va ganando tu compañero (${state.seatNames[wSeat]}). Probando cientos de repartos, lo que más conviene a vuestro bando es soltar ${cardLabel(suggestion)} — sumas sus puntos en vez de gastar una carta que podrías necesitar en otra baza.`;
+    return tf('La baza la va ganando tu compañero ({0}). Probando cientos de repartos, lo que más conviene a vuestro bando es soltar {1} — sumas sus puntos en vez de gastar una carta que podrías necesitar en otra baza.', state.seatNames[wSeat], cardLabel(suggestion));
   }
   if(top.winProb>=0.5){
-    return `Probando cientos de repartos posibles, ${cardLabel(suggestion)} es lo que más te conviene frente a ${cardLabel(bestCard)} (de ${state.seatNames[wSeat]}): gana esta baza en el ${winPct}% de las simulaciones sin gastar tus cartas más fuertes.`;
+    return tf('Probando cientos de repartos posibles, {0} es lo que más te conviene frente a {1} (de {2}): gana esta baza en el {3}% de las simulaciones sin gastar tus cartas más fuertes.', cardLabel(suggestion), cardLabel(bestCard), state.seatNames[wSeat], winPct);
   }
-  return `No hay ninguna jugada que gane esta baza con garantías frente a ${cardLabel(bestCard)} (de ${state.seatNames[wSeat]}) — la mejor opción solo se impone en el ${winPct}% de las simulaciones. Jugando ${cardLabel(suggestion)} es lo que más beneficia a tu bando a la larga, contando lo que puedes necesitar más adelante.`;
+  return tf('No hay ninguna jugada que gane esta baza con garantías frente a {0} (de {1}) — la mejor opción solo se impone en el {2}% de las simulaciones. Jugando {3} es lo que más beneficia a tu bando a la larga, contando lo que puedes necesitar más adelante.', cardLabel(bestCard), state.seatNames[wSeat], winPct, cardLabel(suggestion));
 }
 function computeHelp(seat){
   const trump=state.trumpSuit;
@@ -2972,7 +3292,7 @@ function showCanteAnimation(seatName, suit, pts){
     <div class="cante-wash"></div>
     <div class="cante-burst"></div>
     <div class="cante-text">
-      <div class="cante-shout">¡Cante!</div>
+      <div class="cante-shout">${t('¡Cante!')}</div>
       <div class="cante-detail">${suitIcon(suit)}<span>${pts} · ${seatName}</span></div>
     </div>`;
   document.body.appendChild(overlay);
@@ -3036,7 +3356,7 @@ function cardHtml(card, extraClass){
 // The trump on the mesa is shown with the suit's own drawing, in colour, the
 // same artwork the cards carry — not its name spelled out.
 function trumpInfoHtml(suit){
-  return `Triunfo: <span class="trump-pip" title="${SUIT_LABEL[suit]}" aria-label="${SUIT_LABEL[suit]}">${suitIcon(suit)}</span>`;
+  return `${t('Triunfo')}: <span class="trump-pip" title="${suitName(suit)}" aria-label="${suitName(suit)}">${suitIcon(suit)}</span>`;
 }
 function seatAiTag(s){
   return (state.humanPlayers!==undefined && s>=state.humanPlayers) ? '<span class="ai-tag">IA</span>' : '';
@@ -3065,8 +3385,8 @@ function seatIsActing(s){
 // "reparte" / "sale" — what the old chips hung off their edges as badges.
 function seatEstados(s){
   const e=[];
-  if(state.dealerIndex===s) e.push('reparte');
-  if((state.phase==='playing'||state.phase==='handover') && state.leader===s) e.push('sale');
+  if(state.dealerIndex===s) e.push(t('reparte'));
+  if((state.phase==='playing'||state.phase==='handover') && state.leader===s) e.push(t('sale'));
   return e;
 }
 // Live points for the hand in progress — 0 outside the 'playing' phase, so
@@ -3109,7 +3429,7 @@ function renderSeatsBar(){
       }).join('');
       return `<div class="team ${t.seats.includes(mine)?'you':''}" data-key="${t.key}">
         <span class="val">${state.scores[t.key]}</span>
-        <div class="team-vivo">En juego ${vivo}</div>
+        <div class="team-vivo">${tf('En juego {0}', vivo)}</div>
         <div class="nombres">${nombres}</div>
       </div>`;
     }).join('');
@@ -3119,7 +3439,7 @@ function renderSeatsBar(){
   bar.className='seats-row seats';
   bar.innerHTML = seatRange().map(s=>{
     const total = state.gameType==='pocha' ? state.pocha.scores[s] : state.scores[s];
-    const vivo = state.gameType==='pocha' ? pochaSeatNote(s) : `En juego ${currentHandPoints(s)}`;
+    const vivo = state.gameType==='pocha' ? pochaSeatNote(s) : tf('En juego {0}', currentHandPoints(s));
     const est = seatEstados(s).join(' · ');
     return `<div class="seat ${s===mine?'you':''} ${seatIsActing(s)?'turn':''}" data-seat="${s}" data-key="${s}">
       <span class="nm">${state.seatNames[s]}</span>
@@ -3216,16 +3536,19 @@ function render(){
   // mesa info
   if(state.gameType==='pocha'){
     document.getElementById('trumpInfo').innerHTML = state.trumpSuit ? trumpInfoHtml(state.trumpSuit)
-      : state.pocha.auctionRound ? 'Triunfo: a subasta' : 'Sin triunfo esta ronda';
+      : t(state.pocha.auctionRound ? 'Triunfo: a subasta' : 'Sin triunfo esta ronda');
     const roundSize = state.pocha.roundSizes[state.pocha.roundIndex];
-    document.getElementById('bidInfo').textContent = `Ronda ${state.pocha.roundIndex+1}/${state.pocha.roundSizes.length} · ${roundSize} carta${roundSize===1?'':'s'}`;
+    document.getElementById('bidInfo').textContent = tf(roundSize===1 ? 'Ronda {0}/{1} · {2} carta' : 'Ronda {0}/{1} · {2} cartas',
+      state.pocha.roundIndex+1, state.pocha.roundSizes.length, roundSize);
   } else {
-    document.getElementById('trumpInfo').innerHTML = state.trumpSuit ? trumpInfoHtml(state.trumpSuit) : 'Triunfo: por decidir';
+    document.getElementById('trumpInfo').innerHTML = state.trumpSuit ? trumpInfoHtml(state.trumpSuit) : t('Triunfo: por decidir');
     if(state.phase==='bidding'){
-      document.getElementById('bidInfo').textContent = state.currentBid>0 ? `Puja: ${state.currentBid} (${state.seatNames[state.currentBidder]})` : 'Subasta en curso';
+      document.getElementById('bidInfo').textContent = state.currentBid>0
+        ? tf('Puja: {0} ({1})', state.currentBid, state.seatNames[state.currentBidder]) : t('Subasta en curso');
     } else if(state.phase==='playing' || state.phase==='handover'){
-      const llevaVerb = state.numPlayers===4 ? 'Llevan' : 'Lleva';
-      document.getElementById('bidInfo').textContent = `Puja: ${state.bidAmount} de ${biddingSideLabel()} · ${llevaVerb}: ${state.biddingTeamPoints}`;
+      document.getElementById('bidInfo').textContent = tf(
+        state.numPlayers===4 ? 'Puja: {0} de {1} · Llevan: {2}' : 'Puja: {0} de {1} · Lleva: {2}',
+        state.bidAmount, biddingSideLabel(), state.biddingTeamPoints);
     } else {
       document.getElementById('bidInfo').textContent='';
     }
@@ -3280,7 +3603,7 @@ function render(){
     const canPlay = state.phase==='playing' && activeSeat===displaySeat && state.turn===displaySeat;
     const legal = canPlay ? legalMoves(state.hands[displaySeat], state.currentTrick, state.trumpSuit).map(c=>c.id) : [];
     const who = multiHuman ? `Mano de ${state.seatNames[displaySeat]}` : 'Tu mano';
-    document.getElementById('handLbl').textContent = (state.phase==='bidding'||state.phase==='pocha-bidding') ? `${who} (para decidir la puja)` : who;
+    document.getElementById('handLbl').textContent = (state.phase==='bidding'||state.phase==='pocha-bidding') ? tf('{0} (para decidir la puja)', who) : who;
     // Two-row layout (see .hand-row CSS) — the top row gets the extra card
     // only when the hand is an odd size; on an even count both rows match
     // and stay aligned (no offset).
@@ -3343,7 +3666,7 @@ function updateTurnTimer(activeSeat){
     remaining--;
     if(remaining<=0){
       clearInterval(turnTimerHandle); turnTimerHandle=null;
-      el.textContent = '¡Tiempo!'; el.classList.add('timeout');
+      el.textContent = t('¡Tiempo!'); el.classList.add('timeout');
       turnTimerTimeoutHandle = setTimeout(()=>{
         turnTimerTimeoutHandle = null;
         autoActOnTimeout(activeSeat, epoch, phase, key);
@@ -3374,18 +3697,18 @@ function autoActOnTimeout(seat, epoch, phase, key){
 
 function renderSummary(){
   const s=state.lastSummary;
-  document.getElementById('summaryTitle').textContent = s.success ? 'Mano cumplida' : 'Mano bañada';
+  document.getElementById('summaryTitle').textContent = t(s.success ? 'Mano cumplida' : 'Mano bañada');
   let rows = `
-    <div class="summary-row"><span>${state.numPlayers===4?'Pareja subastadora':'Jugador solo'}</span><span>${biddingSideLabel()}</span></div>
-    <div class="summary-row"><span>Puntos pujados</span><span>${state.bidAmount}</span></div>
-    <div class="summary-row"><span>Puntos reunidos</span><span>${s.made}</span></div>`;
+    <div class="summary-row"><span>${t(state.numPlayers===4?'Pareja subastadora':'Jugador solo')}</span><span>${biddingSideLabel()}</span></div>
+    <div class="summary-row"><span>${t('Puntos pujados')}</span><span>${state.bidAmount}</span></div>
+    <div class="summary-row"><span>${t('Puntos reunidos')}</span><span>${s.made}</span></div>`;
   if(state.numPlayers===4){
-    rows += `<div class="summary-row total"><span>Anota</span><span>${scoreLabelFor(s.awardedKey)}: +${state.bidAmount}</span></div>`;
+    rows += `<div class="summary-row total"><span>${t('Anota')}</span><span>${scoreLabelFor(s.awardedKey)}: +${state.bidAmount}</span></div>`;
   } else if(s.success){
-    rows += `<div class="summary-row total"><span>Anota</span><span>${state.seatNames[state.biddingTeam]}: +${state.bidAmount}</span></div>`;
+    rows += `<div class="summary-row total"><span>${t('Anota')}</span><span>${state.seatNames[state.biddingTeam]}: +${state.bidAmount}</span></div>`;
   } else {
     const entries = Object.entries(s.splits).map(([seat,amt])=>`${state.seatNames[seat]}: +${amt}`).join(' · ');
-    rows += `<div class="summary-row total"><span>Anotan</span><span>${entries}</span></div>`;
+    rows += `<div class="summary-row total"><span>${t('Anotan')}</span><span>${entries}</span></div>`;
   }
   document.getElementById('summaryBody').innerHTML = rows;
 }
@@ -3394,6 +3717,10 @@ function renderSummary(){
    while it was expanded, to avoid any scrolling; that turned out to be worse
    than the scroll it was avoiding, so the log now just pushes the page and
    .wrap scrolls if it has to. */
+
+// French may be remembered from a previous visit — apply it before anything
+// is drawn, and reflect it on the switch.
+if(LANG==='fr') setLang('fr');
 
 /* ---------- INIT ----------
    No auto-start — the LAUNCHER overlay (visible by default in the HTML)
@@ -3406,14 +3733,14 @@ function launcherGo(step){
 }
 function pickLauncherType(type){
   launcherType = type;
-  document.getElementById('launcherStep2Title').textContent = `Subastao a ${type}`;
+  document.getElementById('launcherStep2Title').textContent = tf('Subastao a {0}', type);
   launcherGo(2);
 }
 function goLauncherPochaCount(){ launcherGo('PochaCount'); }
 function pickPochaTableSize(n){
   launcherType = 'pocha'+n;
   pochaTableSize = n;
-  document.getElementById('launcherStep2Title').textContent = `La Pocha a ${n}`;
+  document.getElementById('launcherStep2Title').textContent = tf('La Pocha a {0}', n);
   launcherGo(2);
 }
 /* Pocha asks for the variant right after Solo / Multi en móvil / Multi Online
@@ -3431,7 +3758,7 @@ function pochaStep2Pick(next){
     item.className = 'launcher-item';
     item.onclick = ()=>pickPochaVariant(key);
     const sizes = v.roundSizes(pochaTableSize);
-    item.innerHTML = `<div><b>${v.label}</b><span>${v.hint(pochaTableSize)} · ${sizes.length} manos</span></div><div class="chev">›</div>`;
+    item.innerHTML = `<div><b>${t(v.label)}</b><span>${v.hint(pochaTableSize)} · ${tf('{0} manos', sizes.length)}</span></div><div class="chev">›</div>`;
     list.appendChild(item);
   });
   launcherGo('PochaVariant');
@@ -3478,7 +3805,7 @@ function goLauncherMultiplayer(){
     item.className='launcher-item';
     item.onclick=()=>finishLauncher(n);
     const aiLeft = max-n;
-    item.innerHTML = `<div><b>${n} personas</b><span>${aiLeft>0?`+ ${aiLeft} IA`:'sin IA'}</span></div><div class="chev">›</div>`;
+    item.innerHTML = `<div><b>${tf('{0} personas', n)}</b><span>${aiLeft>0?tf('+ {0} IA', aiLeft):t('sin IA')}</span></div><div class="chev">›</div>`;
     list.appendChild(item);
   }
   launcherGo(3);
@@ -3557,7 +3884,7 @@ async function watchOpenRooms(){
   try{
     await ensureFirebaseAuth();
   }catch(e){
-    list.innerHTML = '<p class="toggle-hint">No se pudo comprobar las salas abiertas.</p>';
+    list.innerHTML = `<p class="toggle-hint">${t('No se pudo comprobar las salas abiertas.')}</p>`;
     return;
   }
   if(openRoomsUnsub) openRoomsUnsub();
@@ -3565,7 +3892,7 @@ async function watchOpenRooms(){
     const rooms=[];
     snap.forEach(doc=>rooms.push({code:doc.id, ...doc.data()}));
     renderOpenRoomsList(rooms);
-  }, ()=>{ list.innerHTML = '<p class="toggle-hint">No se pudo comprobar las salas abiertas.</p>'; });
+  }, ()=>{ list.innerHTML = `<p class="toggle-hint">${t('No se pudo comprobar las salas abiertas.')}</p>`; });
 }
 function stopWatchingOpenRooms(){
   if(openRoomsUnsub){ openRoomsUnsub(); openRoomsUnsub=null; }
@@ -3573,13 +3900,13 @@ function stopWatchingOpenRooms(){
 function renderOpenRoomsList(rooms){
   const list = document.getElementById('openRoomsList');
   const open = rooms.filter(r=>(r.players||[]).length < maxSeatsFor(r.gameType));
-  if(!open.length){ list.innerHTML = '<p class="toggle-hint">No hay salas abiertas ahora mismo — crea una o introduce un código.</p>'; return; }
+  if(!open.length){ list.innerHTML = `<p class="toggle-hint">${t('No hay salas abiertas ahora mismo — crea una o introduce un código.')}</p>`; return; }
   list.innerHTML = open.map(r=>{
     const max = maxSeatsFor(r.gameType);
     const {gameType:rGameType, pochaVariant:rVariant} = parseGameSelector(r.gameType);
     const gameLabel = rGameType==='pocha' ? `${pochaVariant(rVariant).label} a ${max}` : `Subastao a ${max}`;
     const host = (r.players||[]).find(p=>p.uid===r.hostUid);
-    return `<div class="launcher-item" onclick="joinOpenRoom('${r.code}')"><div><b>${gameLabel} · ${r.code}</b><span>Anfitrión ${host?host.name:'?'} · ${(r.players||[]).length}/${max} jugadores</span></div><div class="chev">›</div></div>`;
+    return `<div class="launcher-item" onclick="joinOpenRoom('${r.code}')"><div><b>${gameLabel} · ${r.code}</b><span>${tf('Anfitrión {0} · {1}/{2} jugadores', host?host.name:'?', (r.players||[]).length, max)}</span></div><div class="chev">›</div></div>`;
   }).join('');
 }
 function joinOpenRoom(code){
@@ -3630,7 +3957,7 @@ async function startCreateOnlineRoom(){
     lobbyRoomCode = code;
     openOnlineLobby(code, true);
   }catch(e){
-    errEl.textContent = 'No se pudo crear la sala: ' + (e.message||e);
+    errEl.textContent = t('No se pudo crear la sala: ') + (e.message||e);
   }finally{
     btn.disabled = false;
   }
@@ -3645,7 +3972,7 @@ async function joinOnlineRoom(){
   const name = (nameEl.value||'').trim().slice(0,8) || 'Jugador';
   const code = (codeEl.value||'').trim().toUpperCase();
   errEl.textContent = '';
-  if(!code){ errEl.textContent = 'Introduce un código.'; return; }
+  if(!code){ errEl.textContent = t('Introduce un código.'); return; }
   btn.disabled = true;
   try{
     const uid = await ensureFirebaseAuth();
@@ -3655,7 +3982,7 @@ async function joinOnlineRoom(){
     const ref = fbDb.collection('rooms').doc(code);
     await fbDb.runTransaction(async tx=>{
       const doc = await tx.get(ref);
-      if(!doc.exists) throw new Error('Esa sala no existe.');
+      if(!doc.exists) throw new Error(t('Esa sala no existe.'));
       const data = doc.data();
       const players = data.players || [];
       const idx = players.findIndex(p=>p.sessionId===sessionId);
@@ -3666,8 +3993,8 @@ async function joinOnlineRoom(){
         tx.update(ref, {players});
         return;
       }
-      if(data.status!=='lobby') throw new Error('Esa partida ya ha empezado.');
-      if(players.length>=maxSeatsFor(data.gameType)) throw new Error('La sala ya está completa.');
+      if(data.status!=='lobby') throw new Error(t('Esa partida ya ha empezado.'));
+      if(players.length>=maxSeatsFor(data.gameType)) throw new Error(t('La sala ya está completa.'));
       players.push({uid, sessionId, name, seat: players.length});
       tx.update(ref, {players});
     });
@@ -3675,7 +4002,7 @@ async function joinOnlineRoom(){
     stopWatchingOpenRooms();
     openOnlineLobby(code, false);
   }catch(e){
-    errEl.textContent = e.message || 'No se pudo unir a la sala.';
+    errEl.textContent = e.message || t('No se pudo unir a la sala.');
   }finally{
     btn.disabled = false;
   }
@@ -3693,7 +4020,7 @@ function openOnlineLobby(code, isHost){
     const data = snap.data();
     const stakeEl = document.getElementById('onlineLobbyStake');
     stakeEl.classList.toggle('hidden', !data.stake);
-    if(data.stake) stakeEl.textContent = `Se juega: ${data.stake}€`;
+    if(data.stake) stakeEl.textContent = tf('Se juega: {0}€', data.stake);
     if(data.status==='lobby'){
       renderOnlineLobbyPlayers(data);
     } else if(data.status==='playing'){
@@ -3706,10 +4033,10 @@ function renderOnlineLobbyPlayers(data){
   const max = maxSeatsFor(data.gameType);
   const list = document.getElementById('onlineLobbyPlayers');
   list.innerHTML = data.players.map(p=>
-    `<div class="launcher-item" style="cursor:default;"><div><b>${p.name}</b><span>${p.uid===data.hostUid?'Anfitrión':'Jugador'}</span></div></div>`
+    `<div class="launcher-item" style="cursor:default;"><div><b>${p.name}</b><span>${t(p.uid===data.hostUid?'Anfitrión':'Jugador')}</span></div></div>`
   ).join('');
   document.getElementById('onlineLobbyStartBtn').textContent =
-    data.players.length>=max ? 'Empezar partida' : `Empezar (${data.players.length}/${max}, resto IA)`;
+    data.players.length>=max ? t('Empezar partida') : tf('Empezar ({0}/{1}, resto IA)', data.players.length, max);
 }
 function leaveOnlineLobby(){
   netTeardown();
