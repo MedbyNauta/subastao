@@ -196,6 +196,13 @@
     vertical-align:middle; letter-spacing:0.03em;
   }
 
+  /* The reserved cell described in the HTML. Stacking every phase panel in one
+     grid area makes the slot as tall as the tallest of them at all times, so
+     the space they need is never taken from the mesa and given back. */
+  .panel-slot{display:grid;}
+  .panel-slot > *{grid-area:1/1; align-self:start;}
+  .panel-slot > .hidden{display:block !important; visibility:hidden; pointer-events:none;}
+
   /* A card on its way from its owner to the cloth — a clone flown above the
      page while the real one waits hidden in its slot (see flyCardToTable). */
   .fly-card{position:fixed; z-index:60; pointer-events:none; will-change:transform,left,top;}
@@ -292,7 +299,12 @@
      bottom row (.offset, added in JS) is nudged right by half a card+gap so
      its cards sit visually between two top cards, like a fanned-out hand.
      A slight negative gap lets the rows overlap just a touch. */
-  .hand{display:flex; flex-direction:column; align-items:center; padding:6px 6px 14px;}
+  /* Two rows' worth of height is always reserved, so the hand doesn't shrink
+     (and hand the mesa extra room) when you're down to your last card. */
+  .hand{
+    display:flex; flex-direction:column; align-items:center; padding:6px 6px 14px;
+    min-height:106px;
+  }
   .hand-row{display:flex; gap:7px; position:relative;}
   .hand-row.top{z-index:2;}
   .hand-row.bottom{z-index:1; margin-top:-8px;}
@@ -337,7 +349,8 @@
   /* The "puedes cantar" prompt that sits just above your hand whenever you've
      won a trick holding a rey+caballo pair — deliberately loud, since missing
      the window costs 20 or 40 points. */
-  .cante-offer{margin:10px 0 4px;}
+  .cante-offer{margin:12px 12px 0;}
+  .cante-offer .lbl{font-size:0.78rem; color:var(--oro); margin-bottom:8px;}
   .cante-offer-btns{display:flex; gap:8px; flex-wrap:wrap;}
   .cante-offer-btn{
     flex:1 1 auto; min-width:120px; display:flex; align-items:center; justify-content:center; gap:8px;
@@ -689,13 +702,6 @@
     <button class="big-btn" id="summaryAdvanceBtn" style="margin-top:14px; width:100%;" onclick="onAdvanceClicked()">Siguiente mano</button>
   </div>
 
-  <!-- CANTE BUTTONS — only shown to the seat that just won a trick while
-       holding an uncanted rey+caballo pair (see renderCanteOffer). -->
-  <div class="cante-offer hidden" id="cantePanel">
-    <div class="lbl">Puedes cantar</div>
-    <div class="cante-offer-btns" id="canteBtns"></div>
-  </div>
-
   <div class="hand-wrap" id="handWrap">
     <div class="lbl" id="handLbl">Tu mano</div>
     <div class="hand" id="handRow"></div>
@@ -709,6 +715,14 @@
     <div class="help-suggestion" id="helpSuggestion"></div>
   </div>
 
+  <!-- PANEL SLOT — the auction, the trump choice, the Pocha bidding and the
+       cante prompt all live in the same grid cell, stacked on top of each
+       other, and the inactive ones are hidden with visibility rather than
+       display. That keeps the slot exactly as tall as the tallest of them in
+       EVERY phase, which is what stops the mesa (the flexible one) from
+       growing and shrinking as you move between screens. The empty reserve
+       during play is where the cante buttons appear. -->
+  <div class="panel-slot" id="panelSlot">
   <!-- BIDDING PANEL -->
   <div class="panel hidden" id="biddingPanel">
     <h3>Subasta</h3>
@@ -748,6 +762,14 @@
     <h3>Elige el triunfo</h3>
     <div class="trump-choices" id="trumpChoices"></div>
   </div>
+
+  <!-- CANTE BUTTONS — only shown to the seat that just won a trick while
+       holding an uncanted rey+caballo pair (see renderCanteOffer). -->
+  <div class="cante-offer hidden" id="cantePanel">
+    <div class="lbl">Puedes cantar</div>
+    <div class="cante-offer-btns" id="canteBtns"></div>
+  </div>
+  </div><!-- /panel-slot -->
 
   <details class="log-box" id="logBoxDetails">
     <summary>Historial de la mano</summary>
@@ -838,7 +860,7 @@
             <div class="rank-chip"><span class="rk">2</span><span class="pt">0</span></div>
           </div>
           <p class="toggle-hint" style="margin:2px 0 10px;">De más a menos fuerte, izquierda a derecha; el número pequeño es lo que vale esa carta al ganar la baza. El 2 solo existe en la partida a 4 jugadores. En total hay 40 puntos en juego por mano, sin contar cantes ni últimas.</p>
-          <p><b>Cantes</b>: si te reparten el rey y el caballo del mismo palo y los conservas sin jugar, puedes cantarlos justo después de ganar una baza: 40 puntos si es el palo de triunfo, 20 si es otro. Solo cuentan para quien se llevó la subasta. Aparecerá un botón sobre tu mano — si no lo tocas antes de que acabe la baza siguiente, pierdes la ocasión (aunque vuelve a salir si ganas otra baza y sigues teniendo la pareja).</p>
+          <p><b>Cantes</b>: si te reparten el rey y el caballo del mismo palo y los conservas sin jugar, puedes cantarlos justo después de ganar una baza: 40 puntos si es el palo de triunfo, 20 si es otro. Solo cuentan para quien se llevó la subasta. Aparecerá un botón bajo tu mano — si no lo tocas antes de que acabe la baza siguiente, pierdes la ocasión (aunque vuelve a salir si ganas otra baza y sigues teniendo la pareja).</p>
           <p><b>Últimas</b>: quien gana la última baza suma 10 puntos si es del bando que subastó.</p>
           <p><b>Resultado</b>: si el bando subastador reúne lo que pujó, anota esa cifra; si no, la anota el bando contrario.</p>
           <p><b>A 3 jugadores</b>: se juega con 36 cartas (sin doses), 12 por jugador. Quien gana la subasta juega solo contra los otros dos. Si se baña, los dos rivales se reparten la puja a medias; si es impar, el que iba de mano en esa mano se lleva 5 puntos más.</p>
