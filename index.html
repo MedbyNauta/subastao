@@ -225,7 +225,12 @@
      stays a fixed size either way, the same in every phase of the hand. */
   .trick-grid{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
-    min-height:94px; align-items:center;
+    min-height:94px;
+    /* Cards and names sit at the BOTTOM of the playing area, so the gap left
+       under the names is just the mesa's own padding — the same 12px there is
+       between the top of the cloth and the trump line. All the slack collects
+       above the cards instead of being split either side of them. */
+    align-items:end;
   }
   .trick-slot{text-align:center;}
   .trick-slot .who{font-size:0.63rem; color:var(--felt-dim); margin-top:3px;}
