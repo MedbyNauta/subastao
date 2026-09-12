@@ -217,9 +217,12 @@
     pointer-events:none;
   }
   .mesa-info{
-    display:flex; justify-content:space-between; font-size:0.75rem;
-    color:var(--felt-dim); margin-bottom:8px;
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:0.75rem; color:var(--felt-dim); margin-bottom:8px;
   }
+  /* The suit drawing sits on the trump line at the size of the text around it. */
+  .trump-pip{display:inline-flex; vertical-align:-3px; margin-left:2px;}
+  .trump-pip svg{width:16px; height:16px; display:block;}
   /* This is what sets the cloth's height: a fixed playing area, with the cards
      centred in it. Bumping this number is how the mesa grows or shrinks — it
      stays a fixed size either way, the same in every phase of the hand. */
@@ -3030,6 +3033,11 @@ function cardHtml(card, extraClass){
   </div>`;
 }
 
+// The trump on the mesa is shown with the suit's own drawing, in colour, the
+// same artwork the cards carry — not its name spelled out.
+function trumpInfoHtml(suit){
+  return `Triunfo: <span class="trump-pip" title="${SUIT_LABEL[suit]}" aria-label="${SUIT_LABEL[suit]}">${suitIcon(suit)}</span>`;
+}
 function seatAiTag(s){
   return (state.humanPlayers!==undefined && s>=state.humanPlayers) ? '<span class="ai-tag">IA</span>' : '';
 }
@@ -3207,12 +3215,12 @@ function render(){
 
   // mesa info
   if(state.gameType==='pocha'){
-    document.getElementById('trumpInfo').textContent = state.trumpSuit ? `Triunfo: ${SUIT_LABEL[state.trumpSuit]}`
+    document.getElementById('trumpInfo').innerHTML = state.trumpSuit ? trumpInfoHtml(state.trumpSuit)
       : state.pocha.auctionRound ? 'Triunfo: a subasta' : 'Sin triunfo esta ronda';
     const roundSize = state.pocha.roundSizes[state.pocha.roundIndex];
     document.getElementById('bidInfo').textContent = `Ronda ${state.pocha.roundIndex+1}/${state.pocha.roundSizes.length} · ${roundSize} carta${roundSize===1?'':'s'}`;
   } else {
-    document.getElementById('trumpInfo').textContent = state.trumpSuit ? `Triunfo: ${SUIT_LABEL[state.trumpSuit]}` : 'Triunfo: por decidir';
+    document.getElementById('trumpInfo').innerHTML = state.trumpSuit ? trumpInfoHtml(state.trumpSuit) : 'Triunfo: por decidir';
     if(state.phase==='bidding'){
       document.getElementById('bidInfo').textContent = state.currentBid>0 ? `Puja: ${state.currentBid} (${state.seatNames[state.currentBidder]})` : 'Subasta en curso';
     } else if(state.phase==='playing' || state.phase==='handover'){
@@ -3382,16 +3390,10 @@ function renderSummary(){
   document.getElementById('summaryBody').innerHTML = rows;
 }
 
-/* ---------- LAYOUT NICETIES ----------
-   "Historial de la mano" can grow tall enough to push the hand below the
-   fold, forcing a scroll just to open it. Since the outer page no longer
-   scrolls on its own (see the html/body/.wrap lock in the CSS), and the
-   hand isn't usable while it's open anyway, hide it for as long as the log
-   is expanded so there's nothing to scroll past to begin with. */
-function updateHandVisibilityForOpenPanels(){
-  document.getElementById('handWrap').classList.toggle('hidden', document.getElementById('logBoxDetails').open);
-}
-document.getElementById('logBoxDetails').addEventListener('toggle', updateHandVisibilityForOpenPanels);
+/* "Historial de la mano" simply opens downward. It used to hide your hand
+   while it was expanded, to avoid any scrolling; that turned out to be worse
+   than the scroll it was avoiding, so the log now just pushes the page and
+   .wrap scrolls if it has to. */
 
 /* ---------- INIT ----------
    No auto-start — the LAUNCHER overlay (visible by default in the HTML)
