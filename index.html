@@ -73,7 +73,11 @@
   .wrap{
     max-width:520px; margin:0 auto; padding:0 0 30px;
     height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain;
+    /* A flex column so .mesa can claim the leftover height (see .mesa). Every
+       other child keeps its natural size — only the cloth grows. */
+    display:flex; flex-direction:column;
   }
+  .wrap > *{flex-shrink:0;}
 
   header{
     padding:16px 16px 12px;
@@ -110,25 +114,56 @@
     display:block; font-size:0.62rem; letter-spacing:0.08em; text-transform:uppercase;
     color:var(--piedra); margin-top:1px;
   }
-  .score-row{display:flex; align-items:center; justify-content:center; gap:8px; padding:0 4px; margin-top:6px;}
-  /* Discreet stake readout — only shown for all-human games with a stake set
-     (see renderScores()); sits quietly under the score chips, same muted
-     tone as the rest of the header chrome, no visual weight of its own. */
-  .stake-row{
-    display:flex; align-items:center; justify-content:center; gap:6px;
-    margin-top:6px; font-size:0.68rem; color:var(--piedra); letter-spacing:0.01em;
+  /* ---- SEATS BAR ----
+     One row replacing what used to be two stacked blocks (the score chips and
+     the player strip), which repeated every name twice. Deliberately light:
+     no boxes, no borders, no filled pills — just text and a hairline between
+     seats. Your own seat is the name in bold; whoever has to act has theirs in
+     the accent colour. Type sizes are the ones the chips already used, so this
+     is a change of layout, not of scale. */
+  .seats-row{padding:4px 12px 0;}
+  .seats-row.seats, .seats-row.teams{display:flex; align-items:stretch;}
+  .seat{flex:1; min-width:0; position:relative; text-align:center; padding:6px 6px 7px;}
+  .seat + .seat{border-left:1px solid var(--linea);}
+  .seat .nm{
+    display:block; font-size:0.78rem; font-weight:400; color:var(--text);
+    line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  .stake-row b{color:var(--oro); font-weight:600;}
-  .stake-row .stake-dot{opacity:0.5;}
-  .scores{display:flex; justify-content:center; gap:6px; flex:1; min-width:0;}
-  .score-chip{
-    position:relative;
-    background:rgba(var(--wash-rgb),0.05); border:1px solid var(--linea);
-    border-radius:10px; padding:8px 6px; text-align:center; flex:1; min-width:0;
+  .seat.you .nm{font-weight:700;}
+  .seat.turn .nm{color:var(--oro); font-weight:600;}
+  .seat.turn.you .nm{font-weight:700;}
+  .seat .val{
+    display:block; font-family:'Fraunces', serif; font-size:1.2rem; font-weight:700;
+    line-height:1.15; letter-spacing:-0.01em; margin-top:1px;
   }
-  /* Pocha round-end bullet badge — see pulsePochaScoreChips(). Sits in the
-     game's own accent color (terracota/verde per theme) for a gain, ink
-     black for a loss; nothing outside the existing palette. */
+  .seat .vivo{
+    display:block; font-size:0.64rem; color:var(--piedra);
+    font-variant-numeric:tabular-nums; line-height:1.35; margin-top:1px;
+  }
+  /* "reparte" / "sale" get a line of their own, always rendered — empty when
+     there's nothing to say — so every seat keeps the same height and the
+     scores stay on one baseline. */
+  .seat .estado-linea{
+    display:block; font-size:0.6rem; color:var(--oro);
+    line-height:1.45; min-height:1.45em;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  /* 4-player Subastao scores by pair, so the pair is the unit. No
+     "Nosotros / Ellos" label: the two names identify it, yours in bold. */
+  .team{flex:1; min-width:0; position:relative; text-align:center; padding:6px 8px 7px;}
+  .team + .team{border-left:1px solid var(--linea);}
+  .team .val{font-family:'Fraunces', serif; font-size:1.2rem; font-weight:700; line-height:1.15;}
+  .team .team-vivo{font-size:0.64rem; color:var(--piedra); font-variant-numeric:tabular-nums; margin-top:1px;}
+  .team .nombres{
+    font-size:0.7rem; color:var(--piedra); margin-top:3px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .team .nombres .n{color:var(--text); font-weight:400;}
+  .team .nombres .n.mio{font-weight:700;}
+  .team .nombres .n.turno{color:var(--oro); font-weight:600;}
+  .team .nombres .sep{opacity:0.5; margin:0 5px;}
+  .team .nombres .estado{color:var(--oro); font-size:0.6rem; margin-left:3px;}
+  /* Pocha's end-of-round bullet — unchanged, it just hangs off the seat now. */
   .score-badge{
     position:absolute; top:-9px; right:-6px; z-index:2;
     background:var(--oro); color:var(--tinta); font-family:'Fraunces', serif;
@@ -139,67 +174,46 @@
   }
   .score-badge.bad{background:var(--tinta); color:var(--pergamino);}
   .score-badge.show{opacity:1; transform:scale(1) translateY(0);}
-  .score-chip .lbl{font-size:0.66rem; color:var(--oro); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .score-chip .val{font-family:'Fraunces', serif; font-size:1.2rem;}
-  .score-chip.you{border-color:var(--oro);}
-  /* Live running points for the hand in progress, right under the match
-     total — ticks up trick by trick, then sits at 0 from the moment the
-     hand resolves (see currentHandPoints()) until the next one starts. */
-  .score-chip .mano{font-size:0.64rem; color:var(--piedra); margin-top:2px; font-variant-numeric:tabular-nums;}
-  /* Brief pop when a chip's total actually changes at hand-end — see
-     pulseScoreChips(), called right after endHand()'s render(). */
+  /* Brief pop on the total that just changed at hand-end — see pulseScoreChips(). */
   @keyframes score-pop{
-    0%   { transform:scale(1); box-shadow:0 0 0 0 rgba(var(--glow-rgb),0); }
-    35%  { transform:scale(1.08); box-shadow:0 0 16px 3px rgba(var(--glow-rgb),0.5); border-color:var(--oro); background:var(--oro-soft); }
-    100% { transform:scale(1); box-shadow:0 0 0 0 rgba(var(--glow-rgb),0); }
+    0%   { transform:scale(1); }
+    35%  { transform:scale(1.09); color:var(--oro); }
+    100% { transform:scale(1); }
   }
-  .score-chip.pop{animation:score-pop 0.9s ease-out;}
+  .pop .val{animation:score-pop 0.9s ease-out; display:inline-block;}
+  /* Discreet stake readout — only for all-human games with a stake set. */
+  .stake-row{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    margin-top:6px; font-size:0.68rem; color:var(--piedra); letter-spacing:0.01em;
+  }
+  .stake-row b{color:var(--oro); font-weight:600;}
+  .stake-row .stake-dot{opacity:0.5;}
   button{cursor:pointer; font-family:'Inter', sans-serif;}
-
-  /* PLAYER STRIP */
-  .players{display:flex; gap:10px; padding:12px 12px 0;}
-  .team-group{
-    flex:1; display:flex; flex-direction:column; gap:4px; padding:6px; border-radius:10px;
-    border:1px solid var(--linea); background:rgba(var(--wash-rgb),0.03);
-  }
-  .team-group.teamA{border-color:rgba(var(--glow-rgb),0.5);}
-  .team-row{display:flex; gap:6px;}
-  .pchip{
-    flex:1; text-align:center; padding:10px 4px; border-radius:8px;
-    background:rgba(var(--wash-rgb),0.04); border:1px solid var(--linea);
-    font-size:0.78rem; position:relative;
-  }
-  /* AI seats: declared before .turn so the turn highlight still wins when
-     it's an AI seat's turn. */
-  .pchip.turn{border-color:var(--oro); background:var(--oro-soft);}
-  .pchip .nm{font-weight:600; color:var(--text);}
-  /* Inline "IA" tag next to a name — shared by the mesa's per-trick "who"
-     label (see .trick-slot .who below); no longer shown on the score chips
-     up top, so a human seat there never stretches to match a label it
-     doesn't have. */
+  /* Inline "IA" tag, used by the mesa's per-trick "who" label below. */
   .ai-tag{
     display:inline-block; font-size:0.56rem; font-weight:700; color:var(--piedra);
     border:1px solid var(--linea); border-radius:5px; padding:0 4px; margin-left:4px;
     vertical-align:middle; letter-spacing:0.03em;
   }
-  .pchip .tag{
-    position:absolute; top:-8px; left:50%; transform:translateX(-50%);
-    background:var(--oro); color:var(--tinta); font-size:0.6rem; padding:1px 6px;
-    border-radius:8px; font-weight:700;
-  }
-  .pchip .tag-bottom{
-    position:absolute; bottom:-8px; left:50%; transform:translateX(-50%);
-    background:var(--pergamino); color:var(--tinta); font-size:0.6rem; padding:1px 6px;
-    border-radius:8px; font-weight:700;
-  }
+
+  /* A card on its way from its owner to the cloth — a clone flown above the
+     page while the real one waits hidden in its slot (see flyCardToTable). */
+  .fly-card{position:fixed; z-index:60; pointer-events:none; will-change:transform,left,top;}
+  .fly-card .card{box-shadow:0 10px 22px rgba(0,0,0,0.4);}
 
   /* MESA */
   /* The mesa is the bar's green baize: a cloth laid on the table rather than
      another panel. The weave is one tileable feTurbulence square kept inside
      this stylesheet as a data URI — no image file to ship or load. */
+  /* The cloth absorbs whatever vertical space the rest of the screen doesn't
+     use: as tall as the phone allows, and — since it's the leftover — never
+     tall enough to push anything off the bottom. .wrap is the flex column
+     that hands it out; min-height is the floor on a very short screen, and
+     min-height:0 lets it shrink to that instead of to its content. */
   .mesa{
     margin:12px 12px 0; border-radius:16px;
     padding:12px 14px; min-height:80px; position:relative; isolation:isolate;
+    flex:1 1 auto; display:flex; flex-direction:column;
     background:
       radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,0.09), rgba(0,0,0,0) 60%),
       linear-gradient(168deg, var(--felt-a) 0%, var(--felt-b) 100%);
@@ -218,14 +232,15 @@
   .trick-grid{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
     min-height:66px; align-items:center;
+    flex:1 1 auto; align-content:center;
   }
   .trick-slot{text-align:center;}
   .trick-slot .who{font-size:0.63rem; color:var(--felt-dim); margin-top:3px;}
   .mesa .ai-tag{color:var(--felt-dim); border-color:rgba(242,237,225,0.28);}
 
   /* LIVE POINTS — live under the match total in the header score chips
-     instead of a separate panel; see .score-chip .mano near the top of
-     this file, and currentHandPoints()/pulseScoreChips() in the JS. */
+     instead of a separate panel; see .seat .vivo near the top of this file,
+     and currentHandPoints()/pulseScoreChips() in the JS. */
 
   /* CARDS */
   .card{
@@ -300,12 +315,14 @@
     animation: sparkle-twinkle 1s ease-out forwards;
     filter: drop-shadow(0 0 4px rgba(var(--glow-rgb),0.7));
   }
-  @keyframes pchip-glow {
-    0%   { box-shadow:0 0 0 0 rgba(var(--glow-rgb),0); }
-    30%  { box-shadow:0 0 22px 5px rgba(var(--glow-rgb),0.55); border-color:var(--oro); background:var(--oro-soft); }
-    100% { box-shadow:0 0 0 0 rgba(var(--glow-rgb),0); }
+  /* Trick-winner pulse. The seats have no box any more, so this lifts and
+     tints the name itself instead of lighting up a rectangle. */
+  @keyframes celebra-pulse {
+    0%   { transform:scale(1); }
+    30%  { transform:scale(1.07); color:var(--oro); }
+    100% { transform:scale(1); }
   }
-  .pchip.celebrate { animation: pchip-glow 1.05s ease-out; }
+  .celebrate{ animation: celebra-pulse 1.05s ease-out; }
   @keyframes win-flash-fade {
     0%   { opacity:0; }
     25%  { opacity:1; }
@@ -649,17 +666,13 @@
         <span class="word2" id="logoWord2">Ourensano</span>
       </div>
     </div>
-    <div class="score-row">
-      <div class="scores" id="scoresRow"></div>
-    </div>
+    <div class="seats-row" id="seatsBar"></div>
     <div class="stake-row hidden" id="stakeRow">
       <span>Apuesta <b id="stakeAmt"></b></span>
       <span class="stake-dot">·</span>
       <span>Bote <b id="stakeTotal"></b></span>
     </div>
   </header>
-
-  <div class="players" id="players"></div>
 
   <div class="mesa" id="mesaBox">
     <div class="mesa-info">
@@ -1794,6 +1807,7 @@ function playCard(seat,card){
     const leadSuit=state.currentTrick[0].card.suit;
     if(card.suit!==leadSuit) state.voidSuits[seat].add(leadSuit);
   }
+  pushEffect('cardPlayed', {seat});
   if(state.currentTrick.length<state.numPlayers){
     state.turn=nextSeat(seat);
     playTick();
@@ -1921,7 +1935,7 @@ function endHand(){
   const success = state.biddingTeamPoints >= state.bidAmount;
   state.phase='handover';
   let summary;
-  let changedKeys; // which scoresRow chip(s) just got points — see pulseScoreChips()
+  let changedKeys; // which seat(s)/pair just took points — see pulseScoreChips()
   if(state.numPlayers===4){
     const awardedKey = success ? state.biddingTeam : (state.biddingTeam==='A'?'B':'A');
     state.scores[awardedKey]+=state.bidAmount;
@@ -1992,8 +2006,8 @@ function showOverlay(key){
    already handled correctly by those, since no card's suit ever equals
    null), then scores based on how close each bid landed. gameType==='pocha'
    is checked at the top of the few shared functions that need to branch
-   (aiChooseCard, resolveTrick, currentActorSeat, render, renderScores,
-   renderPlayers, makePchip) — everything else here is Pocha-only and never
+   (aiChooseCard, resolveTrick, currentActorSeat, render, renderSeatsBar)
+   — everything else here is Pocha-only and never
    touches Subastao's state fields (biddingTeam, cantedSuits, etc). */
 
 // The hand-summary panel's button is shared between both games — dispatch
@@ -2758,6 +2772,62 @@ function computePochaHelp(seat){
   return {knownLines, reasoning, suggestion};
 }
 
+/* ---------- CARD FLIGHT ----------
+   A played card travels from whoever played it to its place on the cloth:
+   from the card you actually tapped in your own hand, or from the player's
+   name in the seats bar for everyone else. Purely cosmetic — a clone flies
+   above the page while the real card sits hidden in its slot, so nothing in
+   the game's state or layout depends on it finishing. */
+// Where your own card left from: measured at the moment you tap it, since the
+// card is out of the DOM by the time the animation runs.
+let flyTapRect = null;
+function reducedMotion(){
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+function flyCardToTable(seat){
+  if(reducedMotion()){ flyTapRect = null; return; }
+  // Your own card flies from your hand; everyone else's from their name in the
+  // seats bar. Online, each device works this out for itself — which is why
+  // this runs off the synced 'cardPlayed' effect rather than from playCard().
+  let origin = null;
+  if(seat===mySeatIndex() && flyTapRect) origin = flyTapRect;
+  else {
+    const el = document.querySelector(`#seatsBar [data-seat="${seat}"]`);
+    if(el) origin = el.getBoundingClientRect();
+  }
+  flyTapRect = null;
+  if(!origin) return;
+  const slot = document.querySelector(`#trickGrid [data-slot="${seat}"]`);
+  const real = slot && slot.querySelector('.card');
+  if(!real) return;
+  const target = real.getBoundingClientRect();
+  const fly = document.createElement('div');
+  fly.className = 'fly-card';
+  fly.innerHTML = real.outerHTML;
+  fly.style.left = (origin.left + origin.width/2) + 'px';
+  fly.style.top  = (origin.top + origin.height/2) + 'px';
+  fly.style.transform = 'translate(-50%,-50%) scale(0.5) rotate(-9deg)';
+  fly.style.opacity = '0.35';
+  document.body.appendChild(fly);
+  real.style.visibility = 'hidden';
+  requestAnimationFrame(()=>{
+    fly.style.transition = 'left .5s cubic-bezier(.25,.9,.3,1), top .5s cubic-bezier(.25,.9,.3,1),'
+                         + 'transform .5s cubic-bezier(.25,.9,.3,1), opacity .18s ease-out';
+    fly.style.left = (target.left + target.width/2) + 'px';
+    fly.style.top  = (target.top + target.height/2) + 'px';
+    fly.style.transform = 'translate(-50%,-50%) scale(1) rotate(0deg)';
+    fly.style.opacity = '1';
+  });
+  setTimeout(()=>{
+    fly.remove();
+    // The grid may well have been rebuilt by another render in the meantime;
+    // unhide whatever card is sitting in that slot now, not the old node.
+    const ahora = document.querySelector(`#trickGrid [data-slot="${seat}"] .card`);
+    if(ahora) ahora.style.visibility = '';
+    if(real.isConnected) real.style.visibility = '';
+  }, 520);
+}
+
 /* ---------- SPARKLES ---------- */
 // A handful of small gold star-twinkles around the trick winner's name, plus a
 // brief glow pulse on the chip itself — reads as "nice, that mattered" without
@@ -2807,7 +2877,7 @@ function burstConfetti(count=22){
 
 /* ---------- STATE EFFECTS (ephemeral animations, synced for online play) ----------
    Trick-winner sparkles, the "¡Cante!" overlay and the end-of-hand/round
-   score-chip pulse used to fire as a plain side effect right inside
+   score pulse used to fire as a plain side effect right inside
    resolveTrick()/endHand()/endPochaRound() — fine for whichever device
    actually runs the game engine (host, solo, or pass-and-play), but
    invisible to an online guest: a guest never calls those functions itself,
@@ -2835,9 +2905,11 @@ function processStateEffects(){
   fresh.forEach(e=>{
     if(e.type==='trickWin'){
       setTimeout(()=>{
-        const players = document.querySelectorAll('.pchip');
-        if(players[e.winnerSeat]) spawnConfetti(players[e.winnerSeat], 15);
+        const el = document.querySelector(`#seatsBar [data-seat="${e.winnerSeat}"]`);
+        if(el) spawnConfetti(el, 15);
       }, 600);
+    } else if(e.type==='cardPlayed'){
+      flyCardToTable(e.seat);
     } else if(e.type==='cante'){
       queueCanteAnimation(e.seatName, e.suit, e.pts);
     } else if(e.type==='scorePulse'){
@@ -2944,36 +3016,49 @@ function cardHtml(card, extraClass){
 function seatAiTag(s){
   return (state.humanPlayers!==undefined && s>=state.humanPlayers) ? '<span class="ai-tag">IA</span>' : '';
 }
-function makePchip(s){
-  const div=document.createElement('div');
-  const pochaTurn = state.gameType==='pocha' && state.phase==='pocha-bidding' && state.pocha.bidTurnSeat===s;
-  div.className='pchip'+(state.turn===s && state.phase==='playing'?' turn':'')+((state.bidSeat===s && state.phase==='bidding')?' turn':'')+(pochaTurn?' turn':'');
-  let tag='';
-  if(state.dealerIndex===s) tag='<div class="tag">reparte</div>';
-  let bottomTag='';
-  if((state.phase==='playing'||state.phase==='handover') && state.leader===s) bottomTag='<div class="tag-bottom">sale</div>';
-  const pochaNote = state.gameType==='pocha' ? pochaChipNote(s) : '';
-  div.innerHTML = `${tag}<div class="nm">${state.seatNames[s]}</div>${pochaNote}${bottomTag}`;
-  return div;
+/* ---- THE SEATS BAR ----
+   Draws the single row that replaced the old score chips and player strip.
+   Each seat carries everything both of them used to show: the name, the
+   running total, what's in play this hand (or the Pocha bid/tricks), and
+   whether that seat deals or leads. 4-player Subastao scores by pair, so
+   there the pair is the unit and its two names ride on one line inside it.
+   `data-key` is what pulseScoreChips()/pulsePochaScoreChips() look for;
+   `data-seat` is what the trick-win confetti and the card flight aim at. */
+function mySeatIndex(){
+  return (state.online && state.online.mySeat!==undefined && state.online.mySeat!==null)
+    ? state.online.mySeat : 0;
 }
-// Bid/tricks note for a Pocha seat's chip — "Puja 2" once they've bid, then
-// "Puja 2 · 1" (bid · tricks won so far) once tricks start being played.
-function pochaChipNote(seat){
-  const bid=state.pocha.bids[seat];
-  if(bid===null || bid===undefined) return '';
-  if(state.phase==='playing' || state.phase==='handover'){
-    return `<div class="ct">${bid} · ${state.pocha.tricksWon[seat]}</div>`;
-  }
-  return `<div class="ct">${bid}</div>`;
+// Is this the seat that has to act right now, whatever phase we're in?
+function seatIsActing(s){
+  if(state.phase==='playing') return state.turn===s;
+  if(state.phase==='bidding') return state.bidSeat===s;
+  if(state.phase==='trump') return state.auctionWinner===s;
+  if(state.phase==='pocha-bidding') return state.pocha.bidTurnSeat===s;
+  if(state.phase==='pocha-trump') return state.pocha.trumpChooser===s;
+  return false;
 }
-
+// "reparte" / "sale" — what the old chips hung off their edges as badges.
+function seatEstados(s){
+  const e=[];
+  if(state.dealerIndex===s) e.push('reparte');
+  if((state.phase==='playing'||state.phase==='handover') && state.leader===s) e.push('sale');
+  return e;
+}
 // Live points for the hand in progress — 0 outside the 'playing' phase, so
-// the "En juego" line under each score chip sits at zero from the moment a
-// hand ends (see endHand()) through the next auction, ready for the next hand.
+// the "En juego" line sits at zero from the moment a hand ends (see endHand())
+// through the next auction, ready for the next hand.
 function currentHandPoints(seat){
   return (state.phase==='playing' && state.playerTrickPoints) ? state.playerTrickPoints[seat] : 0;
 }
-function renderScores(){
+// Pocha's under-the-name line: the bid once made, then "bid · tricks won"
+// once the round is being played.
+function pochaSeatNote(seat){
+  const bid=state.pocha.bids[seat];
+  if(bid===null || bid===undefined) return '&nbsp;';
+  return (state.phase==='playing' || state.phase==='handover')
+    ? `${bid} · ${state.pocha.tricksWon[seat]}` : `${bid}`;
+}
+function renderSeatsBar(){
   const stakeRow=document.getElementById('stakeRow');
   const noAI = state.humanPlayers!==undefined && state.numPlayers!==undefined && state.humanPlayers>=state.numPlayers;
   if(stakeRow){
@@ -2985,41 +3070,53 @@ function renderScores(){
       stakeRow.classList.add('hidden');
     }
   }
-  const row=document.getElementById('scoresRow');
-  if(state.gameType==='pocha'){
-    row.innerHTML = state.seatNames.map((nm,i)=>`
-      <div class="score-chip ${i===0?'you':''}" data-key="${i}"><div class="lbl">${nm}</div><div class="val">${state.pocha.scores[i]}</div></div>`).join('');
+  const bar=document.getElementById('seatsBar');
+  const mine=mySeatIndex();
+
+  if(state.gameType!=='pocha' && state.numPlayers===4){
+    bar.className='seats-row teams';
+    bar.innerHTML = [{key:'A',seats:[0,2]},{key:'B',seats:[1,3]}].map(t=>{
+      const vivo = t.seats.reduce((n,s)=>n+currentHandPoints(s),0);
+      const nombres = t.seats.map((s,k)=>{
+        const cls = 'n' + (s===mine?' mio':'') + (seatIsActing(s)?' turno':'');
+        const est = seatEstados(s).map(e=>`<span class="estado">${e}</span>`).join('');
+        return `${k?'<span class="sep">·</span>':''}<span class="${cls}" data-seat="${s}">${state.seatNames[s]}${est}</span>`;
+      }).join('');
+      return `<div class="team ${t.seats.includes(mine)?'you':''}" data-key="${t.key}">
+        <span class="val">${state.scores[t.key]}</span>
+        <div class="team-vivo">En juego ${vivo}</div>
+        <div class="nombres">${nombres}</div>
+      </div>`;
+    }).join('');
     return;
   }
-  if(state.numPlayers===4){
-    const manoA = currentHandPoints(0)+currentHandPoints(2);
-    const manoB = currentHandPoints(1)+currentHandPoints(3);
-    row.innerHTML = `
-      <div class="score-chip you" data-key="A"><div class="lbl">${teamLabel('A')}</div><div class="val">${state.scores.A}</div><div class="mano">En juego: ${manoA}</div></div>
-      <div class="score-chip" data-key="B"><div class="lbl">${teamLabel('B')}</div><div class="val">${state.scores.B}</div><div class="mano">En juego: ${manoB}</div></div>`;
-  } else {
-    row.innerHTML = state.seatNames.map((nm,i)=>`
-      <div class="score-chip ${i===0?'you':''}" data-key="${i}"><div class="lbl">${nm}</div><div class="val">${state.scores[i]}</div><div class="mano">En juego: ${currentHandPoints(i)}</div></div>`).join('');
-  }
+
+  bar.className='seats-row seats';
+  bar.innerHTML = seatRange().map(s=>{
+    const total = state.gameType==='pocha' ? state.pocha.scores[s] : state.scores[s];
+    const vivo = state.gameType==='pocha' ? pochaSeatNote(s) : `En juego ${currentHandPoints(s)}`;
+    const est = seatEstados(s).join(' · ');
+    return `<div class="seat ${s===mine?'you':''} ${seatIsActing(s)?'turn':''}" data-seat="${s}" data-key="${s}">
+      <span class="nm">${state.seatNames[s]}</span>
+      <span class="val">${total}</span>
+      <span class="vivo">${vivo}</span>
+      <span class="estado-linea">${est || '&nbsp;'}</span>
+    </div>`;
+  }).join('');
 }
-// Brief pop/glow on whichever score chip(s) just received points, called
-// right after endHand()'s render() has rebuilt scoresRow with fresh totals.
+// Brief pop on whichever seat (or pair) just took points — fired by the
+// 'scorePulse' effect, right after render() rebuilt the bar with fresh totals.
 function pulseScoreChips(keys){
   keys.forEach(key=>{
-    const chip=document.querySelector(`.score-chip[data-key="${key}"]`);
+    const chip=document.querySelector(`#seatsBar [data-key="${key}"]`);
     if(!chip) return;
     chip.classList.add('pop');
     setTimeout(()=>chip.classList.remove('pop'), 900);
   });
 }
-// Pocha round-end: same chip pop as pulseScoreChips(), plus a small "+10"/"-2"
-// bullet badge on each chip's corner — var(--oro) for a gain (the game's own
-// accent, sage in the light theme/terracota in dark) and var(--tinta) (ink
-// black) for a loss, so the color is never anything outside the app's own
-// palette. Fades in, holds briefly, fades out; no motion beyond that.
 function pulsePochaScoreChips(results){
   results.forEach(r=>{
-    const chip=document.querySelector(`.score-chip[data-key="${r.seat}"]`);
+    const chip=document.querySelector(`#seatsBar [data-key="${r.seat}"]`);
     if(!chip) return;
     chip.classList.add('pop');
     setTimeout(()=>chip.classList.remove('pop'), 900);
@@ -3035,31 +3132,6 @@ function pulsePochaScoreChips(results){
   });
 }
 
-function renderPlayers(){
-  const pdiv=document.getElementById('players');
-  pdiv.innerHTML='';
-  if(state.numPlayers===4 && state.gameType!=='pocha'){
-    const groups=[{cls:' teamA',seats:[0,2]},{cls:'',seats:[1,3]}];
-    groups.forEach(g=>{
-      const gdiv=document.createElement('div');
-      gdiv.className='team-group'+g.cls;
-      const row=document.createElement('div');
-      row.className='team-row';
-      g.seats.forEach(s=>row.appendChild(makePchip(s)));
-      gdiv.appendChild(row);
-      pdiv.appendChild(gdiv);
-    });
-  } else {
-    const gdiv=document.createElement('div');
-    gdiv.className='team-group';
-    const row=document.createElement('div');
-    row.className='team-row';
-    seatRange().forEach(s=>row.appendChild(makePchip(s)));
-    gdiv.appendChild(row);
-    pdiv.appendChild(gdiv);
-  }
-}
-
 // The main render entry point — rebuilds the whole UI from `state`: scores,
 // player chips, the trick in progress, whichever panel matches the current
 // phase (bidding/trump/hand summary), the active seat's hand and legal
@@ -3070,8 +3142,7 @@ function render(){
   const activeSeat = activeSeatForUI();
   updatePassScreen();
 
-  renderScores();
-  renderPlayers();
+  renderSeatsBar();
 
   document.getElementById('mesaBox').classList.toggle('hidden', state.phase==='handover');
   document.getElementById('summaryPanel').classList.toggle('hidden', state.phase!=='handover');
@@ -3144,6 +3215,7 @@ function render(){
     const played=(state.currentTrick||[]).find(t=>t.seat===s);
     const slot=document.createElement('div');
     slot.className='trick-slot';
+    slot.dataset.slot=s;
     slot.innerHTML = played ? cardHtml(played.card,'mini') + `<div class="who">${state.seatNames[s]}${seatAiTag(s)}</div>` : `<div style="height:52px;"></div><div class="who">${state.seatNames[s]}${seatAiTag(s)}</div>`;
     grid.appendChild(slot);
   });
@@ -3194,7 +3266,7 @@ function render(){
       const el=document.createElement('div');
       el.innerHTML = cardHtml(card, ok?'clickable':(canPlay?'disabled':''));
       const node = el.firstElementChild;
-      if(ok) node.onclick=()=>playCard(displaySeat,card);
+      if(ok) node.onclick=()=>{ flyTapRect = node.getBoundingClientRect(); playCard(displaySeat,card); };
       (i<topCount?topRow:bottomRow).appendChild(node);
     });
     handRow.appendChild(topRow);
