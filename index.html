@@ -528,6 +528,8 @@
   .launcher-item b{font-family:'Fraunces', serif; font-size:0.96rem; font-weight:600; display:block; color:var(--text);}
   .launcher-item span{font-size:0.74rem; color:var(--piedra);}
   .launcher-item .chev{color:var(--oro); font-size:1.15rem; flex-shrink:0;}
+  .launcher-item.disabled{cursor:default; opacity:0.45;}
+  .launcher-item.disabled .chev{visibility:hidden;}
   .trump-choices{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;}
   .trump-choice{
     flex:1; min-width:100px; padding:16px 10px; text-align:center; border-radius:10px;
@@ -853,8 +855,9 @@
     <select id="aiLevelSelect">
       <option value="low">Bajo</option>
       <option value="medium" selected>Medio</option>
-      <option value="high">Alto</option>
+      <option value="high" id="aiLevelHighOption">Alto</option>
     </select>
+    <p class="toggle-hint hidden" id="aiLevelHighNote">Alto no está disponible todavía en Modo Capitán — usa Medio.</p>
     <button class="big-btn" style="width:100%; margin-top:16px;" onclick="changeSetup(); closeSettings();">Aplicar y empezar de nuevo</button>
 
     <div class="rules-box" style="border-top:1px solid rgba(31,42,61,0.14); margin-top:18px; padding-top:14px;">
@@ -1008,7 +1011,7 @@
       <div class="launcher-title" id="launcherStep2Title"></div>
       <div class="launcher-list">
         <div class="launcher-item" onclick="pochaStep2Pick(()=>finishLauncher(1))"><div><b>Solo</b><span>Tú + IA en este móvil</span></div><div class="chev">›</div></div>
-        <div class="launcher-item" onclick="pochaStep2Pick(goLauncherMultiplayer)"><div><b>Multi en móvil</b><span>Os vais pasando el teléfono</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" id="stepMultiMovilItem" onclick="pochaStep2Pick(goLauncherMultiplayer)"><div><b>Multi en móvil</b><span id="stepMultiMovilNote">Os vais pasando el teléfono</span></div><div class="chev">›</div></div>
         <div class="launcher-item" onclick="pochaStep2Pick(goLauncherOnlineMenu)"><div><b>Multi Online</b><span>Cada uno desde su móvil</span></div><div class="chev">›</div></div>
       </div>
     </div>
@@ -1137,6 +1140,7 @@ const SUITS = ['oros','copas','espadas','bastos'];
    remembers each node's Spanish so switching back is exact.
    ===================================================================== */
 const FR_DICT = {
+  "No disponible todavía en Modo Capitán": "Pas encore disponible en Mode Capitaine",
   "Elige la modalidad": "Choisis la modalité",
   "Subastao Simple": "Subastao Simple",
   "Subastao por Parejas": "Subastao par Équipes",
@@ -2068,6 +2072,15 @@ function updateSettingsForGameType(){
   document.getElementById('subastaoRulesBox').classList.toggle('hidden', isPocha || isCapitan);
   document.getElementById('pochaRulesBox').classList.toggle('hidden', !isPocha);
   document.getElementById('capitanRulesBox').classList.toggle('hidden', !isCapitan);
+  // Modo Capitán's AI always plays the plain heuristic (see aiChooseCard) —
+  // no Monte Carlo built for its mission-based objective yet. Rather than
+  // silently downgrade a choice that looks selected, grey the option out.
+  const highOpt = document.getElementById('aiLevelHighOption');
+  highOpt.disabled = isCapitan;
+  document.getElementById('aiLevelHighNote').classList.toggle('hidden', !isCapitan);
+  if(isCapitan && document.getElementById('aiLevelSelect').value==='high'){
+    document.getElementById('aiLevelSelect').value = 'medium';
+  }
 }
 function changeSetup(){
   const t=document.getElementById('targetSelect').value;
@@ -4173,10 +4186,21 @@ function goLauncherSubastaoModes(){ launcherGo('SubastaoMode'); }
 function goLauncherCaptainCount(){ launcherGo('CaptainCount'); }
 // mode: 'tradicional' (n fixed at 3 or 4, from Subastao Simple/por Parejas)
 // or 'capitan' (n freely 2-5, from the table-size screen above).
+// Modo Capitán's pass-and-play hand-off (who reveals when, whose turn it is
+// to name trump/mission) hasn't been exercised yet — rather than ship it
+// untested, "Multi en móvil" shows as unavailable for this mode specifically.
+function setMultiMovilAvailable(available){
+  const item = document.getElementById('stepMultiMovilItem');
+  item.classList.toggle('disabled', !available);
+  item.onclick = available ? ()=>pochaStep2Pick(goLauncherMultiplayer) : null;
+  document.getElementById('stepMultiMovilNote').textContent = available
+    ? t('Os vais pasando el teléfono') : t('No disponible todavía en Modo Capitán');
+}
 function pickSubastaoMode(mode, n){
   launcherType = mode==='capitan' ? n+':capitan' : String(n);
   const base = tf('Subastao a {0}', n);
   document.getElementById('launcherStep2Title').textContent = mode==='capitan' ? base+' · Capitán' : base;
+  setMultiMovilAvailable(mode!=='capitan');
   launcherGo(2);
 }
 function goLauncherPochaCount(){ launcherGo('PochaCount'); }
@@ -4184,6 +4208,7 @@ function pickPochaTableSize(n){
   launcherType = 'pocha'+n;
   pochaTableSize = n;
   document.getElementById('launcherStep2Title').textContent = tf('La Pocha a {0}', n);
+  setMultiMovilAvailable(true);
   launcherGo(2);
 }
 /* Pocha asks for the variant right after Solo / Multi en móvil / Multi Online
