@@ -452,10 +452,6 @@
     text-shadow:0 2px 8px rgba(0,0,0,0.5); margin-top:6px;
   }
   .chest-card-who{font-size:0.85rem; color:#fff; opacity:0.85; margin-top:2px;}
-  .chest-card-desc{
-    font-size:0.85rem; color:#fff; background:rgba(0,0,0,0.45);
-    border-radius:12px; padding:8px 14px; margin-top:10px; max-width:280px;
-  }
 
   /* CANTE ANIMATION — a big, theatrical, full-screen slam for the
      rey+caballo bonus (see queueCanteAnimation in the JS): a color wash
@@ -1055,9 +1051,9 @@
           </div>
           <p class="toggle-hint" style="margin:2px 0 10px;">En ese orden: 🟢 Fácil · 🟡 Medio · 🔴 Difícil — el número de bazas que hay que llegar a ganar como mínimo.</p>
           <p><b>Los demás jugadores</b>: no tienen ninguna misión propia — juegan normalmente para llevarse el máximo de bazas, que es justo lo que hace falta para impedir que el Capitán complete la suya. Cada jugador suma un punto por cada baza que gana, sea Capitán o no.</p>
-          <p><b>Si el Capitán falla</b>: no cobra la recompensa y recibe un cofre de compensación. Quien termine la ronda con menos bazas también recibe uno.</p>
-          <p><b>Partida</b>: dura tantas rondas como jugadores haya, para que todos sean Capitán una vez. Gana quien más puntos tenga al terminar la última.</p>
-          <p><b>Cofres y cartas</b>: los cofres se abren en cuanto quieres, no cuestan turno, y dan una carta especial al azar — máximo 3 guardadas y como mucho una usada por jugador y por baza. Las cartas de cada jugador son públicas, visibles junto a su nombre. De las doce del diseño, dos están ya en juego: <b>🚫 Ignorar palo</b> (una vez, puedes no seguir el palo obligado) y <b>🍀 Segunda oportunidad</b> (si fallas tu misión por una sola baza, se da por cumplida). Las otras diez —cambio de palo, mini triunfo, escudo, empujón, piedra, cambio rápido, mira una carta, roba baza, congelar y espejo— llegarán después.</p>
+          <p><b>Cofres</b>: se ganan perdiendo. Si el Capitán falla su misión, recibe un cofre de compensación. Si la cumple, es el resto de la mesa quien no ha conseguido impedirlo — y cada uno de ellos recibe un cofre.</p>
+          <p><b>Partida</b>: dura tres rondas por jugador (todos son Capitán tres veces), rotando el turno cada ronda. Gana quien más puntos tenga al terminar la última.</p>
+          <p><b>Cofres y cartas</b>: los cofres se abren en cuanto quieres, no cuestan turno, y dan una carta especial al azar — máximo 3 guardadas y como mucho una usada por jugador y por baza. Las cartas de cada jugador son públicas, visibles junto a su nombre. De las doce del diseño, siete están ya en juego: <b>🚫 Ignorar palo</b> (una vez, puedes no seguir el palo obligado), <b>🍀 Segunda oportunidad</b> (si fallas tu misión por una sola baza, se da por cumplida), <b>🛡️ Escudo</b> (evita ganar la baza aunque fueras a hacerlo), <b>🎯 Roba baza</b> (el segundo se la lleva en tu lugar), <b>👑 Mini triunfo</b> y <b>⬆️ Empujón</b> (tu carta cuenta como triunfo, o gana pase lo que pase) y <b>⬇️ Piedra</b> (anula la carta de un rival). Las otras cinco —cambio de palo, cambio rápido, mira una carta, congelar y espejo— llegarán después.</p>
         </div>
       </div>
     </div>
@@ -1273,11 +1269,21 @@ const SUITS = ['oros','copas','espadas','bastos'];
    ===================================================================== */
 const FR_DICT = {
   "Cofres y cartas": "Coffres et cartes",
-  ": los cofres se abren en cuanto quieres, no cuestan turno, y dan una carta especial al azar — máximo 3 guardadas y como mucho una usada por jugador y por baza. Las cartas de cada jugador son públicas, visibles junto a su nombre. De las doce del diseño, dos están ya en juego:": " : les coffres s'ouvrent quand tu veux, sans coûter de tour, et donnent une carte spéciale au hasard — 3 au maximum en réserve et une seule utilisée par joueur et par pli. Les cartes de chacun sont publiques, visibles à côté de son nom. Sur les douze du design, deux sont déjà en jeu :",
+  ": los cofres se abren en cuanto quieres, no cuestan turno, y dan una carta especial al azar — máximo 3 guardadas y como mucho una usada por jugador y por baza. Las cartas de cada jugador son públicas, visibles junto a su nombre. De las doce del diseño, siete están ya en juego: ": " : les coffres s'ouvrent quand tu veux, sans coûter de tour, et donnent une carte spéciale au hasard — 3 au maximum en réserve et une seule utilisée par joueur et par pli. Les cartes de chacun sont publiques, visibles à côté de son nom. Sur les douze du design, sept sont déjà en jeu : ",
   "🚫 Ignorar palo": "🚫 Ignorer la couleur",
-  "(una vez, puedes no seguir el palo obligado) y": "(une fois, tu peux ne pas suivre la couleur demandée) et",
+  " (una vez, puedes no seguir el palo obligado), ": " (une fois, tu peux ne pas suivre la couleur demandée), ",
   "🍀 Segunda oportunidad": "🍀 Seconde chance",
-  "(si fallas tu misión por una sola baza, se da por cumplida). Las otras diez —cambio de palo, mini triunfo, escudo, empujón, piedra, cambio rápido, mira una carta, roba baza, congelar y espejo— llegarán después.": "(si tu rates ta mission d'un seul pli, elle est quand même considérée réussie). Les dix autres — changement de couleur, mini-atout, bouclier, coup de pouce, pierre, échange rapide, regarde une carte, vol de pli, geler et miroir — arriveront ensuite.",
+  " (si fallas tu misión por una sola baza, se da por cumplida), ": " (si tu rates ta mission d'un seul pli, elle est quand même considérée réussie), ",
+  "🛡️ Escudo": "🛡️ Bouclier",
+  " (evita ganar la baza aunque fueras a hacerlo), ": " (évite de gagner le pli même si tu allais le gagner), ",
+  "🎯 Roba baza": "🎯 Vol de pli",
+  " (el segundo se la lleva en tu lugar), ": " (le deuxième le remporte à ta place), ",
+  "👑 Mini triunfo": "👑 Mini-atout",
+  " y ": " et ",
+  "⬆️ Empujón": "⬆️ Coup de pouce",
+  " (tu carta cuenta como triunfo, o gana pase lo que pase) y ": " (ta carte compte comme atout, ou gagne quoi qu'il arrive) et ",
+  "⬇️ Piedra": "⬇️ Pierre",
+  " (anula la carta de un rival). Las otras cinco —cambio de palo, cambio rápido, mira una carta, congelar y espejo— llegarán después.": " (annule la carte d'un adversaire). Les cinq autres — changement de couleur, échange rapide, regarde une carte, geler et miroir — arriveront ensuite.",
   "Tus cartas": "Tes cartes",
   "Ignorar palo": "Ignorer la couleur",
   "Segunda oportunidad": "Seconde chance",
@@ -1336,12 +1342,12 @@ const FR_DICT = {
   "A 3 jugadores los objetivos suben a 3+, 6+ y 9+ (la mesa tiene más cartas cada uno). Recompensa: 10, 15 y 22 puntos.": "À 3 joueurs, les objectifs montent à 3+, 6+ et 9+ (chacun a plus de cartes à cette table). Récompense : 10, 15 et 22 points.",
   "Los demás jugadores": "Les autres joueurs",
   ": no tienen ninguna misión propia — juegan normalmente para llevarse el máximo de bazas, que es justo lo que hace falta para impedir que el Capitán complete la suya. Cada jugador suma un punto por cada baza que gana, sea Capitán o no.": " : n'ont aucune mission propre — ils jouent normalement pour remporter un maximum de plis, ce qui est justement ce qu'il faut pour empêcher le Capitaine de réussir la sienne. Chaque joueur marque un point par pli remporté, Capitaine ou non.",
-  "Si el Capitán falla": "Si le Capitaine échoue",
-  ": no cobra la recompensa y recibe un cofre de compensación. Quien termine la ronda con menos bazas también recibe uno.": " : il ne touche pas la récompense et reçoit un coffre de compensation. Celui qui termine la manche avec le moins de plis en reçoit un aussi.",
+  "Cofres": "Coffres",
+  ": se ganan perdiendo. Si el Capitán falla su misión, recibe un cofre de compensación. Si la cumple, es el resto de la mesa quien no ha conseguido impedirlo — y cada uno de ellos recibe un cofre.": " : se gagnent en perdant. Si le Capitaine échoue sa mission, il reçoit un coffre de compensation. S'il la réussit, c'est le reste de la table qui n'a pas réussi à l'en empêcher — et chacun d'eux reçoit un coffre.",
   "Cartas y baraja": "Cartes et jeu",
   ": igual que en el Modo Tradicional — a 4 jugadores, las 40 cartas repartidas a 10 por jugador; a 3, sin los doses (36 cartas), 12 por jugador.": " : comme en Mode Traditionnel — à 4 joueurs, les 40 cartes distribuées à 10 par joueur ; à 3, sans les 2 (36 cartes), 12 par joueur.",
   "Partida": "Partie",
-  ": dura tantas rondas como jugadores haya, para que todos sean Capitán una vez. Gana quien más puntos tenga al terminar la última.": " : dure autant de manches qu'il y a de joueurs, pour que chacun soit Capitaine une fois. Gagne celui qui a le plus de points à la fin de la dernière.",
+  ": dura tres rondas por jugador (todos son Capitán tres veces), rotando el turno cada ronda. Gana quien más puntos tenga al terminar la última.": " : dure trois manches par joueur (chacun est Capitaine trois fois), le tour tournant à chaque manche. Gagne celui qui a le plus de points à la fin de la dernière.",
 
   "Ronda {0}/{1}: capitán {2}.": "Manche {0}/{1} : capitaine {2}.",
   "Misión: {0} {1} — ganar {2} o más bazas.": "Mission : {0} {1} — gagner {2} plis ou plus.",
@@ -2975,15 +2981,16 @@ function endCaptainRound(){
     state.captainMode.chests[state.captainSeat].comun++;
     state.log.push(tf('{0} falla su misión y recibe un cofre de compensación.', state.seatNames[state.captainSeat]));
   }
-  // Whoever won the fewest tricks this round also gets a chest (ties share it).
-  const minTricks = Math.min(...state.tricksWon);
-  const lastPlace = seatRange().filter(s=>state.tricksWon[s]===minTricks);
-  lastPlace.forEach(s=>{ state.captainMode.chests[s].comun++; });
+  // Chests reward "losing": the Capitán when their OWN mission fails
+  // (above), and everyone else when it SUCCEEDS instead — since the rest of
+  // the table's job is to stop them, and they didn't.
+  const chestSeats = success ? seatRange().filter(s=>s!==state.captainSeat) : [];
+  chestSeats.forEach(s=>{ state.captainMode.chests[s].comun++; });
 
   state.phase = 'handover';
   state.lastSummary = {
     captain:true, captainSeat:state.captainSeat, mission:tier, threshold,
-    captainTricks, success, reward, tricksWon:state.tricksWon.slice(), lastPlace,
+    captainTricks, success, reward, tricksWon:state.tricksWon.slice(), chestSeats,
   };
   pushEffect('scorePulse', {keys: seatRange().map(String)});
   render();
@@ -4329,7 +4336,6 @@ function showChestAnimation(seatName, key){
         <div class="chest-card-icon">${captainCardIconHtml(key)}</div>
         <div class="chest-card-name">${t(m.label)}</div>
         <div class="chest-card-who">${seatName}</div>
-        <div class="chest-card-desc">${t(m.desc)}</div>
       </div>
     </div>`;
   document.body.appendChild(overlay);
