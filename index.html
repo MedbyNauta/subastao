@@ -221,10 +221,10 @@
     font-size:0.75rem; color:var(--felt-dim); margin-bottom:8px;
   }
   /* The suit drawing sits on the trump line at the size of the text around it. */
-  /* Same size as the suit icon on a card in your hand (.card .icon-wrap svg),
-     not the smaller one used by the mini cards that land on the mesa. */
-  .trump-pip{display:inline-flex; vertical-align:-3px; margin-left:2px;}
-  .trump-pip svg{width:13px; height:13px; display:block;}
+  /* Twice the size of the suit icon on a card in your hand (.card .icon-wrap
+     svg is 13px) — the trump mark is meant to stand out on the mesa. */
+  .trump-pip{display:inline-flex; vertical-align:-7px; margin-left:2px;}
+  .trump-pip svg{width:26px; height:26px; display:block;}
   /* This is what sets the cloth's height: a fixed playing area, with the cards
      centred in it. Bumping this number is how the mesa grows or shrinks — it
      stays a fixed size either way, the same in every phase of the hand. */
@@ -1068,6 +1068,19 @@ const SUITS = ['oros','copas','espadas','bastos'];
    remembers each node's Spanish so switching back is exact.
    ===================================================================== */
 const FR_DICT = {
+  "Van jugadas <b>{0}</b> cartas de esta mano.": "<b>{0}</b> cartes ont déjà été jouées dans cette donne.",
+  "Quedan <b>{0}</b> triunfo(s) de {1} sin ver (fuera de tu mano).": "Il reste <b>{0}</b> atout(s) de {1} non vus (hors de ta main).",
+  "Te falta <b>{0}</b> para cumplir tu puja.": "Il te manque <b>{0}</b> pour réussir ton annonce.",
+  "Te faltan <b>{0}</b> para cumplir tu puja.": "Il te manque <b>{0}</b> pour réussir ton annonce.",
+  "Ya has cumplido tu puja — te conviene no ganar más bazas.": "Tu as déjà réussi ton annonce — mieux vaut ne plus remporter de plis.",
+  "Ya te has pasado de tu puja por <b>{0}</b>.": "Tu as déjà dépassé ton annonce de <b>{0}</b>.",
+  "Van jugadas <b>{0}</b> cartas de esta ronda.": "<b>{0}</b> cartes ont déjà été jouées dans cette manche.",
+  "Esta ronda se juega sin triunfo.": "Cette manche se joue sans atout.",
+  "Reparte {0}.": "{0} distribue.",
+  "{0} puja {1}.": "{0} enchérit {1}.",
+  "{0} pasa.": "{0} passe.",
+  "Todos pasan. Se reparte de nuevo.": "Tout le monde passe. On redistribue.",
+  "{0} se lleva la subasta con {1} puntos.": "{0} remporte l'enchère avec {1} points.",
   "Sin conexión — reintentando…": "Pas de connexion — nouvelle tentative…",
   "Ourensano": "Ourensano",
   "Apuesta": "Mise",
@@ -1971,7 +1984,7 @@ function startAuction(){
   state.manoSeat=state.bidSeat;
   state.aiMaxBids={};
   for(let s=0;s<state.numPlayers;s++){ if(s>=state.humanPlayers) state.aiMaxBids[s]=aiMaxBid(s); }
-  state.bidLog=[`Reparte ${state.seatNames[state.dealerIndex]}.`];
+  state.bidLog=[tf('Reparte {0}.', state.seatNames[state.dealerIndex])];
   document.getElementById('biddingPanel').classList.remove('hidden');
   bidTick();
 }
@@ -2014,15 +2027,15 @@ function aiBidAction(seat){
 }
 function recordBid(seat,amount){
   state.currentBid=amount; state.currentBidder=seat;
-  state.bidLog.push(`${state.seatNames[seat]} puja ${amount}.`);
+  state.bidLog.push(tf('{0} puja {1}.', state.seatNames[seat], amount));
   state.bidSeat=nextSeat(seat);
   bidTick();
 }
 function recordPass(seat){
   state.passed.add(seat);
-  state.bidLog.push(`${state.seatNames[seat]} pasa.`);
+  state.bidLog.push(tf('{0} pasa.', state.seatNames[seat]));
   if(state.passed.size===state.numPlayers){
-    state.bidLog.push('Todos pasan. Se reparte de nuevo.');
+    state.bidLog.push(t('Todos pasan. Se reparte de nuevo.'));
     render();
     const dealerAtRedeal = state.dealerIndex;
     const epoch = state.epoch;
@@ -2063,7 +2076,7 @@ function humanPass(){
 function finishAuction(winnerSeat){
   state.auctionWinner=winnerSeat;
   state.bidAmount=state.currentBid;
-  state.bidLog.push(`${state.seatNames[winnerSeat]} se lleva la subasta con ${state.currentBid} puntos.`);
+  state.bidLog.push(tf('{0} se lleva la subasta con {1} puntos.', state.seatNames[winnerSeat], state.currentBid));
   document.getElementById('biddingPanel').classList.add('hidden');
   state.phase='trump';
   render();
@@ -3021,7 +3034,7 @@ function computeHelp(seat){
   // --- "what we know" summary ---
   const knownLines=[];
   const seenCount=state.seenCards.length;
-  knownLines.push(`Van jugadas <b>${seenCount}</b> cartas de esta mano.`);
+  knownLines.push(tf('Van jugadas <b>{0}</b> cartas de esta mano.', seenCount));
   for(let s=0;s<state.numPlayers;s++){
     if(s===seat) continue;
     const voids=[...state.voidSuits[s]];
@@ -3030,7 +3043,7 @@ function computeHelp(seat){
     }
   }
   const outTrumpsLeft=outstanding[trump].length;
-  knownLines.push(`Quedan <b>${outTrumpsLeft}</b> triunfo(s) de ${SUIT_LABEL[trump]} sin ver (fuera de tu mano).`);
+  knownLines.push(tf('Quedan <b>{0}</b> triunfo(s) de {1} sin ver (fuera de tu mano).', outTrumpsLeft, suitName(trump)));
 
   // --- reasoning + suggestion, via Monte Carlo determinization (same engine as la IA "Alto") ---
   let suggestion=null, reasoning='';
@@ -3090,17 +3103,17 @@ function computePochaHelp(seat){
 
   const knownLines=[];
   knownLines.push(`Pediste <b>${bid}</b> baza${bid===1?'':'s'} y llevas <b>${won}</b>.`);
-  if(stillNeeded>0) knownLines.push(`Te falta${stillNeeded===1?'':'n'} <b>${stillNeeded}</b> para cumplir tu puja.`);
-  else if(stillNeeded===0) knownLines.push('Ya has cumplido tu puja — te conviene no ganar más bazas.');
-  else knownLines.push(`Ya te has pasado de tu puja por <b>${-stillNeeded}</b>.`);
-  knownLines.push(`Van jugadas <b>${state.seenCards.length}</b> cartas de esta ronda.`);
+  if(stillNeeded>0) knownLines.push(tf(stillNeeded===1 ? 'Te falta <b>{0}</b> para cumplir tu puja.' : 'Te faltan <b>{0}</b> para cumplir tu puja.', stillNeeded));
+  else if(stillNeeded===0) knownLines.push(t('Ya has cumplido tu puja — te conviene no ganar más bazas.'));
+  else knownLines.push(tf('Ya te has pasado de tu puja por <b>{0}</b>.', -stillNeeded));
+  knownLines.push(tf('Van jugadas <b>{0}</b> cartas de esta ronda.', state.seenCards.length));
   for(let s=0;s<state.numPlayers;s++){
     if(s===seat) continue;
     const voids=[...state.voidSuits[s]];
     if(voids.length) knownLines.push(`<b>${state.seatNames[s]}</b> no tiene: ${voids.map(v=>SUIT_LABEL[v]).join(', ')}.`);
   }
-  if(trump) knownLines.push(`Quedan <b>${outstanding[trump].length}</b> triunfo(s) de ${SUIT_LABEL[trump]} sin ver (fuera de tu mano).`);
-  else knownLines.push('Esta ronda se juega sin triunfo.');
+  if(trump) knownLines.push(tf('Quedan <b>{0}</b> triunfo(s) de {1} sin ver (fuera de tu mano).', outstanding[trump].length, suitName(trump)));
+  else knownLines.push(t('Esta ronda se juega sin triunfo.'));
 
   let suggestion=null, reasoning='';
   if(legal.length===1){
