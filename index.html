@@ -1206,7 +1206,7 @@
 <div class="side-drawer" id="sideDrawer">
   <div class="side-scrim" onclick="closeSideDrawer()"></div>
   <div class="side-drawer-panel">
-    <button title="Nueva partida" onclick="closeSideDrawer(); goToLauncher();">+</button>
+    <button title="Nueva partida" onclick="closeSideDrawer(); restartSameSetup();">+</button>
     <button title="Ajustes" onclick="closeSideDrawer(); openSettings();">⚙</button>
     <button class="side-help-btn" id="sideHelpBtn" title="Ayuda" onclick="toggleHelpFromDrawer()">i</button>
   </div>
@@ -2777,7 +2777,7 @@ function captainMissionThreshold(tier){ return CAPTAIN_MISSIONS[tier].threshold[
 function startCaptainGame(){
   state.captainMode = {
     round: 0,
-    totalRounds: state.numPlayers, // everyone captains exactly once per match
+    totalRounds: state.numPlayers*3, // everyone captains three times per match
     chests: Array.from({length:state.numPlayers}, ()=>({comun:0, raro:0, epico:0, legendario:0})),
     // Special cards — one persistent inventory per seat, carried across
     // rounds (unlike tricksWon/etc, which reset every round in
@@ -3836,17 +3836,25 @@ function importResultHistory(file){
   reader.readAsText(file);
   document.getElementById('importHistoryFile').value = '';
 }
-function closeOverlay(){
+// Both "Jugar otra vez" (end-of-match overlay) and "Nueva partida" (side
+// drawer, mid-match) start an identical rematch — same game, same table
+// size/modalidad, same AI level and target score — read straight from the
+// CURRENT state, NOT from the Ajustes dropdowns (those may still show
+// stale values if the player never opened Ajustes during a game launched
+// from the modo-selector, e.g. Subastao Capitán or a Pocha variant, which
+// don't go through those selects at all). Changing the game itself still
+// goes through Ajustes, same as always.
+function restartSameSetup(){
   netTeardown(); // leave the online room (if any) before starting a fresh local game
   document.getElementById('overlay').classList.add('hidden');
-  newGame(
-    document.getElementById('targetSelect').value,
-    document.getElementById('playersSelect').value,
-    document.getElementById('aiLevelSelect').value,
-    undefined,
-    document.getElementById('pochaVariantSelect').value
-  );
+  document.getElementById('settingsOverlay').classList.add('hidden');
+  const selector = state.gameType==='pocha' ? ('pocha'+state.numPlayers)
+    : (state.subastaoMode==='capitan' ? state.numPlayers+':capitan' : String(state.numPlayers));
+  const pochaVariant = state.gameType==='pocha' ? state.pocha.variant : undefined;
+  const pochaForbid = state.gameType==='pocha' ? (state.pocha.forbidLastMatch===false ? 'off' : 'on') : undefined;
+  newGame(state.target, selector, state.aiLevel, state.humanPlayers, pochaVariant, pochaForbid);
 }
+function closeOverlay(){ restartSameSetup(); }
 
 /* ---------- PASS-AND-PLAY (multiple humans sharing this phone) ---------- */
 // Seats 0..humanPlayers-1 are controlled by real people taking turns with the
@@ -4853,16 +4861,6 @@ function launcherBackFromStep2(){
 function launcherBackToModality(){
   if(launcherType && launcherType.startsWith('pocha')) pochaStep2Pick(()=>{});
   else launcherGo(2);
-}
-// "Nueva partida" (side drawer) goes back to the launcher instead of
-// silently reapplying whatever was last chosen in Ajustes — hides any
-// mid-game overlay first so nothing else shows through behind it.
-function goToLauncher(){
-  netTeardown(); // leave any online room's listeners behind before starting fresh
-  document.getElementById('overlay').classList.add('hidden');
-  document.getElementById('settingsOverlay').classList.add('hidden');
-  launcherGo(1);
-  document.getElementById('launcherOverlay').classList.remove('hidden');
 }
 // "Varios en este móvil" — list how many humans can share the phone, capped
 // by the chosen game type's own seat count (3 or 4 for Subastao, 3 to 5 for Pocha); the rest
