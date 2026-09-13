@@ -147,8 +147,10 @@
   /* Modo Capitán: everyone's held special cards, public per the design doc.
      Small and quiet — this is information, not a control (see the separate
      "usa una carta" strip near your own hand for that). */
-  .seat-cards{display:block; margin-top:2px; font-size:0.72rem; line-height:1;}
-  .seat-cards .empty{opacity:0.25;}
+  .seat-cards{display:flex; gap:3px; margin-top:2px; line-height:1;}
+  .seat-cards .ico{display:inline-flex; color:var(--oro);}
+  .seat-cards .ico svg{width:13px; height:13px;}
+  .seat-cards .empty{opacity:0.25; font-size:0.72rem;}
 
   /* 4-player Subastao scores by pair, so the pair is the unit. No
      "Nosotros / Ellos" label: the two names identify it, yours in bold. */
@@ -368,24 +370,92 @@
   @keyframes cante-offer-throb{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.03);} }
   @media (prefers-reduced-motion: reduce){ .cante-offer-btn{animation:none;} }
 
-  /* MODO CAPITÁN — your own inventory strip. Quieter than the cante prompt
-     above (this is available most of the time, not a fleeting window), so
-     it reads as a toolbar rather than an alert. */
-  .captain-inventory{margin:10px 0 4px;}
-  .captain-inventory-row{display:flex; gap:8px; flex-wrap:wrap;}
-  .captain-card-btn{
-    display:flex; align-items:center; gap:6px; padding:8px 12px;
-    border:1px solid var(--linea); border-radius:10px; cursor:pointer;
-    font-family:inherit; font-size:0.82rem; font-weight:600; color:var(--text);
-    background:rgba(var(--wash-rgb),0.04);
+  /* MODO CAPITÁN — your own inventory strip, folded into the hand-wrap
+     felt band right below your cards: a drawn chest (opens on tap, see the
+     JS-driven .open class below and showChestAnimation) and up to 3 card
+     icon buttons. Quieter than the cante prompt above (this is available
+     most of the time, not a fleeting window), so it reads as a toolbar
+     rather than an alert. */
+  .captain-inventory{margin:10px 0 2px; position:relative; z-index:1;}
+  .captain-inventory-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .captain-inventory-cards{display:flex; gap:8px; flex-wrap:wrap;}
+  .chest-btn{
+    display:flex; align-items:center; gap:6px; padding:2px 8px 2px 2px;
+    border:none; background:none; cursor:pointer; color:var(--oro);
+    position:relative;
   }
-  .captain-card-btn .em{font-size:1.1rem;}
+  .chest-btn svg{width:40px; height:34px; overflow:visible;}
+  .chest-lid-shape{fill:var(--oro); stroke:var(--bg); stroke-width:1;}
+  .chest-body{fill:var(--oro); opacity:0.82; stroke:var(--bg); stroke-width:1;}
+  .chest-band, .chest-lock{stroke:var(--bg); stroke-width:1.4; fill:var(--bg);}
+  .chest-band{opacity:0.5;}
+  .chest-lid{transform-origin:24px 19px; transition:transform .3s ease;}
+  .chest-btn:active .chest-lid{transform:rotate(-18deg);}
+  .chest-count{
+    font-family:'Fraunces', serif; font-weight:700; font-size:1rem; color:var(--oro);
+  }
+  .chest-btn.hidden{display:none;}
+  .captain-card-btn{
+    display:flex; align-items:center; justify-content:center; padding:8px;
+    width:40px; height:40px; border:1px solid var(--linea); border-radius:10px;
+    cursor:pointer; color:var(--text); background:rgba(var(--wash-rgb),0.04);
+  }
+  .captain-card-btn svg{width:22px; height:22px;}
+  .captain-card-btn.sel{border-color:var(--oro); background:rgba(var(--wash-rgb),0.12); color:var(--oro);}
   .captain-card-btn:disabled{opacity:0.4; cursor:default;}
   .captain-card-empty{
-    display:flex; align-items:center; padding:8px 12px; border-radius:10px;
-    border:1px dashed var(--linea); font-size:0.78rem; color:var(--piedra);
+    width:40px; height:40px; border-radius:10px;
+    border:1px dashed var(--linea);
   }
-  #captainOpenChestBtn{margin-top:8px;}
+  /* "Qué hace / usar" panel for the currently-selected card — a reminder of
+     the effect always comes before the Usar button that actually spends it. */
+  .captain-card-detail{
+    display:flex; align-items:flex-start; gap:10px; margin-top:10px;
+    padding:10px; border-radius:10px; background:rgba(var(--wash-rgb),0.06);
+    border:1px solid var(--linea);
+  }
+  .ccd-icon{flex-shrink:0; width:30px; height:30px; color:var(--oro);}
+  .ccd-icon svg{width:100%; height:100%;}
+  .ccd-txt{flex:1; min-width:0;}
+  .ccd-name{font-weight:700; font-size:0.88rem; color:var(--oro);}
+  .ccd-desc{font-size:0.8rem; color:var(--text); opacity:0.85; margin-top:2px;}
+  .ccd-targets{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .ccd-targets.hidden{display:none;}
+  .ccd-use{width:auto; padding:8px 16px; align-self:center; margin:0;}
+
+  /* CHEST-OPENING ANIMATION — same overlay/queue shape as the cante slam
+     (see showChestAnimation), gold-treasure palette, ends by revealing the
+     drawn card's icon/name/description since Capitán's cards are public. */
+  .chest-overlay{
+    position:fixed; inset:0; z-index:1000; pointer-events:none;
+    display:flex; align-items:center; justify-content:center;
+    animation: cante-overlay-fade 3s ease-out forwards;
+  }
+  .chest-wash{
+    position:absolute; inset:0;
+    background:linear-gradient(160deg, #E0A526 0%, #6B4A12 100%);
+    animation: cante-wash-pulse 3s ease-out forwards;
+  }
+  .chest-anim{position:relative; text-align:center; padding:0 20px;}
+  .chest-anim-svg{width:120px; height:100px; overflow:visible; filter:drop-shadow(0 6px 14px rgba(0,0,0,0.5));}
+  .chest-anim-svg .chest-lid{transform-origin:24px 19px; animation:chest-lid-open 0.5s ease-in 0.15s forwards;}
+  @keyframes chest-lid-open{ 100%{ transform:rotate(-100deg) translate(-2px,-6px);} }
+  .chest-card-reveal{
+    margin-top:10px; opacity:0; transform:scale(0.5) translateY(10px);
+    animation: chest-card-in 0.5s cubic-bezier(.19,1.6,.4,1) 0.5s forwards;
+  }
+  @keyframes chest-card-in{ 100%{ opacity:1; transform:scale(1) translateY(0);} }
+  .chest-card-icon{width:48px; height:48px; margin:0 auto; color:#fff;}
+  .chest-card-icon svg{width:100%; height:100%;}
+  .chest-card-name{
+    font-family:'Fraunces', serif; font-weight:700; font-size:1.5rem; color:#fff;
+    text-shadow:0 2px 8px rgba(0,0,0,0.5); margin-top:6px;
+  }
+  .chest-card-who{font-size:0.85rem; color:#fff; opacity:0.85; margin-top:2px;}
+  .chest-card-desc{
+    font-size:0.85rem; color:#fff; background:rgba(0,0,0,0.45);
+    border-radius:12px; padding:8px 14px; margin-top:10px; max-width:280px;
+  }
 
   /* CANTE ANIMATION — a big, theatrical, full-screen slam for the
      rey+caballo bonus (see queueCanteAnimation in the JS): a color wash
@@ -467,9 +537,14 @@
     background:radial-gradient(circle, #FFE9B0 0%, #FF5A1F 55%, transparent 78%);
     filter:drop-shadow(0 0 6px rgba(255,90,31,0.8));
   }
+  .sparkle.spark-gold{
+    background:radial-gradient(circle, #FFF6DA 0%, #E0A526 55%, transparent 78%);
+    filter:drop-shadow(0 0 6px rgba(224,165,38,0.8));
+  }
   @media (prefers-reduced-motion: reduce){
     .cante-overlay, .cante-wash, .cante-burst, .cante-shout, .cante-detail{animation:none; opacity:1; transform:none;}
     .cante-overlay{animation:cante-overlay-fade 3.2s ease-out forwards;}
+    .chest-overlay, .chest-wash, .chest-anim-svg .chest-lid, .chest-card-reveal{animation:none !important; opacity:1 !important; transform:none !important;}
   }
 
   /* PANELS */
@@ -765,15 +840,39 @@
   <div class="hand-wrap" id="handWrap">
     <div class="lbl" id="handLbl">Tu mano</div>
     <div class="hand" id="handRow"></div>
-  </div>
 
-  <!-- CAPTAIN INVENTORY — Modo Capitán only. Your own held special cards
-       (tap to use, at most one per trick) plus a button to open any earned
-       chests. See captainRenderInventory()/captainOpenChest()/captainUseCard(). -->
-  <div class="captain-inventory hidden" id="captainInventory">
-    <div class="lbl">Tus cartas</div>
-    <div class="captain-inventory-row" id="captainInventoryRow"></div>
-    <button class="ghost-btn hidden" id="captainOpenChestBtn" onclick="captainOpenChest(mySeatIndex())">Abrir cofre</button>
+    <!-- CAPTAIN INVENTORY — Modo Capitán only, folded into the same felt
+         band as the hand (caña/tapa filigrana included) rather than a
+         separate block. A drawn chest (opens on tap, revealing a card) plus
+         up to 3 held card icons; tapping a card opens the "qué hace / usar"
+         panel below instead of activating it straight away. See
+         renderCaptainInventory()/renderCaptainCardDetail()/captainOpenChest()
+         /captainUseCard(). -->
+    <div class="captain-inventory hidden" id="captainInventory">
+      <div class="captain-inventory-row" id="captainInventoryRow">
+        <button class="chest-btn hidden" id="captainChestBtn" onclick="captainOpenChest(mySeatIndex())" title="Abrir cofre">
+          <svg viewBox="0 0 48 40" aria-hidden="true">
+            <g class="chest-lid">
+              <path class="chest-lid-shape" d="M4 18 Q24 2 44 18 L44 20 L4 20 Z"/>
+              <circle class="chest-lock" cx="24" cy="16" r="2.6"/>
+            </g>
+            <rect class="chest-body" x="4" y="19" width="40" height="17" rx="2.5"/>
+            <line class="chest-band" x1="24" y1="19" x2="24" y2="36"/>
+          </svg>
+          <span class="chest-count" id="captainChestCount">0</span>
+        </button>
+        <div class="captain-inventory-cards" id="captainInventoryCards"></div>
+      </div>
+      <div class="captain-card-detail hidden" id="captainCardDetail">
+        <div class="ccd-icon" id="captainCardDetailIcon"></div>
+        <div class="ccd-txt">
+          <div class="ccd-name" id="captainCardDetailName"></div>
+          <div class="ccd-desc" id="captainCardDetailDesc"></div>
+          <div class="ccd-targets" id="captainCardTargets"></div>
+        </div>
+        <button class="big-btn ccd-use hidden" id="captainUseBtn" onclick="captainConfirmUse()">Usar</button>
+      </div>
+    </div>
   </div>
 
   <!-- HELP PANEL -->
@@ -1195,7 +1294,18 @@ const FR_DICT = {
   "Espejo": "Miroir",
   "{0} abre un cofre y consigue: {1} {2}.": "{0} ouvre un coffre et obtient : {1} {2}.",
   "{0} usa: {1} {2}.": "{0} utilise : {1} {2}.",
+  "{0} usa: {1} {2} → {3}.": "{0} utilise : {1} {2} → {3}.",
   "Abrir cofre ({0})": "Ouvrir un coffre ({0})",
+  "Abrir cofre": "Ouvrir un coffre",
+  "Usar": "Utiliser",
+  "Todavía no hay ninguna carta rival en esta baza.": "Aucune carte adverse dans ce pli pour l'instant.",
+  "Una vez, no sigues el palo obligado en tu próxima jugada de esta baza.": "Une fois, tu ne suis pas la couleur demandée à ta prochaine carte de ce pli.",
+  "Si fallas tu misión por una sola baza, se da por cumplida. Se usa sola, no hace falta activarla.": "Si tu rates ta mission d'un seul pli, elle est considérée réussie. Elle s'active seule, pas besoin de l'utiliser.",
+  "Evita ganar esta baza aunque fueras a hacerlo — la gana quien vaya después de ti.": "Évite de gagner ce pli même si tu allais le gagner — c'est le suivant qui le remporte.",
+  "Si quedas segundo en esta baza, pasas a ganarla tú. No se puede usar en la última baza.": "Si tu termines deuxième de ce pli, c'est toi qui le gagnes. Inutilisable au dernier pli.",
+  "Actívala antes de jugar: tu carta de esta baza cuenta como si fuera de triunfo.": "Active-la avant de jouer : ta carte de ce pli compte comme si elle était atout.",
+  "Actívala antes de jugar: tu carta de esta baza gana a cualquier otra.": "Active-la avant de jouer : ta carte de ce pli bat n'importe quelle autre.",
+  "Elige la carta de un rival ya jugada en esta baza y anúlala: pasa a perder frente a cualquier otra.": "Choisis la carte déjà jouée d'un adversaire dans ce pli et annule-la : elle perd face à n'importe quelle autre.",
   "{0} usa: {1} {2} y cumple igualmente su misión — suma {3} puntos.": "{0} utilise : {1} {2} et réussit sa mission quand même — marque {3} points.",
   "No disponible todavía en Modo Capitán": "Pas encore disponible en Mode Capitaine",
   "Elige la modalidad": "Choisis la modalité",
@@ -2395,10 +2505,19 @@ function playCard(seat,card){
   const hand=state.hands[seat];
   const idx=hand.findIndex(c=>c.id===card.id);
   hand.splice(idx,1);
-  // "Ignorar palo" is spent by playing at all, whether or not the freedom
-  // was actually needed for this particular card.
-  if(state.subastaoMode==='capitan' && state.captainMode.skipFollowSuit[seat]) state.captainMode.skipFollowSuit[seat]=false;
-  state.currentTrick.push({seat,card});
+  // Cards armed BEFORE playing (Ignorar palo, Mini triunfo, Empujón) are all
+  // spent by playing at all, whether or not the effect ends up mattering.
+  // Mini triunfo/Empujón additionally tag the trick entry itself, so
+  // captainEffectiveWinner() can read it back at resolution time — this
+  // never touches the real card or hand, only how THIS trick reads it.
+  let capEffect = null;
+  if(state.subastaoMode==='capitan'){
+    const cm = state.captainMode;
+    if(cm.skipFollowSuit[seat]) cm.skipFollowSuit[seat]=false;
+    if(cm.miniTriunfoArmed[seat]){ cm.miniTriunfoArmed[seat]=false; capEffect='mini_triunfo'; }
+    if(cm.empujonArmed[seat]){ cm.empujonArmed[seat]=false; if(!capEffect) capEffect='empujon'; }
+  }
+  state.currentTrick.push({seat,card,capEffect});
   state.log.push(tf('{0} juega {1}.', state.seatNames[seat], cardLabel(card)));
   // memory tracking: record card seen, and deduce a void suit if this player didn't follow the lead suit
   state.seenCards.push(card);
@@ -2641,7 +2760,14 @@ function startCaptainGame(){
     // DO reset there.
     inventory: Array.from({length:state.numPlayers}, ()=>[]),
     usedCardThisTrick: new Array(state.numPlayers).fill(false),
-    skipFollowSuit: new Array(state.numPlayers).fill(false),
+    skipFollowSuit: new Array(state.numPlayers).fill(false),   // ignorar_palo, armado hasta la próxima jugada
+    miniTriunfoArmed: new Array(state.numPlayers).fill(false), // mini_triunfo, ídem
+    empujonArmed: new Array(state.numPlayers).fill(false),     // empujón, ídem
+    escudoSeats: new Set(),   // quién ha usado escudo en la baza en curso
+    robaBazaSeats: new Set(), // ídem, roba baza
+    piedraTarget: null,       // asiento al que se le ha aplicado piedra esta baza, o null
+    trickNumber: 0,           // bazas ya resueltas en la ronda en curso
+    handSize: 0,              // cartas repartidas esta ronda — para saber cuál es "la última baza"
   };
   state.captainSeat = state.dealerIndex;
   startCaptainRound();
@@ -2655,6 +2781,8 @@ function startCaptainRound(){
   state.hands = Array.from({length:state.numPlayers}, ()=>[]);
   for(let i=0;i<deck.length;i++) state.hands[i%state.numPlayers].push(deck[i]);
   for(let s=0;s<state.numPlayers;s++) sortHand(state.hands[s]);
+  state.captainMode.handSize = state.hands[0].length;
+  state.captainMode.trickNumber = 0;
   state.trumpSuit = null;
   state.currentTrick = [];
   state.canteOffer = null; // Modo Capitán has no cante
@@ -2720,20 +2848,76 @@ function chooseCaptainMission(tier){
   state.log.push(tf('Misión: {0} {1} — ganar {2} o más bazas.', m.emoji, t(m.label), captainMissionThreshold(tier)));
   document.getElementById('captainMissionPanel').classList.add('hidden');
   state.captainMode.usedCardThisTrick.fill(false); // primera baza de la ronda
+  state.captainMode.escudoSeats.clear();
+  state.captainMode.robaBazaSeats.clear();
+  state.captainMode.piedraTarget = null;
   state.phase = 'playing';
   state.leader = state.captainSeat;
   state.turn = state.captainSeat;
   playTick();
 }
+// Numeric strength for "who's ahead" purposes only (Roba baza needs a full
+// ranking, not just a single winner) — preserves beats()'s exact ordering
+// (trump > lead suit > everything else, lower rankIndex stronger within each)
+// while also giving a total order across cards beats() leaves incomparable.
+function captainCardStrength(card, leadSuit, trump){
+  if(card.suit===trump) return 2000 - card.rankIndex;
+  if(card.suit===leadSuit) return 1000 - card.rankIndex;
+  return -card.rankIndex;
+}
+// Who actually wins the trick once Modo Capitán's active cards are folded
+// in — a read done ONLY for this decision: it clones the trick entries it
+// needs to adjust (mini_triunfo/empujón/piedra change a clone's suit or
+// rankIndex) and never touches the real cards, hands, or state.trumpSuit.
+function captainEffectiveWinner(trick, trump){
+  const leadSuit = trick[0].card.suit;
+  const clone = trick.map(t=>{
+    let card = t.card;
+    if(t.capEffect==='mini_triunfo' && trump) card = Object.assign({}, card, {suit:trump});
+    return {seat:t.seat, card, capEffect:t.capEffect};
+  });
+  const cm = state.captainMode;
+  // Piedra: "pasa a perder frente a cualquier otra" — no basta con bajarle
+  // el rango, porque si fuera la única carta de triunfo seguiría ganando
+  // por ser la única de su palo (beats() no la compararía con nada). Se
+  // saca del todo del grupo que decide la baza en su lugar, igual que hace
+  // Escudo más abajo con quien se blinda.
+  let pool = clone.filter(c=>c.seat!==cm.piedraTarget);
+  if(!pool.length) pool = clone.slice(); // nunca debería vaciarse del todo, pero por si acaso
+  // Empujón gana la baza de forma directa (no compara palos ni triunfo con
+  // beats(), simplemente se declara ganador), salvo que Piedra la haya
+  // anulado justo arriba o Escudo la descarte en el bucle siguiente.
+  const empujado = pool.find(c=>c.capEffect==='empujon');
+  let winnerSeat = empujado ? empujado.seat : trickWinnerSeat(pool, trump);
+  // Escudo: if whoever comes out ahead shielded themself, re-decide without
+  // their card, repeating in case that ALSO lands on a shielded seat.
+  while(cm.escudoSeats.has(winnerSeat) && pool.length>1){
+    pool = pool.filter(c=>c.seat!==winnerSeat);
+    const stillEmpujado = pool.find(c=>c.capEffect==='empujon');
+    winnerSeat = stillEmpujado ? stillEmpujado.seat : trickWinnerSeat(pool, trump);
+  }
+  // Roba baza: whoever's actually in 2nd place (by the same adjusted
+  // strengths, and excluding a Piedra-nullified card just like the winner
+  // decision above) takes the trick instead, if they played this card.
+  const ranked = clone.filter(c=>c.seat!==cm.piedraTarget)
+    .map(c=>({seat:c.seat, strength:captainCardStrength(c.card, leadSuit, trump)}))
+    .sort((a,b)=>b.strength-a.strength);
+  if(ranked[1] && cm.robaBazaSeats.has(ranked[1].seat)) winnerSeat = ranked[1].seat;
+  return winnerSeat;
+}
 function resolveCaptainTrick(){
   const trick = state.currentTrick;
-  const winnerSeat = trickWinnerSeat(trick, state.trumpSuit);
+  const winnerSeat = captainEffectiveWinner(trick, state.trumpSuit);
   state.tricksWon[winnerSeat]++;
   state.playerTrickPoints[winnerSeat]++;
   state.log.push(tf('{0} gana la baza.', state.seatNames[winnerSeat]));
   pushEffect('trickWin', {winnerSeat});
   state.currentTrick = [];
+  state.captainMode.trickNumber++;
   state.captainMode.usedCardThisTrick.fill(false); // una carta especial por jugador y por baza
+  state.captainMode.escudoSeats.clear();
+  state.captainMode.robaBazaSeats.clear();
+  state.captainMode.piedraTarget = null;
   const isLastTrick = state.hands[0].length===0;
   if(isLastTrick){ endCaptainRound(); }
   else { state.leader=winnerSeat; state.turn=winnerSeat; playTick(); }
@@ -2852,19 +3036,55 @@ function renderCaptainSummary(s){
    Deliberately NOT wired into the AI: Capitán seats never open chests or
    use cards themselves yet, so a solo game against AI never surprises you
    with one of these — only a human seat's own choices ever touch this. */
+// Original line-art icons, one per implemented card — same stroke-based style
+// as the suit icons and the caña/tapa filigrana (see suitIcon() and the
+// --art-canya/--art-tapa tokens): plain shapes, currentColor, no reused art.
+const CAPTAIN_CARD_ICONS = {
+  ignorar_palo: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>'
+    + '<path d="M12 7 L15.5 12 L12 17 L8.5 12 Z" fill="none" stroke="currentColor" stroke-width="1.3"/>'
+    + '<line x1="5.5" y1="18.5" x2="18.5" y2="5.5" stroke="currentColor" stroke-width="1.8"/>',
+  segunda_oportunidad: '<circle cx="9" cy="9" r="3.6" fill="none" stroke="currentColor" stroke-width="1.4"/>'
+    + '<circle cx="15" cy="9" r="3.6" fill="none" stroke="currentColor" stroke-width="1.4"/>'
+    + '<circle cx="9" cy="15" r="3.6" fill="none" stroke="currentColor" stroke-width="1.4"/>'
+    + '<circle cx="15" cy="15" r="3.6" fill="none" stroke="currentColor" stroke-width="1.4"/>'
+    + '<line x1="12" y1="15" x2="12" y2="21" stroke="currentColor" stroke-width="1.4"/>',
+  escudo: '<path d="M12 3 L19 6 V11.5 C19 16 16 19.5 12 21 C8 19.5 5 16 5 11.5 V6 Z" '
+    + 'fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
+  roba_baza: '<rect x="4" y="7" width="9" height="13" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.3" transform="rotate(-8 8.5 13.5)"/>'
+    + '<rect x="11" y="6" width="9" height="13" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.5" transform="rotate(6 15.5 12.5)"/>'
+    + '<path d="M6 5 C9 2 15 2 18 5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>'
+    + '<path d="M18 5 L15.6 4.6 M18 5 L17.2 7.2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>',
+  mini_triunfo: '<rect x="6" y="10" width="12" height="10" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.4"/>'
+    + '<path d="M7 8 L9 4 L12 7 L15 4 L17 8 Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>',
+  empujon: '<rect x="7" y="9" width="10" height="13" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.4"/>'
+    + '<path d="M12 6 L12 1 M9 3.5 L12 0.7 L15 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+  piedra: '<rect x="7" y="2" width="10" height="13" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.4"/>'
+    + '<path d="M12 17 L12 21.5 M9 19.3 L12 22.3 L15 19.3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+};
+function captainCardIconHtml(key){
+  const svg = CAPTAIN_CARD_ICONS[key];
+  return svg ? `<svg viewBox="0 0 24 24" aria-hidden="true">${svg}</svg>` : '';
+}
 const CAPTAIN_CARDS = {
-  ignorar_palo:        {key:'ignorar_palo',        label:'Ignorar palo',           emoji:'🚫', kind:'active',  implemented:true},
-  segunda_oportunidad: {key:'segunda_oportunidad',  label:'Segunda oportunidad',    emoji:'🍀', kind:'passive', implemented:true},
-  cambio_palo:         {key:'cambio_palo',          label:'Cambio de palo',        emoji:'🔄', kind:'active',  implemented:false},
-  mini_triunfo:        {key:'mini_triunfo',         label:'Mini triunfo',          emoji:'👑', kind:'active',  implemented:false},
-  escudo:              {key:'escudo',               label:'Escudo',                emoji:'🛡️', kind:'active',  implemented:false},
-  empujon:             {key:'empujon',              label:'Empujón',               emoji:'⬆️', kind:'active',  implemented:false},
-  piedra:              {key:'piedra',               label:'Piedra',                emoji:'⬇️', kind:'active',  implemented:false},
-  cambio_rapido:       {key:'cambio_rapido',        label:'Cambio rápido',         emoji:'♻️', kind:'active',  implemented:false},
-  mira_carta:          {key:'mira_carta',           label:'Mira una carta',        emoji:'👁️', kind:'active',  implemented:false},
-  roba_baza:           {key:'roba_baza',            label:'Roba baza',             emoji:'🎯', kind:'active',  implemented:false},
-  congelar:            {key:'congelar',             label:'Congelar',              emoji:'🧊', kind:'active',  implemented:false},
-  espejo:              {key:'espejo',               label:'Espejo',                emoji:'🪞', kind:'active',  implemented:false},
+  ignorar_palo:        {key:'ignorar_palo',        label:'Ignorar palo',        emoji:'🚫',
+    desc:'Una vez, no sigues el palo obligado en tu próxima jugada de esta baza.', kind:'active', implemented:true, needsTarget:false},
+  segunda_oportunidad: {key:'segunda_oportunidad',  label:'Segunda oportunidad', emoji:'🍀',
+    desc:'Si fallas tu misión por una sola baza, se da por cumplida. Se usa sola, no hace falta activarla.', kind:'passive', implemented:true, needsTarget:false},
+  escudo:              {key:'escudo',               label:'Escudo',              emoji:'🛡️',
+    desc:'Evita ganar esta baza aunque fueras a hacerlo — la gana quien vaya después de ti.', kind:'active', implemented:true, needsTarget:false},
+  roba_baza:           {key:'roba_baza',            label:'Roba baza',           emoji:'🎯',
+    desc:'Si quedas segundo en esta baza, pasas a ganarla tú. No se puede usar en la última baza.', kind:'active', implemented:true, needsTarget:false},
+  mini_triunfo:        {key:'mini_triunfo',         label:'Mini triunfo',        emoji:'👑',
+    desc:'Actívala antes de jugar: tu carta de esta baza cuenta como si fuera de triunfo.', kind:'active', implemented:true, needsTarget:false},
+  empujon:             {key:'empujon',              label:'Empujón',             emoji:'⬆️',
+    desc:'Actívala antes de jugar: tu carta de esta baza gana a cualquier otra.', kind:'active', implemented:true, needsTarget:false},
+  piedra:              {key:'piedra',               label:'Piedra',              emoji:'⬇️',
+    desc:'Elige la carta de un rival ya jugada en esta baza y anúlala: pasa a perder frente a cualquier otra.', kind:'active', implemented:true, needsTarget:true},
+  cambio_palo:         {key:'cambio_palo',          label:'Cambio de palo',      emoji:'🔄', kind:'active',  implemented:false},
+  cambio_rapido:       {key:'cambio_rapido',        label:'Cambio rápido',       emoji:'♻️', kind:'active',  implemented:false},
+  mira_carta:          {key:'mira_carta',           label:'Mira una carta',      emoji:'👁️', kind:'active',  implemented:false},
+  congelar:            {key:'congelar',             label:'Congelar',            emoji:'🧊', kind:'active',  implemented:false},
+  espejo:              {key:'espejo',               label:'Espejo',              emoji:'🪞', kind:'active',  implemented:false},
 };
 // Only implemented cards are ever actually drawn from a chest — the rest of
 // the roster above exists so the pool grows the moment each one is finished,
@@ -2890,12 +3110,22 @@ function captainOpenChest(seat){
   const key = CAPTAIN_CARD_POOL[Math.floor(Math.random()*CAPTAIN_CARD_POOL.length)];
   state.captainMode.inventory[seat].push(key);
   state.log.push(tf('{0} abre un cofre y consigue: {1} {2}.', state.seatNames[seat], CAPTAIN_CARDS[key].emoji, t(CAPTAIN_CARDS[key].label)));
+  pushEffect('chestOpened', {seatName:state.seatNames[seat], key});
   render();
 }
 // Activates one of `seat`'s ACTIVE cards. Passive cards (segunda_oportunidad)
 // can't be activated by hand — they're checked automatically instead — and
 // every seat gets at most one activation per trick, active card or not.
-function captainUseCard(seat, key){
+// Targets Piedra may legally be pointed at right now: whichever OTHER
+// seats have already played a card in the trick in progress.
+function captainPiedraTargets(seat){
+  return state.currentTrick.filter(t=>t.seat!==seat).map(t=>t.seat);
+}
+// Activates one of `seat`'s ACTIVE cards — `targetSeat` only matters for
+// Piedra. Every card shares the same outer gates (exists, one-per-trick);
+// each `if` below is that one card's own extra rule, straight from its
+// description in CAPTAIN_CARDS.
+function captainUseCard(seat, key, targetSeat){
   if(state.subastaoMode!=='capitan' || state.phase!=='playing') return;
   const m = CAPTAIN_CARDS[key];
   if(!m || m.kind!=='active') return;
@@ -2903,14 +3133,37 @@ function captainUseCard(seat, key){
   const idx = inv.indexOf(key);
   if(idx===-1) return;
   if(state.captainMode.usedCardThisTrick[seat]) return;
+  const yaJugueEstaBaza = state.currentTrick.some(t=>t.seat===seat);
+  const cm = state.captainMode;
+
   if(key==='ignorar_palo'){
-    state.captainMode.skipFollowSuit[seat] = true;
+    if(yaJugueEstaBaza) return; // hay que armarla antes de tu jugada, como el resto de las "antes de jugar"
+    cm.skipFollowSuit[seat] = true;
+  } else if(key==='mini_triunfo'){
+    if(yaJugueEstaBaza) return;
+    cm.miniTriunfoArmed[seat] = true;
+  } else if(key==='empujon'){
+    if(yaJugueEstaBaza) return;
+    cm.empujonArmed[seat] = true;
+  } else if(key==='escudo'){
+    cm.escudoSeats.add(seat);
+  } else if(key==='roba_baza'){
+    if(cm.trickNumber+1 >= cm.handSize) return; // "no puede utilizarse en la última baza"
+    cm.robaBazaSeats.add(seat);
+  } else if(key==='piedra'){
+    const objetivos = captainPiedraTargets(seat);
+    if(!objetivos.length || !objetivos.includes(targetSeat)) return;
+    cm.piedraTarget = targetSeat;
   } else {
     return; // no implementada todavía — no debería poder llegar aquí
   }
   inv.splice(idx,1);
-  state.captainMode.usedCardThisTrick[seat] = true;
-  state.log.push(tf('{0} usa: {1} {2}.', state.seatNames[seat], m.emoji, t(m.label)));
+  cm.usedCardThisTrick[seat] = true;
+  if(key==='piedra'){
+    state.log.push(tf('{0} usa: {1} {2} → {3}.', state.seatNames[seat], m.emoji, t(m.label), state.seatNames[targetSeat]));
+  } else {
+    state.log.push(tf('{0} usa: {1} {2}.', state.seatNames[seat], m.emoji, t(m.label)));
+  }
   render();
 }
 // The small, public row of icons shown on every seat's chip (see
@@ -2919,29 +3172,84 @@ function captainUseCard(seat, key){
 // the row's width doesn't jump as cards come and go.
 function captainInventoryIconsHtml(seat){
   const inv = state.captainMode.inventory[seat];
-  const llenas = inv.map(k=>`<span title="${t(CAPTAIN_CARDS[k].label)}">${CAPTAIN_CARDS[k].emoji}</span>`);
+  const llenas = inv.map(k=>`<span class="ico" title="${t(CAPTAIN_CARDS[k].label)}">${captainCardIconHtml(k)}</span>`);
   const vacias = new Array(3-inv.length).fill('<span class="empty">·</span>');
   return `<span class="seat-cards">${llenas.concat(vacias).join(' ')}</span>`;
 }
-// Your OWN inventory strip, next to your hand — tap a card to use it, or
-// open a chest if you have one and room for what it holds. Unlike the public
-// icons above, this one is a control: only rendered for your own seat (see
-// its call site in render()).
+// Which card (if any) is expanded in the "qué hace / usar" panel below the
+// strip — purely local UI state, never synced: each device decides for
+// itself what it's looking at, the same way helpModeEnabled works.
+let capitanCardSeleccionada = null;
+function captainSelectCard(seat, key){
+  capitanCardSeleccionada = (capitanCardSeleccionada===key) ? null : key;
+  renderCaptainInventory(seat);
+}
+function captainConfirmUse(){
+  if(!capitanCardSeleccionada) return;
+  captainUseCard(mySeatIndex(), capitanCardSeleccionada);
+  capitanCardSeleccionada = null;
+}
+function captainPickTarget(targetSeat){
+  if(!capitanCardSeleccionada) return;
+  captainUseCard(mySeatIndex(), capitanCardSeleccionada, targetSeat);
+  capitanCardSeleccionada = null;
+}
+// Your OWN inventory strip, next to your hand: a chest button (with however
+// many you have queued) and up to 3 card icons. Tapping a card doesn't use
+// it straight away — it opens the "qué hace" panel underneath with a Usar
+// button (or, for Piedra, the list of legal targets instead), so a reminder
+// always comes before spending something you only get three of at a time.
 function renderCaptainInventory(seat){
   const inv = state.captainMode.inventory[seat];
-  const usedYa = state.captainMode.usedCardThisTrick[seat];
   const slots = inv.map(key=>{
     const m = CAPTAIN_CARDS[key];
-    const puede = m.kind==='active' && state.phase==='playing' && !usedYa;
-    return `<button class="captain-card-btn" ${puede?'':'disabled'} onclick="captainUseCard(${seat},'${key}')" title="${t(m.label)}">
-      <span class="em">${m.emoji}</span><span>${t(m.label)}</span></button>`;
+    const activa = capitanCardSeleccionada===key;
+    return `<button class="captain-card-btn ${activa?'sel':''}" onclick="captainSelectCard(${seat},'${key}')" title="${t(m.label)}">
+      <span class="em">${captainCardIconHtml(key)}</span></button>`;
   });
-  for(let i=inv.length;i<3;i++) slots.push(`<div class="captain-card-empty">—</div>`);
-  document.getElementById('captainInventoryRow').innerHTML = slots.join('');
-  const chestBtn = document.getElementById('captainOpenChestBtn');
+  for(let i=inv.length;i<3;i++) slots.push('<div class="captain-card-empty"></div>');
+  document.getElementById('captainInventoryCards').innerHTML = slots.join('');
+
+  const chestBtn = document.getElementById('captainChestBtn');
   const n = captainChestCount(seat);
   chestBtn.classList.toggle('hidden', !(n>0 && inv.length<3));
-  chestBtn.textContent = tf('Abrir cofre ({0})', n);
+  document.getElementById('captainChestCount').textContent = n;
+
+  renderCaptainCardDetail(seat);
+}
+// The "qué hace / usar" panel for whichever card is currently selected —
+// hidden entirely when nothing is selected.
+function renderCaptainCardDetail(seat){
+  const panel = document.getElementById('captainCardDetail');
+  const key = capitanCardSeleccionada;
+  if(!key || !state.captainMode.inventory[seat].includes(key)){
+    panel.classList.add('hidden');
+    return;
+  }
+  const m = CAPTAIN_CARDS[key];
+  panel.classList.remove('hidden');
+  document.getElementById('captainCardDetailIcon').innerHTML = captainCardIconHtml(key);
+  document.getElementById('captainCardDetailName').textContent = t(m.label);
+  document.getElementById('captainCardDetailDesc').textContent = t(m.desc);
+  const usedYa = state.captainMode.usedCardThisTrick[seat];
+  const targetsEl = document.getElementById('captainCardTargets');
+  const useBtn = document.getElementById('captainUseBtn');
+  if(m.kind!=='active'){
+    // Segunda oportunidad: nothing to tap — just the explanation.
+    targetsEl.classList.add('hidden');
+    useBtn.classList.add('hidden');
+  } else if(m.needsTarget){
+    useBtn.classList.add('hidden');
+    const objetivos = captainPiedraTargets(seat);
+    targetsEl.classList.toggle('hidden', usedYa);
+    targetsEl.innerHTML = usedYa ? '' : (objetivos.length
+      ? objetivos.map(s=>`<button class="ghost-btn" onclick="captainPickTarget(${s})">${state.seatNames[s]}</button>`).join('')
+      : `<p class="toggle-hint">${t('Todavía no hay ninguna carta rival en esta baza.')}</p>`);
+  } else {
+    targetsEl.classList.add('hidden');
+    useBtn.classList.remove('hidden');
+    useBtn.disabled = usedYa;
+  }
 }
 
 /* ---------- POCHA GAME FLOW ----------
@@ -3881,6 +4189,8 @@ function processStateEffects(){
       flyCardToTable(e.seat);
     } else if(e.type==='cante'){
       queueCanteAnimation(e.seatName, e.suit, e.pts);
+    } else if(e.type==='chestOpened'){
+      queueChestAnimation(e.seatName, e.key);
     } else if(e.type==='scorePulse'){
       pulseScoreChips(e.keys);
     } else if(e.type==='pochaScorePulse'){
@@ -3945,6 +4255,53 @@ function spawnCanteSparks(count, variantClass){
     document.body.appendChild(s);
     setTimeout(()=>s.remove(), 3600);
   }
+}
+
+/* ---------- CHEST-OPENING ANIMATION ----------
+   Modo Capitán's equivalent of the cante slam above — same overlay/queue
+   shape, gold-treasure palette instead of blue/fire, and instead of a suit
+   icon it reveals the actual card drawn from the chest (icon, name, and
+   what it does), since the chests and every card in them are public
+   knowledge in this mode. Queued for the same reason cante is: nothing
+   stops two seats from opening a chest in quick succession. */
+let chestQueue = [];
+let chestAnimating = false;
+function queueChestAnimation(seatName, key){
+  chestQueue.push({seatName, key});
+  if(!chestAnimating) processChestQueue();
+}
+function processChestQueue(){
+  if(chestQueue.length===0){ chestAnimating=false; return; }
+  chestAnimating = true;
+  const {seatName, key} = chestQueue.shift();
+  showChestAnimation(seatName, key);
+  setTimeout(processChestQueue, 3000);
+}
+function showChestAnimation(seatName, key){
+  const m = CAPTAIN_CARDS[key];
+  const overlay=document.createElement('div');
+  overlay.className='chest-overlay';
+  overlay.innerHTML = `
+    <div class="chest-wash"></div>
+    <div class="chest-anim">
+      <svg class="chest-anim-svg" viewBox="0 0 48 40" aria-hidden="true">
+        <g class="chest-lid">
+          <path class="chest-lid-shape" d="M4 18 Q24 2 44 18 L44 20 L4 20 Z"/>
+          <circle class="chest-lock" cx="24" cy="16" r="2.6"/>
+        </g>
+        <rect class="chest-body" x="4" y="19" width="40" height="17" rx="2.5"/>
+        <line class="chest-band" x1="24" y1="19" x2="24" y2="36"/>
+      </svg>
+      <div class="chest-card-reveal">
+        <div class="chest-card-icon">${captainCardIconHtml(key)}</div>
+        <div class="chest-card-name">${t(m.label)}</div>
+        <div class="chest-card-who">${seatName}</div>
+        <div class="chest-card-desc">${t(m.desc)}</div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  spawnCanteSparks(30, 'spark-gold');
+  setTimeout(()=>overlay.remove(), 3000);
 }
 
 function renderHelp(activeSeat){
@@ -4840,7 +5197,7 @@ function applyNetAction(action){
     case 'captainTrump': chooseCaptainTrump(action.suit); break;
     case 'captainMission': chooseCaptainMission(action.tier); break;
     case 'captainOpenChest': captainOpenChest(action.seat); break;
-    case 'captainUseCard': captainUseCard(action.seat, action.key); break;
+    case 'captainUseCard': captainUseCard(action.seat, action.key, action.targetSeat); break;
     case 'advance': onAdvanceClicked(); break;
   }
 }
@@ -4951,9 +5308,9 @@ captainOpenChest = function(seat){
   if(netShouldForward()){ netSendAction('captainOpenChest', {seat}); return; }
   _localCaptainOpenChest(seat);
 };
-captainUseCard = function(seat, key){
-  if(netShouldForward()){ netSendAction('captainUseCard', {seat, key}); return; }
-  _localCaptainUseCard(seat, key);
+captainUseCard = function(seat, key, targetSeat){
+  if(netShouldForward()){ netSendAction('captainUseCard', {seat, key, targetSeat}); return; }
+  _localCaptainUseCard(seat, key, targetSeat);
 };
 </script>
 </body>
