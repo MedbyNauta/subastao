@@ -502,7 +502,7 @@
   .launcher-screen.active{display:block;}
   /* Language switch, top-right of the opening screen. Two letters, quiet
      until you're on the one you're using. */
-  .lang-switch{display:flex; justify-content:flex-end; gap:4px; margin-bottom:10px;}
+  .lang-switch{display:flex; justify-content:center; gap:6px; margin-top:20px;}
   .lang-switch button{
     font-family:inherit; font-size:0.72rem; font-weight:700; letter-spacing:0.04em;
     color:var(--piedra); background:transparent;
@@ -921,15 +921,15 @@
 <div class="overlay" id="launcherOverlay">
   <div class="launcher-panel">
     <div class="launcher-screen active" id="launcherStep1">
-      <div class="lang-switch" role="group" aria-label="Idioma">
-        <button type="button" data-lang-btn="es" aria-pressed="true" onclick="setLang('es')">ES</button>
-        <button type="button" data-lang-btn="fr" aria-pressed="false" onclick="setLang('fr')">FR</button>
-      </div>
       <div class="launcher-hero">Apuestas de bazas</div>
       <div class="launcher-list">
         <div class="launcher-item" onclick="pickLauncherType('3')"><div><b>Subastao a 3</b><span>Uno solo contra dos</span></div><div class="chev">›</div></div>
         <div class="launcher-item" onclick="pickLauncherType('4')"><div><b>Subastao a 4</b><span>Por parejas</span></div><div class="chev">›</div></div>
         <div class="launcher-item" onclick="goLauncherPochaCount()"><div><b>La Pocha</b><span>3 a 5 jugadores, sin parejas</span></div><div class="chev">›</div></div>
+      </div>
+      <div class="lang-switch" role="group" aria-label="Idioma">
+        <button type="button" data-lang-btn="es" aria-pressed="true" onclick="setLang('es')">ES</button>
+        <button type="button" data-lang-btn="fr" aria-pressed="false" onclick="setLang('fr')">FR</button>
       </div>
     </div>
     <div class="launcher-screen" id="launcherStepPochaCount">
