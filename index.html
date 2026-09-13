@@ -867,12 +867,12 @@
           <p style="margin-left:10px;"><b>· Tradicional</b>: cada número de cartas se juega tantas veces como jugadores haya, para que todos repartan una vez en cada tamaño de mano. Se sube de 1 hasta el máximo y se baja de vuelta a 1. A 4 jugadores son 76 manos: cuatro de 1 carta, cuatro de 2… hasta cuatro de 10, y de vuelta hasta cuatro de 1.</p>
           <p style="margin-left:10px;"><b>· Olímpica</b>: la misma pirámide y, al llegar al máximo de cartas, se juegan las manos normales de siempre y después otras tantas —una por jugador— en las que no se destapa triunfo: la puja hace de subasta y quien más bazas canta elige el palo. Luego se baja como en la tradicional.</p>
           <p style="margin-left:10px;"><b>· Corta a 5 cartas</b>: diez manos seguidas de 5 cartas, sin subida ni bajada.</p>
-          <p style="margin-left:10px;"><b>· Niños</b>: para empezar. Sube de 1 a 5 cartas y después se juegan cinco manos de 5, diez en total. El triunfo se destapa como siempre y, sobre todo, <b>no obliga a fallar</b>: si no tienes el palo que se ha pedido, puedes echar la carta que quieras en vez de estar obligado a poner triunfo. Además, por defecto, la puja sí puede cuadrar exacta con las cartas repartidas — puede acertar todo el mundo —, aunque esto se puede cambiar en Ajustes como en cualquier otra modalidad.</p>
+          <p style="margin-left:10px;"><b>· Niños</b>: para empezar. Siempre 5 cartas por mano, diez manos, sin subida ni bajada. El triunfo se destapa como siempre y, sobre todo, <b>no obliga a fallar</b>: si no tienes el palo que se ha pedido, puedes echar la carta que quieras en vez de estar obligado a poner triunfo. La puntuación también es más suave — acertar suma 10 + 2 por baza, y fallar no resta nada —, y por defecto la puja sí puede cuadrar exacta con las cartas repartidas, aunque esto se puede cambiar en Ajustes como en cualquier otra modalidad.</p>
           <p style="margin-left:10px;"><b>· Corta Normal</b>: una sola mano de cada número, de 1 carta hasta 10, y ahí acaba: sin repeticiones y sin fase descendente.</p>
           <p><b>Triunfo</b>: al repartir se destapa la siguiente carta del mazo sobrante — su palo es el triunfo de la mano. Si el reparto gasta las 40 cartas y no sobra ninguna, el repartidor enseña la última carta que recibe y la conserva en su mano: ese palo es el triunfo.</p>
           <p><b>Puja</b>: por turnos, cada jugador canta cuántas bazas cree que va a hacer esa ronda (de 0 al total de cartas repartidas). Por defecto, el último en cantar no puede pedir el número que haría que la suma de todas las pujas cuadre exactamente con las cartas repartidas — así siempre falla alguien; esto se puede desactivar en Ajustes ("Puja del último en cantar").</p>
           <p><b>Al jugar</b>: igual que en el Subastao — si tienes el palo pedido, tienes que jugarlo y superarlo si puedes; si no, tienes que triunfar y superarlo si puedes (cuando hay triunfo esa ronda); si no tienes ni palo ni triunfo, puedes echar cualquier carta. La excepción es la modalidad <b>Niños</b>, en la que sin el palo pedido puedes echar lo que quieras.</p>
-          <p><b>Puntuación</b> (Fournier): si aciertas tu puja exacta, sumas 10 puntos + 5 por cada baza conseguida. Si fallas, restas 5 por cada baza de diferencia, te hayas quedado corto o largo. Pides 3 y haces 3 → 25 puntos; pides 3 y haces 1 → −10; pides 1 y haces 3 → −10.</p>
+          <p><b>Puntuación</b> (Fournier): si aciertas tu puja exacta, sumas 10 puntos + 5 por cada baza conseguida. Si fallas, restas 5 por cada baza de diferencia, te hayas quedado corto o largo. Pides 3 y haces 3 → 25 puntos; pides 3 y haces 1 → −10; pides 1 y haces 3 → −10. En <b>Niños</b> es distinta: aciertas sumas 10 + 2 por baza, y si fallas no restas nada.</p>
           <p><b>Ganador</b>: quien tenga más puntos al terminar la última mano de la modalidad elegida.</p>
         </div>
       </div>
@@ -1068,6 +1068,8 @@ const SUITS = ['oros','copas','espadas','bastos'];
    remembers each node's Spanish so switching back is exact.
    ===================================================================== */
 const FR_DICT = {
+  "Pediste <b>{0}</b> baza y llevas <b>{1}</b>.": "Tu as annoncé <b>{0}</b> pli et tu en as <b>{1}</b>.",
+  "Pediste <b>{0}</b> bazas y llevas <b>{1}</b>.": "Tu as annoncé <b>{0}</b> plis et tu en as <b>{1}</b>.",
   "Van jugadas <b>{0}</b> cartas de esta mano.": "<b>{0}</b> cartes ont déjà été jouées dans cette donne.",
   "Quedan <b>{0}</b> triunfo(s) de {1} sin ver (fuera de tu mano).": "Il reste <b>{0}</b> atout(s) de {1} non vus (hors de ta main).",
   "Te falta <b>{0}</b> para cumplir tu puja.": "Il te manque <b>{0}</b> pour réussir ton annonce.",
@@ -1205,13 +1207,14 @@ const FR_DICT = {
   ": de 3 a 5, baraja española de 40 cartas. El máximo de cartas por mano es el mazo repartido entero: 13 a 3 jugadores, 10 a 4 y 8 a 5.": " : de 3 à 5, jeu espagnol de 40 cartes. Le maximum de cartes par donne, c'est tout le paquet distribué : 13 à 3 joueurs, 10 à 4 et 8 à 5.",
   ": cada número de cartas se juega tantas veces como jugadores haya, para que todos repartan una vez en cada tamaño de mano. Se sube de 1 hasta el máximo y se baja de vuelta a 1. A 4 jugadores son 76 manos: cuatro de 1 carta, cuatro de 2… hasta cuatro de 10, y de vuelta hasta cuatro de 1.": " : chaque nombre de cartes se joue autant de fois qu'il y a de joueurs, pour que chacun donne une fois à chaque taille de main. On monte de 1 jusqu'au maximum et on redescend jusqu'à 1. À 4 joueurs, cela fait 76 donnes : quatre à 1 carte, quatre à 2… jusqu'à quatre à 10, puis retour jusqu'à quatre à 1.",
   ": la misma pirámide y, al llegar al máximo de cartas, se juegan las manos normales de siempre y después otras tantas —una por jugador— en las que no se destapa triunfo: la puja hace de subasta y quien más bazas canta elige el palo. Luego se baja como en la tradicional.": " : la même pyramide et, arrivé au maximum de cartes, on joue les donnes normales habituelles puis autant d'autres — une par joueur — où aucun atout n'est retourné : l'annonce fait office d'enchère et qui annonce le plus de plis choisit la couleur. Ensuite on redescend comme dans la traditionnelle.",
-  ": para empezar. Sube de 1 a 5 cartas y después se juegan cinco manos de 5, diez en total. El triunfo se destapa como siempre y, sobre todo,": " : pour débuter. On monte de 1 à 5 cartes puis on joue cinq donnes de 5, dix en tout. L'atout se retourne comme d'habitude et, surtout,",
-  ": si no tienes el palo que se ha pedido, puedes echar la carta que quieras en vez de estar obligado a poner triunfo. Además, por defecto, la puja sí puede cuadrar exacta con las cartas repartidas — puede acertar todo el mundo —, aunque esto se puede cambiar en Ajustes como en cualquier otra modalidad.": " : si tu n'as pas la couleur demandée, tu peux jouer la carte que tu veux au lieu d'être obligé de couper. De plus, par défaut, l'annonce peut tomber juste sur les cartes distribuées — tout le monde peut réussir —, même si cela peut se changer dans Réglages comme pour n'importe quelle autre variante.",
+  ": para empezar. Siempre 5 cartas por mano, diez manos, sin subida ni bajada. El triunfo se destapa como siempre y, sobre todo,": " : pour débuter. Toujours 5 cartes par donne, dix donnes, sans montée ni descente. L'atout se retourne comme d'habitude et, surtout,",
+  ": si no tienes el palo que se ha pedido, puedes echar la carta que quieras en vez de estar obligado a poner triunfo. La puntuación también es más suave — acertar suma 10 + 2 por baza, y fallar no resta nada —, y por defecto la puja sí puede cuadrar exacta con las cartas repartidas, aunque esto se puede cambiar en Ajustes como en cualquier otra modalidad.": " : si tu n'as pas la couleur demandée, tu peux jouer la carte que tu veux au lieu d'être obligé de couper. Le score est aussi plus doux — réussir rapporte 10 + 2 par pli, et rater ne fait rien perdre —, et par défaut l'annonce peut tomber juste sur les cartes distribuées, même si cela peut se changer dans Réglages comme pour n'importe quelle autre variante.",
   ": una sola mano de cada número, de 1 carta hasta 10, y ahí acaba: sin repeticiones y sin fase descendente.": " : une seule donne de chaque nombre, de 1 carte jusqu'à 10, et c'est fini : sans répétitions ni descente.",
   ": al repartir se destapa la siguiente carta del mazo sobrante — su palo es el triunfo de la mano. Si el reparto gasta las 40 cartas y no sobra ninguna, el repartidor enseña la última carta que recibe y la conserva en su mano: ese palo es el triunfo.": " : à la distribution, on retourne la carte suivante du talon — sa couleur est l'atout de la donne. Si la distribution épuise les 40 cartes et qu'il n'en reste aucune, le donneur montre la dernière carte qu'il reçoit et la garde en main : cette couleur est l'atout.",
   ": por turnos, cada jugador canta cuántas bazas cree que va a hacer esa ronda (de 0 al total de cartas repartidas). Por defecto, el último en cantar no puede pedir el número que haría que la suma de todas las pujas cuadre exactamente con las cartas repartidas — así siempre falla alguien; esto se puede desactivar en Ajustes (\"Puja del último en cantar\").": " : à tour de rôle, chacun annonce combien de plis il pense faire dans la manche (de 0 au nombre de cartes distribuées). Par défaut, le dernier à parler ne peut pas demander le nombre qui ferait tomber le total des annonces exactement sur le nombre de cartes distribuées — ainsi quelqu'un rate toujours ; cela se désactive dans Réglages (« Annonce du dernier à parler »).",
   ": igual que en el Subastao — si tienes el palo pedido, tienes que jugarlo y superarlo si puedes; si no, tienes que triunfar y superarlo si puedes (cuando hay triunfo esa ronda); si no tienes ni palo ni triunfo, puedes echar cualquier carta. La excepción es la modalidad": " : comme au Subastao — si tu as la couleur demandée, tu dois la jouer et la dépasser si tu peux ; sinon tu dois couper et surcouper si tu peux (quand il y a un atout dans la manche) ; si tu n'as ni la couleur ni d'atout, tu joues ce que tu veux. L'exception, c'est la variante",
-  "(Fournier): si aciertas tu puja exacta, sumas 10 puntos + 5 por cada baza conseguida. Si fallas, restas 5 por cada baza de diferencia, te hayas quedado corto o largo. Pides 3 y haces 3 → 25 puntos; pides 3 y haces 1 → −10; pides 1 y haces 3 → −10.": " (Fournier) : si tu réussis ton annonce exacte, tu marques 10 points + 5 par pli remporté. Si tu rates, tu perds 5 points par pli d'écart, que tu sois en dessous ou au-dessus. Tu annonces 3 et tu en fais 3 → 25 points ; tu annonces 3 et tu en fais 1 → −10 ; tu annonces 1 et tu en fais 3 → −10.",
+  "(Fournier): si aciertas tu puja exacta, sumas 10 puntos + 5 por cada baza conseguida. Si fallas, restas 5 por cada baza de diferencia, te hayas quedado corto o largo. Pides 3 y haces 3 → 25 puntos; pides 3 y haces 1 → −10; pides 1 y haces 3 → −10. En": " (Fournier) : si tu réussis ton annonce exacte, tu marques 10 points + 5 par pli remporté. Si tu rates, tu perds 5 points par pli d'écart, que tu sois en dessous ou au-dessus. Tu annonces 3 et tu en fais 3 → 25 points ; tu annonces 3 et tu en fais 1 → −10 ; tu annonces 1 et tu en fais 3 → −10. Pour",
+  "es distinta: aciertas sumas 10 + 2 por baza, y si fallas no restas nada.": ", c'est différent : réussir rapporte 10 + 2 par pli, et rater ne fait rien perdre.",
   ": quien tenga más puntos al terminar la última mano de la modalidad elegida.": " : celui qui a le plus de points à la fin de la dernière donne de la variante choisie.",
   "Oros": "Deniers",
   "Copas": "Coupes",
@@ -1287,7 +1290,7 @@ const FR_DICT = {
   "Jugador": "Joueur",
   "Anfitrión {0} · {1}/{2} jugadores": "Hôte {0} · {1}/{2} joueurs",
   "Empezar ({0}/{1}, resto IA)": "Commencer ({0}/{1}, le reste en IA)",
-  "Sube de 1 a 5 cartas y luego cinco manos de 5, y no obliga a fallar": "Monte de 1 à 5 cartes puis cinq donnes de 5, et n'oblige pas à couper",
+  "Siempre 5 cartas, diez manos, sin obligar a fallar y sin puntos negativos": "Toujours 5 cartes, dix donnes, n'oblige pas à couper et pas de points négatifs",
   "Cada número de cartas {0} veces, subiendo de 1 a {1} y bajando a 1": "Chaque nombre de cartes {0} fois, en montant de 1 à {1} puis en redescendant à 1",
   "Como la tradicional y, al llegar a {0} cartas, otras {1} manos subastando el triunfo": "Comme la traditionnelle et, arrivé à {0} cartes, {1} donnes de plus avec l'atout aux enchères",
   "Diez manos seguidas de 5 cartas, sin subida ni bajada": "Dix donnes de suite à 5 cartes, sans montée ni descente",
@@ -1419,11 +1422,13 @@ const POCHA_VARIANTS = {
   },
   ninos: {
     label: 'Pocha Niños',
-    hint: ()=>t('Sube de 1 a 5 cartas y luego cinco manos de 5, y no obliga a fallar'),
-    // 1 → 5 and then five more hands of five.
-    roundSizes(){ return [1,2,3,4,5,5,5,5,5,5]; },
+    hint: ()=>t('Siempre 5 cartas, diez manos, sin obligar a fallar y sin puntos negativos'),
+    // Ten hands, always 5 cards — no ramp at all, unlike every other variant.
+    roundSizes(){ return new Array(10).fill(5); },
     // Without a card of the led suit you may throw anything — see legalMoves.
     libreSinPalo: true,
+    // Gentler scoring too — see pochaScoreFor: no penalty for missing the bid.
+    scoring: 'ninos',
   },
   corta5: {
     label: 'Pocha Corta a 5 cartas',
@@ -1447,8 +1452,22 @@ function pochaRoundSizesFor(numPlayers, variant){
 // Fournier scoring: hitting your bid pays 10 plus 5 per trick taken; missing
 // it costs 5 per trick of difference, in either direction. (Bid 3 take 3 → 25;
 // bid 3 take 1 → −10; bid 1 take 3 → −10.)
-function pochaScoreFor(bid, won){
+function pochaScoreForFournier(bid, won){
   return won===bid ? 10 + 5*won : -5*Math.abs(won-bid);
+}
+// Pocha Niños scoring: hitting the bid pays 10 plus 2 per trick, and missing
+// it costs nothing at all — no negative points, so a beginner's bad guess
+// just doesn't score instead of setting them back.
+function pochaScoreForNinos(bid, won){
+  return won===bid ? 10 + 2*won : 0;
+}
+// Dispatches to whichever formula the running game's variant uses. Reads the
+// variant off state.pocha so every caller (the AI's rollouts, the real
+// end-of-round tally) gets it for free; with no game running yet (or in a
+// standalone test) it falls back to Fournier, the shared default.
+function pochaScoreFor(bid, won){
+  const variant = pochaVariant(state && state.pocha && state.pocha.variant);
+  return variant.scoring==='ninos' ? pochaScoreForNinos(bid, won) : pochaScoreForFournier(bid, won);
 }
 
 // Inline SVG paths for each suit's icon (used on cards, trump-choice buttons, etc).
@@ -3122,7 +3141,7 @@ function computePochaHelp(seat){
   const stillNeeded=bid-won;
 
   const knownLines=[];
-  knownLines.push(`Pediste <b>${bid}</b> baza${bid===1?'':'s'} y llevas <b>${won}</b>.`);
+  knownLines.push(tf(bid===1 ? 'Pediste <b>{0}</b> baza y llevas <b>{1}</b>.' : 'Pediste <b>{0}</b> bazas y llevas <b>{1}</b>.', bid, won));
   if(stillNeeded>0) knownLines.push(tf(stillNeeded===1 ? 'Te falta <b>{0}</b> para cumplir tu puja.' : 'Te faltan <b>{0}</b> para cumplir tu puja.', stillNeeded));
   else if(stillNeeded===0) knownLines.push(t('Ya has cumplido tu puja — te conviene no ganar más bazas.'));
   else knownLines.push(tf('Ya te has pasado de tu puja por <b>{0}</b>.', -stillNeeded));
