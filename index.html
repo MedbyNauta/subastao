@@ -1212,28 +1212,11 @@
   </button>
 </div>
 
-<!-- Firebase (compat build — plain globals, no bundler needed) used only for
-     Multi Online (see NETWORKING / ONLINE MULTIPLAYER section below). -->
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-<script>
-// TODO: paste your own Firebase project's config here (Project settings ›
-// General › "Your apps" › SDK setup and configuration). Needs Firestore
-// (Native mode) and Anonymous auth enabled — see firestore.rules below.
-const firebaseConfig = {
-  apiKey: "AIzaSyAxtJIPuwfIpCUEt6H-Hq4V7fSDYOURXak",
-  authDomain: "apuestas-de-bazas.firebaseapp.com",
-  projectId: "apuestas-de-bazas",
-  storageBucket: "apuestas-de-bazas.firebasestorage.app",
-  messagingSenderId: "929540107134",
-  appId: "1:929540107134:web:94b73d7697df2fb10de12f"
-};
-firebase.initializeApp(firebaseConfig);
-const fbAuth = firebase.auth();
-const fbDb = firebase.firestore();
-</script>
-
+<!-- Main game engine loads first, independent of Firebase — Solo/Multi
+     en móvil never touch fbAuth/fbDb, so they must never be gated behind
+     those external script loads (a blocked/slow gstatic.com — ad blockers,
+     flaky connections — used to leave the whole launcher unresponsive: the
+     buttons rendered but their onclick handlers weren't defined yet). -->
 <script>
 /* =====================================================================
    OVERVIEW
@@ -5342,6 +5325,28 @@ captainUseCard = function(seat, key, targetSeat){
   if(netShouldForward()){ netSendAction('captainUseCard', {seat, key, targetSeat}); return; }
   _localCaptainUseCard(seat, key, targetSeat);
 };
+</script>
+
+<!-- Firebase (compat build — plain globals, no bundler needed) used only for
+     Multi Online (see NETWORKING / ONLINE MULTIPLAYER section below). -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script>
+// TODO: paste your own Firebase project's config here (Project settings ›
+// General › "Your apps" › SDK setup and configuration). Needs Firestore
+// (Native mode) and Anonymous auth enabled — see firestore.rules below.
+const firebaseConfig = {
+  apiKey: "AIzaSyAxtJIPuwfIpCUEt6H-Hq4V7fSDYOURXak",
+  authDomain: "apuestas-de-bazas.firebaseapp.com",
+  projectId: "apuestas-de-bazas",
+  storageBucket: "apuestas-de-bazas.firebasestorage.app",
+  messagingSenderId: "929540107134",
+  appId: "1:929540107134:web:94b73d7697df2fb10de12f"
+};
+firebase.initializeApp(firebaseConfig);
+const fbAuth = firebase.auth();
+const fbDb = firebase.firestore();
 </script>
 </body>
 </html>
