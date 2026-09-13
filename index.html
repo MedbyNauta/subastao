@@ -1117,14 +1117,13 @@
       <div class="launcher-list">
         <div class="launcher-item" onclick="pickSubastaoMode('tradicional',3)"><div><b>Subastao Simple</b><span>3 jugadores</span></div><div class="chev">›</div></div>
         <div class="launcher-item" onclick="pickSubastaoMode('tradicional',4)"><div><b>Subastao por Parejas</b><span>4 jugadores</span></div><div class="chev">›</div></div>
-        <div class="launcher-item" onclick="goLauncherCaptainCount()"><div><b>🏴‍☠️ Subastao Capitán</b><span>2 a 5 jugadores</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="goLauncherCaptainCount()"><div><b>🏴‍☠️ Subastao Capitán</b><span>3 a 5 jugadores</span></div><div class="chev">›</div></div>
       </div>
     </div>
     <div class="launcher-screen" id="launcherStepCaptainCount">
       <button class="launcher-back" onclick="launcherGo('SubastaoMode')">‹ Atrás</button>
       <div class="launcher-title">¿Cuántos en la mesa?</div>
       <div class="launcher-list">
-        <div class="launcher-item" onclick="pickSubastaoMode('capitan',2)"><div><b>2 jugadores</b></div><div class="chev">›</div></div>
         <div class="launcher-item" onclick="pickSubastaoMode('capitan',3)"><div><b>3 jugadores</b></div><div class="chev">›</div></div>
         <div class="launcher-item" onclick="pickSubastaoMode('capitan',4)"><div><b>4 jugadores</b></div><div class="chev">›</div></div>
         <div class="launcher-item" onclick="pickSubastaoMode('capitan',5)"><div><b>5 jugadores</b></div><div class="chev">›</div></div>
@@ -1312,7 +1311,7 @@ const FR_DICT = {
   "Subastao Simple": "Subastao Simple",
   "Subastao por Parejas": "Subastao par Équipes",
   "🏴‍☠️ Subastao Capitán": "🏴‍☠️ Subastao Capitaine",
-  "2 a 5 jugadores": "2 à 5 joueurs",
+  "3 a 5 jugadores": "3 à 5 joueurs",
   "2 jugadores": "2 joueurs",
   ": de 2 a 5, sin parejas — cada uno compite por su cuenta. Se reparte el mazo entero sin que sobre ninguna carta: 40 cartas de baraja completa a 2, 4 y 5 jugadores (20, 10 y 8 cada uno); a 3, sin los doses (36 cartas), 12 cada uno.": " : de 2 à 5, sans équipes — chacun joue pour soi. Le paquet entier est distribué sans qu'aucune carte ne reste de côté : 40 cartes du jeu complet à 2, 4 et 5 joueurs (20, 10 et 8 chacun) ; à 3, sans les 2 (36 cartes), 12 chacun.",
   ": después de elegir triunfo, el Capitán elige en público cuántas bazas se compromete a ganar — a más dificultad, mayor recompensa si lo consigue (10, 15 y 22 puntos). El objetivo se escala según la mesa:": " : une fois l'atout choisi, le Capitaine annonce publiquement combien de plis il s'engage à remporter — plus la difficulté est haute, plus la récompense est grande s'il réussit (10, 15 et 22 points). L'objectif s'ajuste selon la table :",
@@ -1639,6 +1638,15 @@ function setLang(code){
   document.querySelectorAll('[data-lang-btn]').forEach(b=>
     b.setAttribute('aria-pressed', String(b.dataset.langBtn===LANG)));
   translateStaticDom();
+  // The logo's mode subtitle is computed from state (Capitán/Ourensano/
+  // pocha variant), not a static string — translateStaticDom() would
+  // otherwise clobber it with a translation of whatever the very first
+  // page-load text happened to be ("Ourensano"), since that's all it
+  // remembers as the node's "original" text.
+  if(state && state.numPlayers){
+    document.getElementById('logoWord1').textContent = state.gameType==='pocha' ? t('La Pocha') : t('Subastao');
+    document.getElementById('logoWord2').textContent = logoWord2Text(state.gameType, state.subastaoMode, state.pocha && state.pocha.variant);
+  }
   // anything drawn from JS has to be drawn again in the new language
   if(state && state.numPlayers) render();
   if(typeof renderResultHistory==='function') renderResultHistory();
@@ -2163,6 +2171,18 @@ function aiChooseCard(seat){
 // selector means it rides along everywhere the selector already goes — the
 // Ajustes dropdown, the saved result history, and the online room doc the
 // guests read.
+// The small word under the "Subastao"/"La Pocha" logo names the actual
+// mode in play, instead of always reading the same fixed subtitle:
+// "Ourensano" for Modo Tradicional, "Capitán" for Modo Capitán, and the
+// Pocha variant's own name (its label minus the "Pocha " prefix, so it
+// still comes straight from POCHA_VARIANTS and translates the same way).
+function logoWord2Text(gameType, subastaoMode, pochaVariantName){
+  if(gameType==='pocha'){
+    const v = POCHA_VARIANTS[pochaVariantName] ? pochaVariantName : POCHA_DEFAULT_VARIANT;
+    return t(POCHA_VARIANTS[v].label).replace(/^Pocha\s+/,'');
+  }
+  return subastaoMode==='capitan' ? t('Capitán') : t('Ourensano');
+}
 function parseGameSelector(sel){
   sel = String(sel);
   if(sel.startsWith('pocha')){
@@ -2174,7 +2194,11 @@ function parseGameSelector(sel){
   // "3"/"4" is Modo Tradicional (unchanged); "3:capitan"/"4:capitan" is the
   // new Modo Capitán — see the CAPITÁN section further down.
   const [seats, mode] = sel.split(':');
-  return {gameType:'subastao', numPlayers: parseInt(seats)||4, pochaVariant:null,
+  const n = parseInt(seats)||4;
+  // Modo Capitán never seats fewer than 3 — with only 2 there's no one
+  // else to actually play against the Capitán's mission.
+  const numPlayers = mode==='capitan' ? Math.max(3, Math.min(5, n)) : n;
+  return {gameType:'subastao', numPlayers, pochaVariant:null,
           subastaoMode: mode==='capitan' ? 'capitan' : 'tradicional'};
 }
 function newGame(target, playerType, aiLevel, humanPlayers, pochaVariantName, pochaForbidLastMatch){
@@ -2199,8 +2223,9 @@ function newGame(target, playerType, aiLevel, humanPlayers, pochaVariantName, po
     dealerIndex:0,
     revealedSeat:null, // pass-and-play: which human seat has tapped "ver mis cartas" and is currently displayed
   };
-  document.getElementById('logoWord1').textContent = gameType==='pocha' ? 'La Pocha' : 'Subastao';
-  document.getElementById('logoWord2').classList.toggle('hidden', gameType==='pocha');
+  document.getElementById('logoWord1').textContent = gameType==='pocha' ? t('La Pocha') : t('Subastao');
+  document.getElementById('logoWord2').textContent = logoWord2Text(gameType, subastaoMode, pochaVariantName);
+  document.getElementById('logoWord2').classList.remove('hidden');
   document.getElementById('overlay').classList.add('hidden');
   // Every mode's own bidding/choice panels are only ever shown/hidden
   // explicitly (by startAuction()/startPochaRound()/startCaptainRound() etc),
@@ -5146,8 +5171,9 @@ function enterOnlineGame(data, isHost){
   lastEffectEpoch = state.epoch;
   lastEffectId = (state.effects && state.effects.length) ? state.effects[state.effects.length-1].id : 0;
   document.getElementById('launcherOverlay').classList.add('hidden');
-  document.getElementById('logoWord1').textContent = state.gameType==='pocha' ? 'La Pocha' : 'Subastao';
-  document.getElementById('logoWord2').classList.toggle('hidden', state.gameType==='pocha');
+  document.getElementById('logoWord1').textContent = state.gameType==='pocha' ? t('La Pocha') : t('Subastao');
+  document.getElementById('logoWord2').textContent = logoWord2Text(state.gameType, state.subastaoMode, state.pocha && state.pocha.variant);
+  document.getElementById('logoWord2').classList.remove('hidden');
   render();
 }
 // Non-host, every subsequent state update the host publishes.
