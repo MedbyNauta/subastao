@@ -221,8 +221,10 @@
     font-size:0.75rem; color:var(--felt-dim); margin-bottom:8px;
   }
   /* The suit drawing sits on the trump line at the size of the text around it. */
+  /* Same size as the suit icon on a card in your hand (.card .icon-wrap svg),
+     not the smaller one used by the mini cards that land on the mesa. */
   .trump-pip{display:inline-flex; vertical-align:-3px; margin-left:2px;}
-  .trump-pip svg{width:16px; height:16px; display:block;}
+  .trump-pip svg{width:13px; height:13px; display:block;}
   /* This is what sets the cloth's height: a fixed playing area, with the cards
      centred in it. Bumping this number is how the mesa grows or shrinks — it
      stays a fixed size either way, the same in every phase of the hand. */
