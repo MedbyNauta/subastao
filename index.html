@@ -296,7 +296,14 @@
      its cards sit visually between two top cards, like a fanned-out hand.
      A slight negative gap lets the rows overlap just a touch. */
   .hand{display:flex; flex-direction:column; align-items:center; padding:6px 6px 14px;}
-  .hand-row{display:flex; gap:7px; position:relative;}
+  /* Both rows always exist in the markup (see the render code), even when the
+     bottom one ends up with no cards — near the end of a hand, or right after
+     the deal on an odd count. Without a fixed height here, an empty row
+     collapses to 0 and the whole hand-wrap gets shorter as you play cards
+     out, which visibly shrinks and re-grows all through the hand. Pinning
+     each row to a card's own height (54px) keeps the two-row block — and
+     everything below it — exactly the same size for the whole hand. */
+  .hand-row{display:flex; gap:7px; position:relative; min-height:54px;}
   .hand-row.top{z-index:2;}
   .hand-row.bottom{z-index:1; margin-top:-8px;}
   .hand-row.offset{margin-left:23px;}
