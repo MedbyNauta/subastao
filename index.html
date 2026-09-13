@@ -538,6 +538,22 @@
   .trump-choice.espadas{color:var(--c-espadas);} .trump-choice.bastos{color:var(--c-bastos);}
   .trump-choice div:last-child{color:var(--text); font-weight:500;}
 
+  /* MODO CAPITÁN — mission choice: a vertical list, one row per difficulty,
+     each naming its own trick target and reward so it reads at a glance
+     (see renderCaptainMissionChoices). */
+  .mission-choices{display:flex; flex-direction:column; gap:8px; margin-top:4px;}
+  .mission-choice{
+    display:flex; align-items:center; gap:10px; padding:10px 12px;
+    border:1px solid var(--linea); border-radius:10px; cursor:pointer;
+    background:rgba(var(--wash-rgb),0.03);
+  }
+  .mission-choice:hover, .mission-choice:focus-visible{border-color:var(--oro);}
+  .mission-emoji{font-size:1.3rem; flex-shrink:0; line-height:1;}
+  .mission-txt{display:flex; flex-direction:column; flex:1; min-width:0;}
+  .mission-txt b{font-size:0.92rem; color:var(--text);}
+  .mission-txt span{font-size:0.78rem; color:var(--piedra);}
+  .mission-reward{font-family:'Fraunces', serif; font-weight:700; color:var(--oro); font-size:1.05rem; flex-shrink:0;}
+
   .summary-row{display:flex; justify-content:space-between; font-size:0.88rem; padding:6px 0; border-bottom:1px solid var(--linea);}
   .summary-row.total{font-weight:700; color:var(--oro);}
   /* Pocha round summary: fixed-width numeric columns (grid, not flex) so the
@@ -773,6 +789,13 @@
     <div class="trump-choices" id="trumpChoices"></div>
   </div>
 
+  <!-- CAPTAIN MISSION PANEL — Modo Capitán only, shown once the Captain has
+       named the trump (see chooseCaptainTrump/renderCaptainMissionChoices). -->
+  <div class="panel hidden" id="captainMissionPanel">
+    <h3>Elige tu misión</h3>
+    <div class="mission-choices" id="missionChoices"></div>
+  </div>
+
   <details class="log-box" id="logBoxDetails">
     <summary>Historial de la mano</summary>
     <div class="log-list" id="logList"></div>
@@ -789,6 +812,8 @@
     <select id="playersSelect" onchange="updateHumanPlayersOptions()">
       <option value="3" selected>Subastao a 3</option>
       <option value="4">Subastao a 4</option>
+      <option value="3:capitan">Subastao a 3 · Capitán</option>
+      <option value="4:capitan">Subastao a 4 · Capitán</option>
       <option value="pocha3">Pocha a 3</option>
       <option value="pocha4">Pocha a 4</option>
       <option value="pocha5">Pocha a 5</option>
@@ -882,6 +907,22 @@
           <p><b>Puntuación</b> (Fournier): si aciertas tu puja exacta, sumas 10 puntos + 5 por cada baza conseguida. Si fallas, restas 5 por cada baza de diferencia, te hayas quedado corto o largo. Pides 3 y haces 3 → 25 puntos; pides 3 y haces 1 → −10; pides 1 y haces 3 → −10. En <b>Niños</b> es distinta: aciertas sumas 10 + 2 por baza, y si fallas no restas nada.</p>
           <p><b>Ganador</b>: quien tenga más puntos al terminar la última mano de la modalidad elegida.</p>
         </div>
+        <div id="capitanRulesBox" class="hidden">
+          <p><b>Jugadores</b>: de 2 a 5, sin parejas — cada uno compite por su cuenta. Se reparte el mazo entero sin que sobre ninguna carta: 40 cartas de baraja completa a 2, 4 y 5 jugadores (20, 10 y 8 cada uno); a 3, sin los doses (36 cartas), 12 cada uno.</p>
+          <p><b>El Capitán</b>: al empezar cada ronda hay un único Capitán, que rota automáticamente al jugador siguiente en la ronda que viene. No hay subasta: el Capitán elige directamente el palo de triunfo y sale el primero.</p>
+          <p><b>La misión</b>: después de elegir triunfo, el Capitán elige en público cuántas bazas se compromete a ganar — a más dificultad, mayor recompensa si lo consigue (10, 15 y 22 puntos). El objetivo se escala según la mesa:</p>
+          <div class="rank-row">
+            <div class="rank-chip"><span class="rk">2 jug.</span><span class="pt">5 · 10 · 15</span></div>
+            <div class="rank-chip"><span class="rk">3 jug.</span><span class="pt">3 · 6 · 9</span></div>
+            <div class="rank-chip"><span class="rk">4 jug.</span><span class="pt">3 · 5 · 7</span></div>
+            <div class="rank-chip"><span class="rk">5 jug.</span><span class="pt">2 · 4 · 6</span></div>
+          </div>
+          <p class="toggle-hint" style="margin:2px 0 10px;">En ese orden: 🟢 Fácil · 🟡 Medio · 🔴 Difícil — el número de bazas que hay que llegar a ganar como mínimo.</p>
+          <p><b>Los demás jugadores</b>: no tienen ninguna misión propia — juegan normalmente para llevarse el máximo de bazas, que es justo lo que hace falta para impedir que el Capitán complete la suya. Cada jugador suma un punto por cada baza que gana, sea Capitán o no.</p>
+          <p><b>Si el Capitán falla</b>: no cobra la recompensa y recibe un cofre de compensación. Quien termine la ronda con menos bazas también recibe uno.</p>
+          <p><b>Partida</b>: dura tantas rondas como jugadores haya, para que todos sean Capitán una vez. Gana quien más puntos tenga al terminar la última.</p>
+          <p class="toggle-hint">El sistema de cofres y cartas especiales de la baraja de este modo todavía no está en juego — de momento los cofres solo se cuentan, a la espera de esa parte.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -923,13 +964,34 @@
     <div class="launcher-screen active" id="launcherStep1">
       <div class="launcher-hero">Apuestas de bazas</div>
       <div class="launcher-list">
-        <div class="launcher-item" onclick="pickLauncherType('3')"><div><b>Subastao a 3</b><span>Uno solo contra dos</span></div><div class="chev">›</div></div>
-        <div class="launcher-item" onclick="pickLauncherType('4')"><div><b>Subastao a 4</b><span>Por parejas</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="goLauncherSubastaoModes()"><div><b>Subastao</b><span>Elige la modalidad</span></div><div class="chev">›</div></div>
         <div class="launcher-item" onclick="goLauncherPochaCount()"><div><b>La Pocha</b><span>3 a 5 jugadores, sin parejas</span></div><div class="chev">›</div></div>
       </div>
       <div class="lang-switch" role="group" aria-label="Idioma">
         <button type="button" data-lang-btn="es" aria-pressed="true" onclick="setLang('es')">ES</button>
         <button type="button" data-lang-btn="fr" aria-pressed="false" onclick="setLang('fr')">FR</button>
+      </div>
+    </div>
+    <!-- SUBASTAO MODES — three siblings: Simple (3p) and por Parejas (4p) are
+         Modo Tradicional, unchanged, just relabeled here; Capitán (new) opens
+         its own table-size screen since it isn't pinned to one player count. -->
+    <div class="launcher-screen" id="launcherStepSubastaoMode">
+      <button class="launcher-back" onclick="launcherGo(1)">‹ Atrás</button>
+      <div class="launcher-title">Subastao</div>
+      <div class="launcher-list">
+        <div class="launcher-item" onclick="pickSubastaoMode('tradicional',3)"><div><b>Subastao Simple</b><span>3 jugadores</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="pickSubastaoMode('tradicional',4)"><div><b>Subastao por Parejas</b><span>4 jugadores</span></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="goLauncherCaptainCount()"><div><b>🏴‍☠️ Subastao Capitán</b><span>2 a 5 jugadores</span></div><div class="chev">›</div></div>
+      </div>
+    </div>
+    <div class="launcher-screen" id="launcherStepCaptainCount">
+      <button class="launcher-back" onclick="launcherGo('SubastaoMode')">‹ Atrás</button>
+      <div class="launcher-title">¿Cuántos en la mesa?</div>
+      <div class="launcher-list">
+        <div class="launcher-item" onclick="pickSubastaoMode('capitan',2)"><div><b>2 jugadores</b></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="pickSubastaoMode('capitan',3)"><div><b>3 jugadores</b></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="pickSubastaoMode('capitan',4)"><div><b>4 jugadores</b></div><div class="chev">›</div></div>
+        <div class="launcher-item" onclick="pickSubastaoMode('capitan',5)"><div><b>5 jugadores</b></div><div class="chev">›</div></div>
       </div>
     </div>
     <div class="launcher-screen" id="launcherStepPochaCount">
@@ -1075,6 +1137,58 @@ const SUITS = ['oros','copas','espadas','bastos'];
    remembers each node's Spanish so switching back is exact.
    ===================================================================== */
 const FR_DICT = {
+  "Elige la modalidad": "Choisis la modalité",
+  "Subastao Simple": "Subastao Simple",
+  "Subastao por Parejas": "Subastao par Équipes",
+  "🏴‍☠️ Subastao Capitán": "🏴‍☠️ Subastao Capitaine",
+  "2 a 5 jugadores": "2 à 5 joueurs",
+  "2 jugadores": "2 joueurs",
+  ": de 2 a 5, sin parejas — cada uno compite por su cuenta. Se reparte el mazo entero sin que sobre ninguna carta: 40 cartas de baraja completa a 2, 4 y 5 jugadores (20, 10 y 8 cada uno); a 3, sin los doses (36 cartas), 12 cada uno.": " : de 2 à 5, sans équipes — chacun joue pour soi. Le paquet entier est distribué sans qu'aucune carte ne reste de côté : 40 cartes du jeu complet à 2, 4 et 5 joueurs (20, 10 et 8 chacun) ; à 3, sans les 2 (36 cartes), 12 chacun.",
+  ": después de elegir triunfo, el Capitán elige en público cuántas bazas se compromete a ganar — a más dificultad, mayor recompensa si lo consigue (10, 15 y 22 puntos). El objetivo se escala según la mesa:": " : une fois l'atout choisi, le Capitaine annonce publiquement combien de plis il s'engage à remporter — plus la difficulté est haute, plus la récompense est grande s'il réussit (10, 15 et 22 points). L'objectif s'ajuste selon la table :",
+  "2 jug.": "2 joueurs",
+  "3 jug.": "3 joueurs",
+  "4 jug.": "4 joueurs",
+  "5 jug.": "5 joueurs",
+  "En ese orden: 🟢 Fácil · 🟡 Medio · 🔴 Difícil — el número de bazas que hay que llegar a ganar como mínimo.": "Dans cet ordre : 🟢 Facile · 🟡 Moyen · 🔴 Difficile — le nombre minimum de plis à remporter.",
+  "Modo Tradicional": "Mode Traditionnel",
+  "Subasta, triunfo y las bazas de siempre": "Enchères, atout et les plis comme toujours",
+  "Modo Capitán": "Mode Capitaine",
+  "Sin subasta: el Capitán elige triunfo y misión": "Sans enchères : le Capitaine choisit l'atout et la mission",
+  "Subastao a 3 · Capitán": "Subastao à 3 · Capitaine",
+  "Subastao a 4 · Capitán": "Subastao à 4 · Capitaine",
+  "El Capitán": "Le Capitaine",
+  ": al empezar cada ronda hay un único Capitán, que rota automáticamente al jugador siguiente en la ronda que viene. No hay subasta: el Capitán elige directamente el palo de triunfo y sale el primero.": " : à chaque manche, il y a un seul Capitaine, qui passe automatiquement au joueur suivant à la manche d'après. Pas d'enchères : le Capitaine choisit directement la couleur d'atout et entame le premier.",
+  "La misión": "La mission",
+  ": después de elegir triunfo, el Capitán elige en público cuántas bazas se compromete a ganar — a más dificultad, mayor recompensa si lo consigue. El objetivo se escala según la mesa:": " : une fois l'atout choisi, le Capitaine annonce publiquement combien de plis il s'engage à remporter — plus la difficulté est haute, plus la récompense est grande s'il réussit. L'objectif s'ajuste selon la table :",
+  "🟢 Fácil": "🟢 Facile",
+  "🟡 Medio": "🟡 Moyen",
+  "🔴 Difícil": "🔴 Difficile",
+  "A 3 jugadores los objetivos suben a 3+, 6+ y 9+ (la mesa tiene más cartas cada uno). Recompensa: 10, 15 y 22 puntos.": "À 3 joueurs, les objectifs montent à 3+, 6+ et 9+ (chacun a plus de cartes à cette table). Récompense : 10, 15 et 22 points.",
+  "Los demás jugadores": "Les autres joueurs",
+  ": no tienen ninguna misión propia — juegan normalmente para llevarse el máximo de bazas, que es justo lo que hace falta para impedir que el Capitán complete la suya. Cada jugador suma un punto por cada baza que gana, sea Capitán o no.": " : n'ont aucune mission propre — ils jouent normalement pour remporter un maximum de plis, ce qui est justement ce qu'il faut pour empêcher le Capitaine de réussir la sienne. Chaque joueur marque un point par pli remporté, Capitaine ou non.",
+  "Si el Capitán falla": "Si le Capitaine échoue",
+  ": no cobra la recompensa y recibe un cofre de compensación. Quien termine la ronda con menos bazas también recibe uno.": " : il ne touche pas la récompense et reçoit un coffre de compensation. Celui qui termine la manche avec le moins de plis en reçoit un aussi.",
+  "Cartas y baraja": "Cartes et jeu",
+  ": igual que en el Modo Tradicional — a 4 jugadores, las 40 cartas repartidas a 10 por jugador; a 3, sin los doses (36 cartas), 12 por jugador.": " : comme en Mode Traditionnel — à 4 joueurs, les 40 cartes distribuées à 10 par joueur ; à 3, sans les 2 (36 cartes), 12 par joueur.",
+  "Partida": "Partie",
+  ": dura tantas rondas como jugadores haya, para que todos sean Capitán una vez. Gana quien más puntos tenga al terminar la última.": " : dure autant de manches qu'il y a de joueurs, pour que chacun soit Capitaine une fois. Gagne celui qui a le plus de points à la fin de la dernière.",
+  "El sistema de cofres y cartas especiales de la baraja de este modo todavía no está en juego — de momento los cofres solo se cuentan, a la espera de esa parte.": "Le système de coffres et de cartes spéciales de ce mode n'est pas encore en jeu — pour l'instant les coffres sont juste comptés, en attendant cette partie.",
+  "Ronda {0}/{1}: capitán {2}.": "Manche {0}/{1} : capitaine {2}.",
+  "Misión: {0} {1} — ganar {2} o más bazas.": "Mission : {0} {1} — gagner {2} plis ou plus.",
+  "{0} cumple su misión y suma {1} puntos.": "{0} réussit sa mission et marque {1} points.",
+  "{0} falla su misión y recibe un cofre de compensación.": "{0} échoue sa mission et reçoit un coffre de compensation.",
+  "Fácil": "Facile",
+  "Difícil": "Difficile",
+  "Ganar {0} o más bazas": "Gagner {0} plis ou plus",
+  "Misión cumplida": "Mission réussie",
+  "Misión fallida": "Mission échouée",
+  "Misión": "Mission",
+  "{0} o más bazas": "{0} plis ou plus",
+  "Capitán": "Capitaine",
+  "capitán": "capitaine",
+  "Capitán: {0}": "Capitaine : {0}",
+  "{0} {1} ({2}+) · Capitán: {3}": "{0} {1} ({2}+) · Capitaine : {3}",
+  "para elegir la misión": "pour choisir la mission",
   "Pediste <b>{0}</b> baza y llevas <b>{1}</b>.": "Tu as annoncé <b>{0}</b> pli et tu en as <b>{1}</b>.",
   "Pediste <b>{0}</b> bazas y llevas <b>{1}</b>.": "Tu as annoncé <b>{0}</b> plis et tu en as <b>{1}</b>.",
   "Van jugadas <b>{0}</b> cartas de esta mano.": "<b>{0}</b> cartes ont déjà été jouées dans cette donne.",
@@ -1551,7 +1665,7 @@ function teamLabel(key){
   return key==='A' ? `${n[0]} + ${n[2]}` : `${n[1]} + ${n[3]}`;
 }
 function scoreLabelFor(key){
-  if(state.numPlayers===4) return teamLabel(key);
+  if(state.numPlayers===4 && state.subastaoMode!=='capitan') return teamLabel(key);
   return state.seatNames[parseInt(key)];
 }
 function biddingSideLabel(){
@@ -1712,7 +1826,11 @@ function heuristicChooseCard(seat, hand, trick, trump){
   const leadSuit=trick[0].card.suit;
   const wSeat=trickWinnerSeat(trick,trump);
   const bestCard=trick.find(t=>t.seat===wSeat).card;
-  const partnerWinning = state.numPlayers===4 && wSeat!==seat && isDeclarerSide(wSeat)===isDeclarerSide(seat);
+  // Only Modo Tradicional pairs seats into teams at 4 players — Modo
+  // Capitán (and Pocha, which never reaches this function) has no partners,
+  // so without this guard isDeclarerSide()'s undefined state.biddingTeam
+  // would make every OTHER seat look like "your partner" here.
+  const partnerWinning = state.numPlayers===4 && state.subastaoMode!=='capitan' && wSeat!==seat && isDeclarerSide(wSeat)===isDeclarerSide(seat);
   if(partnerWinning){
     // el compañero ya gana la baza: no compitas con él, pásale puntos
     const withPts=legal.filter(c=>c.pts>0).sort((a,b)=>b.pts-a.pts);
@@ -1847,6 +1965,10 @@ function monteCarloChooseCard(seat, hand, trick, trump){
 function aiChooseCard(seat){
   if(state.gameType==='pocha') return aiChoosePochaCard(seat);
   const hand=state.hands[seat], trick=state.currentTrick, trump=state.trumpSuit;
+  // Modo Capitán always uses the plain heuristic, at any AI level: Monte
+  // Carlo (see below) optimises for the wrong objective here — it scores
+  // rollouts by bidding-team card points, not by a trick-count mission.
+  if(state.subastaoMode==='capitan') return heuristicChooseCard(seat,hand,trick,trump);
   const level=state.aiLevel || 'medium';
   if(level==='low') return lowChooseCard(seat,hand,trick,trump);
   if(level==='high') return monteCarloChooseCard(seat,hand,trick,trump);
@@ -1878,10 +2000,14 @@ function parseGameSelector(sel){
     return {gameType:'pocha', numPlayers:(n>=3&&n<=5)?n:4,
             pochaVariant: POCHA_VARIANTS[variant] ? variant : POCHA_DEFAULT_VARIANT};
   }
-  return {gameType:'subastao', numPlayers: parseInt(sel)||4, pochaVariant:null};
+  // "3"/"4" is Modo Tradicional (unchanged); "3:capitan"/"4:capitan" is the
+  // new Modo Capitán — see the CAPITÁN section further down.
+  const [seats, mode] = sel.split(':');
+  return {gameType:'subastao', numPlayers: parseInt(seats)||4, pochaVariant:null,
+          subastaoMode: mode==='capitan' ? 'capitan' : 'tradicional'};
 }
 function newGame(target, playerType, aiLevel, humanPlayers, pochaVariantName, pochaForbidLastMatch){
-  const {gameType, numPlayers, pochaVariant} = parseGameSelector(playerType);
+  const {gameType, numPlayers, pochaVariant, subastaoMode} = parseGameSelector(playerType);
   // An explicit variant argument wins; otherwise take whatever the selector carried.
   pochaVariantName = POCHA_VARIANTS[pochaVariantName] ? pochaVariantName : pochaVariant;
   humanPlayers = parseInt(humanPlayers)||numPlayers; // default: all players are human
@@ -1889,27 +2015,34 @@ function newGame(target, playerType, aiLevel, humanPlayers, pochaVariantName, po
   state = {
     epoch: gameEpoch,
     gameType,
+    subastaoMode: gameType==='subastao' ? subastaoMode : null,
     target: parseInt(target)||500,
     numPlayers,
     humanPlayers, // how many humans play on this mobile device
     aiLevel: aiLevel || 'medium',
     seatNames: SEAT_NAMES.slice(0,numPlayers),
-    scores: gameType==='pocha' ? {} : (numPlayers===4 ? {A:0,B:0} : {0:0,1:0,2:0}),
+    // Modo Capitán scores individually at any table size (no partnerships,
+    // unlike Modo Tradicional at 4 players) — same array-of-seats shape Pocha uses.
+    scores: gameType==='pocha' ? {} : (subastaoMode==='capitan' ? Array.from({length:numPlayers},()=>0)
+      : (numPlayers===4 ? {A:0,B:0} : {0:0,1:0,2:0})),
     dealerIndex:0,
     revealedSeat:null, // pass-and-play: which human seat has tapped "ver mis cartas" and is currently displayed
   };
   document.getElementById('logoWord1').textContent = gameType==='pocha' ? 'La Pocha' : 'Subastao';
   document.getElementById('logoWord2').classList.toggle('hidden', gameType==='pocha');
   document.getElementById('overlay').classList.add('hidden');
-  // Both games' bidding panels are only ever shown/hidden explicitly (by
-  // startAuction()/finishAuction() and startPochaRound()/startPochaPlay()),
-  // not from render() — so switching game type mid-auction could otherwise
-  // leave the OTHER game's stale panel on screen. Hide both up front.
+  // Every mode's own bidding/choice panels are only ever shown/hidden
+  // explicitly (by startAuction()/startPochaRound()/startCaptainRound() etc),
+  // not from render() — so switching game type could otherwise leave a
+  // stale panel from a DIFFERENT mode on screen. Hide them all up front.
   document.getElementById('biddingPanel').classList.add('hidden');
   document.getElementById('humanBidArea').classList.add('hidden');
   document.getElementById('pochaBidPanel').classList.add('hidden');
   document.getElementById('humanPochaBidArea').classList.add('hidden');
-  if(gameType==='pocha') startPochaGame(pochaVariantName, pochaForbidLastMatch); else startNewHand();
+  document.getElementById('captainMissionPanel').classList.add('hidden');
+  if(gameType==='pocha') startPochaGame(pochaVariantName, pochaForbidLastMatch);
+  else if(subastaoMode==='capitan') startCaptainGame();
+  else startNewHand();
 }
 function updateHumanPlayersOptions(keepValue){
   const type = document.getElementById('playersSelect').value;
@@ -1927,11 +2060,14 @@ function updateHumanPlayersOptions(keepValue){
 // the two games — Objetivo de puntos and the Subastao rules vs. Puntuación
 // al fallar and the Pocha rules.
 function updateSettingsForGameType(){
-  const isPocha = document.getElementById('playersSelect').value.startsWith('pocha');
-  document.getElementById('targetRow').classList.toggle('hidden', isPocha);
+  const val = document.getElementById('playersSelect').value;
+  const isPocha = val.startsWith('pocha');
+  const isCapitan = val.endsWith(':capitan');
+  document.getElementById('targetRow').classList.toggle('hidden', isPocha || isCapitan);
   document.getElementById('pochaOptionsRow').classList.toggle('hidden', !isPocha);
-  document.getElementById('subastaoRulesBox').classList.toggle('hidden', isPocha);
+  document.getElementById('subastaoRulesBox').classList.toggle('hidden', isPocha || isCapitan);
   document.getElementById('pochaRulesBox').classList.toggle('hidden', !isPocha);
+  document.getElementById('capitanRulesBox').classList.toggle('hidden', !isCapitan);
 }
 function changeSetup(){
   const t=document.getElementById('targetSelect').value;
@@ -1954,7 +2090,8 @@ function openSettings(){
   document.getElementById('aiLevelSelect').value = state.aiLevel || 'medium';
   renderResultHistory();
   if(state.numPlayers){
-    document.getElementById('playersSelect').value = state.gameType==='pocha' ? 'pocha'+state.numPlayers : String(state.numPlayers);
+    document.getElementById('playersSelect').value = state.gameType==='pocha' ? 'pocha'+state.numPlayers
+      : (state.subastaoMode==='capitan' ? state.numPlayers+':capitan' : String(state.numPlayers));
     if(state.gameType==='pocha'){
       document.getElementById('pochaVariantSelect').value = state.pocha.variant || POCHA_DEFAULT_VARIANT;
       document.getElementById('pochaForbidSelect').value = state.pocha.forbidLastMatch===false ? 'off' : 'on';
@@ -2134,7 +2271,9 @@ function renderTrumpChoices(){
     div.innerHTML=`${suitIcon(suit)}<div>${suitName(suit)}</div>`;
     div.onclick=()=>{
       document.getElementById('trumpPanel').classList.add('hidden');
-      if(state.gameType==='pocha') choosePochaTrump(suit); else chooseTrump(suit);
+      if(state.gameType==='pocha') choosePochaTrump(suit);
+      else if(state.subastaoMode==='capitan') chooseCaptainTrump(suit);
+      else chooseTrump(suit);
     };
     el.appendChild(div);
   });
@@ -2270,6 +2409,7 @@ function renderCanteOffer(){
 // last one, calls endHand().
 function resolveTrick(){
   if(state.gameType==='pocha'){ resolvePochaTrick(); return; }
+  if(state.subastaoMode==='capitan'){ resolveCaptainTrick(); return; }
   const trick=state.currentTrick;
   const winnerSeat=trickWinnerSeat(trick,state.trumpSuit);
   const trickPts=trick.reduce((s,t)=>s+t.card.pts,0);
@@ -2372,7 +2512,10 @@ function advanceToNextHand(){
 function showOverlay(key){
   const label=scoreLabelFor(key);
   const amount=state.scores[key];
-  const isYou = (state.numPlayers===4 && key==='A') || (state.numPlayers===3 && key==='0');
+  // Modo Capitán scores individually at any table size, unlike Modo
+  // Tradicional's 4-player teams — so "isYou" there is always just seat 0.
+  const individual = state.subastaoMode==='capitan' || state.numPlayers===3;
+  const isYou = individual ? key==='0' : key==='A';
   document.getElementById('overlayTitle').textContent = isYou ? t('¡Has ganado la partida!') : tf('Gana {0}', label);
   document.getElementById('overlayBody').textContent = tf('{0} llega a {1} puntos.', label, amount) + (state.stake ? tf(' Se jugaba: {0}€.', state.stake) : '');
   document.getElementById('overlay').classList.remove('hidden');
@@ -2380,6 +2523,208 @@ function showOverlay(key){
   document.getElementById('saveResultConfirm').classList.add('hidden');
   document.getElementById('saveResultBtn').classList.remove('hidden');
   if(isYou) burstConfetti(100);
+}
+
+/* =====================================================================
+   SUBASTAO — MODO CAPITÁN
+   An independent variant of Subastao, parallel to Modo Tradicional above and
+   deliberately NOT sharing its bidding/team state (biddingTeam,
+   biddingTeamPoints, cantedSuits, cante) — see the guards added to
+   heuristicChooseCard/renderHelp/renderSeatsBar/scoreLabelFor/showOverlay
+   elsewhere in this file, all gated on state.subastaoMode==='capitan' so
+   Modo Tradicional itself is untouched.
+
+   Each round has ONE Captain (state.captainSeat), rotating to the next seat
+   every round. No auction: the Captain names the trump directly, then a
+   PUBLIC mission — a trick count they're betting they'll reach. Everyone
+   else just plays their own hand normally; the only shared incentive is
+   that winning tricks yourself is also what keeps the Captain from theirs.
+   Every seat scores 1 point per trick won, and the Captain additionally
+   earns their mission's reward on success, or a compensation chest (just
+   counted for now) on failure. The chest/special-cards economy from the
+   design doc is intentionally not built yet — this lays the groundwork
+   (chests are tracked) without yet spending them on anything. */
+// 3p/4p thresholds are exactly the numbers given for this mode; 2p/5p are
+// this project's own extension (not specified), scaled to the same 25/50/75%
+// split that 3p's numbers already happen to follow, off THEIR hand sizes
+// (2p deals 20 cards each, 5p deals 8 — see startCaptainRound). Easy to
+// retune later since every table size's numbers live in one place.
+const CAPTAIN_MISSIONS = {
+  facil:   {key:'facil',   label:'Fácil',   emoji:'🟢', threshold:{2:5, 3:3,4:3, 5:2}, reward:10},
+  medio:   {key:'medio',   label:'Medio',   emoji:'🟡', threshold:{2:10,3:6,4:5, 5:4}, reward:15},
+  dificil: {key:'dificil', label:'Difícil', emoji:'🔴', threshold:{2:15,3:9,4:7, 5:6}, reward:22},
+};
+const CAPTAIN_MISSION_ORDER = ['facil','medio','dificil'];
+function captainMissionThreshold(tier){ return CAPTAIN_MISSIONS[tier].threshold[state.numPlayers]; }
+
+function startCaptainGame(){
+  state.captainMode = {
+    round: 0,
+    totalRounds: state.numPlayers, // everyone captains exactly once per match
+    // Chests are only counted for now — see the file-level note above.
+    chests: Array.from({length:state.numPlayers}, ()=>({comun:0, raro:0, epico:0, legendario:0})),
+  };
+  state.captainSeat = state.dealerIndex;
+  startCaptainRound();
+}
+function startCaptainRound(){
+  // The whole deck, split evenly with nothing left over: only at 3 players
+  // does 40 fail to divide evenly, so only there do the 2s come out (36
+  // cards, 12 each) — every other size (2, 4, 5) deals the full 40.
+  const ranks = state.numPlayers===3 ? RANKS_3P : RANKS_4P;
+  const deck = shuffle(buildDeck(ranks));
+  state.hands = Array.from({length:state.numPlayers}, ()=>[]);
+  for(let i=0;i<deck.length;i++) state.hands[i%state.numPlayers].push(deck[i]);
+  for(let s=0;s<state.numPlayers;s++) sortHand(state.hands[s]);
+  state.trumpSuit = null;
+  state.currentTrick = [];
+  state.canteOffer = null; // Modo Capitán has no cante
+  state.captainMission = null;
+  state.tricksWon = new Array(state.numPlayers).fill(0);
+  // Live "En juego" counter on each seat's chip — tricks won so far this round.
+  state.playerTrickPoints = new Array(state.numPlayers).fill(0);
+  state.seenCards = [];
+  state.voidSuits = {};
+  for(let s=0;s<state.numPlayers;s++) state.voidSuits[s] = new Set();
+  state.log = [tf('Ronda {0}/{1}: capitán {2}.', state.captainMode.round+1, state.captainMode.totalRounds, state.seatNames[state.captainSeat])];
+  document.getElementById('summaryPanel').classList.add('hidden');
+  document.getElementById('trumpPanel').classList.add('hidden');
+  document.getElementById('captainMissionPanel').classList.add('hidden');
+  state.phase = 'captain-trump';
+  render();
+  if(!isHumanSeat(state.captainSeat)){
+    const seat = state.captainSeat, epoch = state.epoch;
+    setTimeout(()=>{
+      if(state.epoch!==epoch || state.phase!=='captain-trump' || state.captainSeat!==seat) return;
+      chooseCaptainTrump(aiChooseTrump(seat));
+    }, 800);
+  }
+  // else: the human Captain picks from trumpPanel — reuses renderTrumpChoices()
+}
+function chooseCaptainTrump(suit){
+  if(state.phase!=='captain-trump') return;
+  state.trumpSuit = suit;
+  for(let s=0;s<state.numPlayers;s++) sortHand(state.hands[s], suit);
+  state.log.push(tf('Triunfo: {0}.', suitName(suit)));
+  document.getElementById('trumpPanel').classList.add('hidden');
+  state.phase = 'captain-mission';
+  render();
+  if(!isHumanSeat(state.captainSeat)){
+    const seat = state.captainSeat, epoch = state.epoch;
+    setTimeout(()=>{
+      if(state.epoch!==epoch || state.phase!=='captain-mission' || state.captainSeat!==seat) return;
+      chooseCaptainMission(aiChooseCaptainMission(seat));
+    }, 800);
+  }
+  // else: the human Captain picks from captainMissionPanel
+}
+// A simple hand-strength estimate mapped to a mission tier — deliberately not
+// the Monte Carlo machinery Subastao's "Alto" level uses (that optimises for
+// bidding-team card points, a different objective from a trick-count target;
+// see the guard in aiChooseCard). Good enough for a first version.
+function aiChooseCaptainMission(seat){
+  const trump = state.trumpSuit, hand = state.hands[seat];
+  let strength = 0;
+  hand.forEach(c=>{
+    if(c.suit===trump) strength += (c.rank==='As'||c.rank==='3') ? 1 : ((c.rank==='Rey'||c.rank==='Caballo'||c.rank==='Sota') ? 0.6 : 0.3);
+    else if(c.rank==='As') strength += 0.4;
+  });
+  const ratio = strength/hand.length;
+  if(ratio >= 0.55) return 'dificil';
+  if(ratio >= 0.35) return 'medio';
+  return 'facil';
+}
+function chooseCaptainMission(tier){
+  if(state.phase!=='captain-mission' || !CAPTAIN_MISSIONS[tier]) return;
+  const m = CAPTAIN_MISSIONS[tier];
+  state.captainMission = tier;
+  state.log.push(tf('Misión: {0} {1} — ganar {2} o más bazas.', m.emoji, t(m.label), captainMissionThreshold(tier)));
+  document.getElementById('captainMissionPanel').classList.add('hidden');
+  state.phase = 'playing';
+  state.leader = state.captainSeat;
+  state.turn = state.captainSeat;
+  playTick();
+}
+function resolveCaptainTrick(){
+  const trick = state.currentTrick;
+  const winnerSeat = trickWinnerSeat(trick, state.trumpSuit);
+  state.tricksWon[winnerSeat]++;
+  state.playerTrickPoints[winnerSeat]++;
+  state.log.push(tf('{0} gana la baza.', state.seatNames[winnerSeat]));
+  pushEffect('trickWin', {winnerSeat});
+  state.currentTrick = [];
+  const isLastTrick = state.hands[0].length===0;
+  if(isLastTrick){ endCaptainRound(); }
+  else { state.leader=winnerSeat; state.turn=winnerSeat; playTick(); }
+}
+function endCaptainRound(){
+  const tier = state.captainMission;
+  const threshold = captainMissionThreshold(tier);
+  const captainTricks = state.tricksWon[state.captainSeat];
+  const success = captainTricks >= threshold;
+  const reward = success ? CAPTAIN_MISSIONS[tier].reward : 0;
+  seatRange().forEach(s=>{ state.scores[s] += state.tricksWon[s]; });
+  if(success){
+    state.scores[state.captainSeat] += reward;
+    state.log.push(tf('{0} cumple su misión y suma {1} puntos.', state.seatNames[state.captainSeat], reward));
+  } else {
+    state.captainMode.chests[state.captainSeat].comun++;
+    state.log.push(tf('{0} falla su misión y recibe un cofre de compensación.', state.seatNames[state.captainSeat]));
+  }
+  // Whoever won the fewest tricks this round also gets a chest (ties share it).
+  const minTricks = Math.min(...state.tricksWon);
+  const lastPlace = seatRange().filter(s=>state.tricksWon[s]===minTricks);
+  lastPlace.forEach(s=>{ state.captainMode.chests[s].comun++; });
+
+  state.phase = 'handover';
+  state.lastSummary = {
+    captain:true, captainSeat:state.captainSeat, mission:tier, threshold,
+    captainTricks, success, reward, tricksWon:state.tricksWon.slice(), lastPlace,
+  };
+  pushEffect('scorePulse', {keys: seatRange().map(String)});
+  render();
+  renderCaptainSummary(state.lastSummary);
+  document.getElementById('summaryPanel').classList.remove('hidden');
+
+  const isLastRound = state.captainMode.round >= state.captainMode.totalRounds-1;
+  if(isLastRound){
+    const winnerSeat = state.scores.indexOf(Math.max(...state.scores));
+    state.phase = 'gameover';
+    state.gameOverInfo = {key:String(winnerSeat)};
+    showOverlay(String(winnerSeat));
+    netPush(true);
+  }
+}
+function advanceCaptainRound(){
+  if(state.phase==='gameover') return;
+  document.getElementById('summaryPanel').classList.add('hidden');
+  state.captainMode.round++;
+  state.captainSeat = nextSeat(state.captainSeat);
+  state.dealerIndex = nextSeat(state.dealerIndex);
+  startCaptainRound();
+}
+function renderCaptainMissionChoices(){
+  document.getElementById('missionChoices').innerHTML = CAPTAIN_MISSION_ORDER.map(key=>{
+    const m = CAPTAIN_MISSIONS[key];
+    return `<div class="mission-choice" onclick="chooseCaptainMission('${key}')">
+      <span class="mission-emoji">${m.emoji}</span>
+      <span class="mission-txt"><b>${t(m.label)}</b><span>${tf('Ganar {0} o más bazas', captainMissionThreshold(key))}</span></span>
+      <span class="mission-reward">+${m.reward}</span>
+    </div>`;
+  }).join('');
+}
+function renderCaptainSummary(s){
+  const m = CAPTAIN_MISSIONS[s.mission];
+  document.getElementById('summaryTitle').textContent = t(s.success ? 'Misión cumplida' : 'Misión fallida');
+  const mission = `<div class="summary-row"><span>${t('Misión')}</span><span>${m.emoji} ${t(m.label)} — ${tf('{0} o más bazas', s.threshold)}</span></div>`;
+  const filas = seatRange().map(seat=>{
+    const tag = seat===s.captainSeat ? ` · ${t('Capitán')}` : '';
+    const ganado = s.tricksWon[seat] + (seat===s.captainSeat && s.success ? s.reward : 0);
+    return `<div class="summary-row pocha-row"><span>${state.seatNames[seat]}${tag}</span><span class="bw">${s.tricksWon[seat]}</span><span class="score">+${ganado}</span></div>`;
+  }).join('');
+  document.getElementById('summaryBody').innerHTML = mission + filas;
+  document.getElementById('summaryAdvanceBtn').textContent = t(
+    state.captainMode.round >= state.captainMode.totalRounds-1 ? 'Ver resultado final' : 'Siguiente ronda');
 }
 
 /* ---------- POCHA GAME FLOW ----------
@@ -2400,7 +2745,9 @@ function showOverlay(key){
 // The hand-summary panel's button is shared between both games — dispatch
 // to whichever "move on" function applies to the game in progress.
 function onAdvanceClicked(){
-  if(state.gameType==='pocha') advancePochaRound(); else advanceToNextHand();
+  if(state.gameType==='pocha') advancePochaRound();
+  else if(state.subastaoMode==='capitan') advanceCaptainRound();
+  else advanceToNextHand();
 }
 
 // Each variant's own default for "hay que fastidiar" — whether the last
@@ -2855,6 +3202,7 @@ function saveResultFromOverlay(){
     name,
     date: new Date().toISOString(),
     gameType: state.gameType,
+    subastaoMode: state.subastaoMode || null,
     target: state.target,
     numPlayers: state.numPlayers,
     humanPlayers: state.humanPlayers,
@@ -2884,7 +3232,8 @@ function renderResultHistory(){
   if(list.length===0){ box.innerHTML = `<span style="color:var(--piedra);">${t('Aún no has guardado ninguna partida.')}</span>`; return; }
   const levelLabel = {low:'Bajo', medium:'Medio', high:'Alto'};
   box.innerHTML = list.map(e=>{
-    const type = e.gameType==='pocha' ? `Pocha a ${e.numPlayers}` : (e.numPlayers===4 ? 'Subastao a 4' : 'Subastao a 3');
+    const type = e.gameType==='pocha' ? `Pocha a ${e.numPlayers}`
+      : (e.numPlayers===4 ? 'Subastao a 4' : 'Subastao a 3') + (e.subastaoMode==='capitan' ? ' · Capitán' : '');
     const human = e.humanPlayers>=e.numPlayers ? `${e.numPlayers} personas` : `${e.humanPlayers} persona${e.humanPlayers===1?'':'s'}+IA`;
     const meta = e.gameType==='pocha' ? '' : `meta ${e.target} · `;
     const scoreStr = Object.entries(e.scores||{}).map(([k,v])=>`${k}:${v}`).join(' · ');
@@ -2962,6 +3311,7 @@ function currentActorSeat(){
   if(state.phase==='playing') return state.turn;
   if(state.phase==='pocha-bidding') return state.pocha.bidTurnSeat;
   if(state.phase==='pocha-trump') return state.pocha.trumpChooser;
+  if(state.phase==='captain-trump' || state.phase==='captain-mission') return state.captainSeat;
   return null;
 }
 // Returns the seat whose controls (bid buttons, trump choices, playable
@@ -2996,7 +3346,8 @@ function updatePassScreen(){
   // between doesn't count as the phone changing hands, so the same human
   // stays revealed (just non-interactive) across their AI's turns.
   if(isHumanSeat(actor) && actor!==state.revealedSeat){
-    const what = t((state.phase==='trump' || state.phase==='pocha-trump') ? 'para elegir el triunfo'
+    const what = t((state.phase==='trump' || state.phase==='pocha-trump' || state.phase==='captain-trump') ? 'para elegir el triunfo'
+      : state.phase==='captain-mission' ? 'para elegir la misión'
       : (state.phase==='bidding' || state.phase==='pocha-bidding') ? 'para pujar' : 'para jugar su carta');
     document.getElementById('passOverlayTitle').textContent = tf('Pásale el móvil a {0}', state.seatNames[actor]);
     document.getElementById('passOverlaySubtitle').textContent = tf('Toca cuando lo tenga {0}. Nadie más debería ver esta pantalla.', what);
@@ -3381,7 +3732,8 @@ function spawnCanteSparks(count, variantClass){
 
 function renderHelp(activeSeat){
   const panel=document.getElementById('helpPanel');
-  const show = helpModeEnabled && state.phase==='playing' && activeSeat!==null && state.turn===activeSeat && state.hands[activeSeat].length>0;
+  const show = helpModeEnabled && state.phase==='playing' && state.subastaoMode!=='capitan'
+    && activeSeat!==null && state.turn===activeSeat && state.hands[activeSeat].length>0;
   panel.classList.toggle('hidden', !show);
   if(!show) return;
   const help = state.gameType==='pocha' ? computePochaHelp(activeSeat) : computeHelp(activeSeat);
@@ -3441,12 +3793,18 @@ function seatIsActing(s){
   if(state.phase==='trump') return state.auctionWinner===s;
   if(state.phase==='pocha-bidding') return state.pocha.bidTurnSeat===s;
   if(state.phase==='pocha-trump') return state.pocha.trumpChooser===s;
+  if(state.phase==='captain-trump' || state.phase==='captain-mission') return state.captainSeat===s;
   return false;
 }
 // "reparte" / "sale" — what the old chips hung off their edges as badges.
 function seatEstados(s){
   const e=[];
-  if(state.dealerIndex===s) e.push(t('reparte'));
+  // The Captain and the dealer are always the same seat by construction
+  // (see startCaptainGame/advanceCaptainRound) — show just the one tag that
+  // actually matters for this mode instead of two redundant ones.
+  if(state.subastaoMode==='capitan'){
+    if(state.captainSeat===s) e.push(t('capitán'));
+  } else if(state.dealerIndex===s) e.push(t('reparte'));
   if((state.phase==='playing'||state.phase==='handover') && state.leader===s) e.push(t('sale'));
   return e;
 }
@@ -3479,7 +3837,7 @@ function renderSeatsBar(){
   const bar=document.getElementById('seatsBar');
   const mine=mySeatIndex();
 
-  if(state.gameType!=='pocha' && state.numPlayers===4){
+  if(state.gameType==='subastao' && state.subastaoMode!=='capitan' && state.numPlayers===4){
     bar.className='seats-row teams';
     bar.innerHTML = [{key:'A',seats:[0,2]},{key:'B',seats:[1,3]}].map(t=>{
       const vivo = t.seats.reduce((n,s)=>n+currentHandPoints(s),0);
@@ -3558,6 +3916,7 @@ function render(){
   // hand). state.lastSummary is synced, so rebuild it from there too.
   if(state.phase==='handover' && state.lastSummary){
     if(state.lastSummary.pocha) renderPochaSummary(state.lastSummary.results, state.lastSummary.isLastRound);
+    else if(state.lastSummary.captain) renderCaptainSummary(state.lastSummary);
     else renderSummary();
   }
   // These containers are also opened explicitly by startAuction()/startPochaRound()
@@ -3577,11 +3936,19 @@ function render(){
 
   // trump choice — same idea: only the revealed human auction-winner sees it
   // ('trump' is Subastao's phase, 'pocha-trump' the Olímpica auction's)
-  if((state.phase==='trump' || state.phase==='pocha-trump') && activeSeat!==null){
+  if((state.phase==='trump' || state.phase==='pocha-trump' || state.phase==='captain-trump') && activeSeat!==null){
     renderTrumpChoices();
     document.getElementById('trumpPanel').classList.remove('hidden');
   } else {
     document.getElementById('trumpPanel').classList.add('hidden');
+  }
+
+  // Modo Capitán's mission choice — same "only once revealed" rule as the rest.
+  if(state.phase==='captain-mission' && activeSeat!==null){
+    renderCaptainMissionChoices();
+    document.getElementById('captainMissionPanel').classList.remove('hidden');
+  } else {
+    document.getElementById('captainMissionPanel').classList.add('hidden');
   }
 
   renderCanteOffer();
@@ -3601,6 +3968,12 @@ function render(){
     const roundSize = state.pocha.roundSizes[state.pocha.roundIndex];
     document.getElementById('bidInfo').textContent = tf(roundSize===1 ? 'Ronda {0}/{1} · {2} carta' : 'Ronda {0}/{1} · {2} cartas',
       state.pocha.roundIndex+1, state.pocha.roundSizes.length, roundSize);
+  } else if(state.subastaoMode==='capitan'){
+    document.getElementById('trumpInfo').innerHTML = state.trumpSuit ? trumpInfoHtml(state.trumpSuit) : t('Triunfo: por decidir');
+    const m = state.captainMission ? CAPTAIN_MISSIONS[state.captainMission] : null;
+    document.getElementById('bidInfo').textContent = m
+      ? tf('{0} {1} ({2}+) · Capitán: {3}', m.emoji, t(m.label), captainMissionThreshold(state.captainMission), state.seatNames[state.captainSeat])
+      : tf('Capitán: {0}', state.seatNames[state.captainSeat]);
   } else {
     document.getElementById('trumpInfo').innerHTML = state.trumpSuit ? trumpInfoHtml(state.trumpSuit) : t('Triunfo: por decidir');
     if(state.phase==='bidding'){
@@ -3619,7 +3992,11 @@ function render(){
   const grid=document.getElementById('trickGrid');
   grid.style.gridTemplateColumns = `repeat(${state.numPlayers},1fr)`;
   grid.innerHTML='';
-  const mesaOrder = state.gameType==='pocha' ? seatRange() : (state.numPlayers===4 ? [0,2,1,3] : [0,1,2]);
+  // The [0,2,1,3] zig-zag alternates Modo Tradicional's 4-player teams
+  // visually; nothing else has real partnerships (Pocha, and now Modo
+  // Capitán at any size, 2 included) so they just sit in seat order.
+  const mesaOrder = (state.gameType==='subastao' && state.subastaoMode!=='capitan' && state.numPlayers===4)
+    ? [0,2,1,3] : seatRange();
   mesaOrder.forEach(s=>{
     const played=(state.currentTrick||[]).find(t=>t.seat===s);
     const slot=document.createElement('div');
@@ -3792,9 +4169,14 @@ function launcherGo(step){
   document.querySelectorAll('.launcher-screen').forEach(el=>el.classList.remove('active'));
   document.getElementById('launcherStep'+step).classList.add('active');
 }
-function pickLauncherType(type){
-  launcherType = type;
-  document.getElementById('launcherStep2Title').textContent = tf('Subastao a {0}', type);
+function goLauncherSubastaoModes(){ launcherGo('SubastaoMode'); }
+function goLauncherCaptainCount(){ launcherGo('CaptainCount'); }
+// mode: 'tradicional' (n fixed at 3 or 4, from Subastao Simple/por Parejas)
+// or 'capitan' (n freely 2-5, from the table-size screen above).
+function pickSubastaoMode(mode, n){
+  launcherType = mode==='capitan' ? n+':capitan' : String(n);
+  const base = tf('Subastao a {0}', n);
+  document.getElementById('launcherStep2Title').textContent = mode==='capitan' ? base+' · Capitán' : base;
   launcherGo(2);
 }
 function goLauncherPochaCount(){ launcherGo('PochaCount'); }
@@ -3835,7 +4217,8 @@ function pickPochaVariant(key){
 // step1 for Subastao, the table-size screen for Pocha.
 function launcherBackFromStep2(){
   if(launcherType && launcherType.startsWith('pocha')) launcherGo('PochaCount');
-  else launcherGo(1);
+  else if(launcherType && launcherType.includes(':capitan')) launcherGo('CaptainCount');
+  else launcherGo('SubastaoMode');
 }
 // Going back from "¿Cuántas personas?" or the online menu: Pocha slots the
 // modality screen in between, Subastao doesn't have one.
@@ -3964,8 +4347,9 @@ function renderOpenRoomsList(rooms){
   if(!open.length){ list.innerHTML = `<p class="toggle-hint">${t('No hay salas abiertas ahora mismo — crea una o introduce un código.')}</p>`; return; }
   list.innerHTML = open.map(r=>{
     const max = maxSeatsFor(r.gameType);
-    const {gameType:rGameType, pochaVariant:rVariant} = parseGameSelector(r.gameType);
-    const gameLabel = rGameType==='pocha' ? `${pochaVariant(rVariant).label} a ${max}` : `Subastao a ${max}`;
+    const {gameType:rGameType, pochaVariant:rVariant, subastaoMode:rMode} = parseGameSelector(r.gameType);
+    const gameLabel = rGameType==='pocha' ? `${pochaVariant(rVariant).label} a ${max}`
+      : `Subastao a ${max}` + (rMode==='capitan' ? ' · Capitán' : '');
     const host = (r.players||[]).find(p=>p.uid===r.hostUid);
     return `<div class="launcher-item" onclick="joinOpenRoom('${r.code}')"><div><b>${gameLabel} · ${r.code}</b><span>${tf('Anfitrión {0} · {1}/{2} jugadores', host?host.name:'?', (r.players||[]).length, max)}</span></div><div class="chev">›</div></div>`;
   }).join('');
@@ -4207,6 +4591,8 @@ function applyNetAction(action){
     case 'pochaBid': recordPochaBid(action.seat, action.amount); break;
     case 'cante': declareCante(action.seat, action.suit); break;
     case 'pochaTrump': choosePochaTrump(action.suit); break;
+    case 'captainTrump': chooseCaptainTrump(action.suit); break;
+    case 'captainMission': chooseCaptainMission(action.tier); break;
     case 'advance': onAdvanceClicked(); break;
   }
 }
@@ -4270,7 +4656,8 @@ render = function(){
 // above); the host applies them the normal way via applyNetAction().
 const _localRecordBid = recordBid, _localRecordPass = recordPass, _localChooseTrump = chooseTrump,
       _localPlayCard = playCard, _localRecordPochaBid = recordPochaBid, _localOnAdvanceClicked = onAdvanceClicked,
-      _localDeclareCante = declareCante, _localChoosePochaTrump = choosePochaTrump;
+      _localDeclareCante = declareCante, _localChoosePochaTrump = choosePochaTrump,
+      _localChooseCaptainTrump = chooseCaptainTrump, _localChooseCaptainMission = chooseCaptainMission;
 recordBid = function(seat, amount){
   if(netShouldForward()){ netSendAction('bid', {seat, amount}); return; }
   _localRecordBid(seat, amount);
@@ -4302,6 +4689,14 @@ declareCante = function(seat, suit){
 choosePochaTrump = function(suit){
   if(netShouldForward()){ netSendAction('pochaTrump', {suit}); return; }
   _localChoosePochaTrump(suit);
+};
+chooseCaptainTrump = function(suit){
+  if(netShouldForward()){ netSendAction('captainTrump', {suit}); return; }
+  _localChooseCaptainTrump(suit);
+};
+chooseCaptainMission = function(tier){
+  if(netShouldForward()){ netSendAction('captainMission', {tier}); return; }
+  _localChooseCaptainMission(tier);
 };
 </script>
 </body>
