@@ -1509,6 +1509,9 @@ const FR_DICT = {
   "(Fournier): si aciertas tu puja exacta, sumas 10 puntos + 5 por cada baza conseguida. Si fallas, restas 5 por cada baza de diferencia, te hayas quedado corto o largo. Pides 3 y haces 3 → 25 puntos; pides 3 y haces 1 → −10; pides 1 y haces 3 → −10. En": " (Fournier) : si tu réussis ton annonce exacte, tu marques 10 points + 5 par pli remporté. Si tu rates, tu perds 5 points par pli d'écart, que tu sois en dessous ou au-dessus. Tu annonces 3 et tu en fais 3 → 25 points ; tu annonces 3 et tu en fais 1 → −10 ; tu annonces 1 et tu en fais 3 → −10. Pour",
   "es distinta: aciertas sumas 10 + 2 por baza, y si fallas no restas nada.": ", c'est différent : réussir rapporte 10 + 2 par pli, et rater ne fait rien perdre.",
   ": quien tenga más puntos al terminar la última mano de la modalidad elegida.": " : celui qui a le plus de points à la fin de la dernière donne de la variante choisie.",
+  "Contando el resto de la mano, soltar aquí {0} saldría {1} puntos peor de media: esa carta rinde más en otra baza.": "En comptant le reste de la donne, lâcher {0} ici coûterait {1} points de moins en moyenne : cette carte rapporte davantage sur un autre pli.",
+  "Contando el resto de la mano, va {0} puntos por delante de {1}, la siguiente mejor.": "En comptant le reste de la donne, elle devance de {0} points {1}, la meilleure suivante.",
+  "Contando el resto de la mano, {0} y {1} salen prácticamente iguales, así que aquí puedes fiarte de tu criterio.": "En comptant le reste de la donne, {0} et {1} se valent pratiquement, tu peux donc suivre ton intuition ici.",
   "Oros": "Deniers",
   "Copas": "Coupes",
   "Espadas": "Épées",
@@ -3947,20 +3950,59 @@ function remainingCardsBySuit(seat){
 // help text say "gana esta baza el 62% de las veces" instead of just assuming an
 // As always wins because "no hay carta más alta de su palo" (ignoring that any
 // outstanding trump beats it).
+// Cuántos repartos se prueban en modo ayuda. La IA "Alto" usa entre 6 y 20 por
+// candidata porque juega decenas de cartas por partida y no puede pararse a
+// pensar en cada una; la ayuda se calcula UNA vez, cuando te toca, así que puede
+// permitirse muchos más. Medido sobre el peor caso (primera baza de una mano
+// entera, 10 candidatas): ~45 ms en un portátil. Con los 6-20 de antes el error
+// típico de cada media rondaba los ±2 puntos, más que la diferencia real entre
+// jugadas parecidas, y la recomendación bailaba de una llamada a otra.
+const HELP_DEALS = 200;
+// Todas las candidatas se prueban contra LOS MISMOS repartos, no contra uno
+// aleatorio distinto cada una. Es la diferencia entre comparar dos jugadas en la
+// misma mano y compararlas en manos distintas: el ruido del reparto afecta por
+// igual a todas y se cancela al restarlas, así que las diferencias pequeñas
+// entre cartas dejan de quedar enterradas bajo el azar del reparto.
+function helpDeals(seat){
+  const deals=[];
+  for(let i=0;i<HELP_DEALS;i++) deals.push(determinizeAssignment(seat));
+  return deals;
+}
 function monteCarloHelpStats(seat, hand, trick, trump, legal){
-  const simsPerCandidate = Math.max(6, Math.min(20, Math.round(240/legal.length)));
+  const deals = helpDeals(seat);
   const stats = legal.map(cand=>{
     let total=0, wins=0;
-    for(let i=0;i<simsPerCandidate;i++){
-      const assigned=determinizeAssignment(seat);
+    for(const assigned of deals){
       const res=rolloutFromCandidate(seat,cand,assigned);
       total+=res.score;
       if(res.firstTrickWinner===seat) wins++;
     }
-    return {card:cand, avgScore: total/simsPerCandidate, winProb: wins/simsPerCandidate};
+    return {card:cand, avgScore: total/deals.length, winProb: wins/deals.length};
   });
   stats.sort((a,b)=>b.avgScore-a.avgScore);
   return stats;
+}
+// La media de cada candidata YA incluye el resto de la mano: cada simulación
+// termina la mano entera, así que guardarse una carta buena para más adelante
+// está contado. Lo que faltaba era decirlo: el texto solo hablaba de "esta
+// baza", y de ahí la impresión de que la ayuda no mira más allá. Esta frase
+// enseña esa parte del cálculo, y en particular cuánto costaría soltar la
+// carta cara que estás pensando en guardarte.
+function helpLookaheadNote(stats){
+  if(stats.length<2) return '';
+  const mejor=stats[0], segunda=stats[1];
+  const cara=stats.slice(1).filter(s=>s.card.pts>0).sort((a,b)=>b.card.pts-a.card.pts)[0];
+  if(cara && mejor.avgScore-cara.avgScore>=1.5){
+    return ' ' + tf('Contando el resto de la mano, soltar aquí {0} saldría {1} puntos peor de media: esa carta rinde más en otra baza.',
+      cardLabel(cara.card), (mejor.avgScore-cara.avgScore).toFixed(1));
+  }
+  const dif=mejor.avgScore-segunda.avgScore;
+  if(dif>=1.5){
+    return ' ' + tf('Contando el resto de la mano, va {0} puntos por delante de {1}, la siguiente mejor.',
+      dif.toFixed(1), cardLabel(segunda.card));
+  }
+  return ' ' + tf('Contando el resto de la mano, {0} y {1} salen prácticamente iguales, así que aquí puedes fiarte de tu criterio.',
+    cardLabel(mejor.card), cardLabel(segunda.card));
 }
 function buildHelpReasoning(stats, trick, trump, outstanding, seat){
   const top=stats[0];
@@ -4019,7 +4061,7 @@ function computeHelp(seat){
   } else {
     const stats=monteCarloHelpStats(seat, hand, trick, trump, legal);
     suggestion=stats[0].card;
-    reasoning=buildHelpReasoning(stats, trick, trump, outstanding, seat);
+    reasoning=buildHelpReasoning(stats, trick, trump, outstanding, seat) + helpLookaheadNote(stats);
   }
   return {knownLines, reasoning, suggestion};
 }
@@ -4031,16 +4073,15 @@ function computeHelp(seat){
    me closer to my own bid" instead of a partnership's points. */
 // Same win-probability tracking as monteCarloHelpStats, using the Pocha rollout.
 function monteCarloPochaHelpStats(seat, hand, trick, trump, legal){
-  const simsPerCandidate = Math.max(6, Math.min(20, Math.round(200/legal.length)));
+  const deals = helpDeals(seat); // mismos repartos para todas — ver monteCarloHelpStats
   const stats = legal.map(cand=>{
     let total=0, wins=0;
-    for(let i=0;i<simsPerCandidate;i++){
-      const assigned=determinizeAssignment(seat);
+    for(const assigned of deals){
       const res=rolloutFromPochaCandidate(seat,cand,assigned);
       total+=res.score;
       if(res.firstTrickWinner===seat) wins++;
     }
-    return {card:cand, avgScore: total/simsPerCandidate, winProb: wins/simsPerCandidate};
+    return {card:cand, avgScore: total/deals.length, winProb: wins/deals.length};
   });
   stats.sort((a,b)=>b.avgScore-a.avgScore);
   return stats;
@@ -4088,7 +4129,7 @@ function computePochaHelp(seat){
   } else {
     const stats=monteCarloPochaHelpStats(seat, hand, trick, trump, legal);
     suggestion=stats[0].card;
-    reasoning=buildPochaHelpReasoning(stats, stillNeeded);
+    reasoning=buildPochaHelpReasoning(stats, stillNeeded) + helpLookaheadNote(stats);
   }
   return {knownLines, reasoning, suggestion};
 }
