@@ -296,6 +296,15 @@
   }
   .card.mini.court-card .rk-corner{top:1px; left:3px; font-size:0.54rem;}
 
+  /* Mira una carta: la nota privada bajo tu tira de especiales. */
+  .captain-peek{
+    display:flex; align-items:center; gap:7px; margin-top:6px;
+    font-size:0.74rem; color:var(--piedra);
+  }
+  .captain-peek.hidden{display:none;}
+  .captain-peek .card{transform:scale(0.82); transform-origin:left center;}
+  .captain-frozen-note{margin-top:6px; font-size:0.74rem; color:var(--piedra);}
+
   /* HAND */
   /* Your cards sit on a faint band of cloth, watermarked with a caña and a
      plate of olives drawn as line art. Both are masks rather than images, so
@@ -893,6 +902,10 @@
         </div>
         <button class="big-btn ccd-use hidden" id="captainUseBtn" onclick="captainConfirmUse()">Usar</button>
       </div>
+      <!-- Mira una carta: lo único de Modo Capitán que se dibuja para un solo
+           asiento. El resto de la mesa ve en el registro QUE has mirado, pero
+           no qué. Se queda hasta el final de la ronda. -->
+      <div class="captain-peek hidden" id="captainPeek"></div>
     </div>
   </div>
 
@@ -1078,7 +1091,7 @@
           <p><b>Los demás jugadores</b>: no tienen ninguna misión propia — juegan normalmente para llevarse el máximo de bazas, que es justo lo que hace falta para impedir que el Capitán complete la suya. Cada jugador suma un punto por cada baza que gana, sea Capitán o no.</p>
           <p><b>Cofres</b>: se ganan perdiendo. Si el Capitán falla su misión, recibe un cofre de compensación. Si la cumple, es el resto de la mesa quien no ha conseguido impedirlo — y cada uno de ellos recibe un cofre.</p>
           <p><b>Partida</b>: dura tres rondas por jugador (todos son Capitán tres veces), rotando el turno cada ronda. Gana quien más puntos tenga al terminar la última.</p>
-          <p><b>Cofres y cartas</b>: los cofres se abren en cuanto quieres, no cuestan turno, y dan una carta especial al azar — máximo 3 guardadas y como mucho una usada por jugador y por baza. Las cartas de cada jugador son públicas, visibles junto a su nombre. De las doce del diseño, siete están ya en juego: <b>🚫 Ignorar palo</b> (una vez, puedes no seguir el palo obligado), <b>🍀 Segunda oportunidad</b> (si fallas tu misión por una sola baza, se da por cumplida), <b>🛡️ Escudo</b> (evita ganar la baza aunque fueras a hacerlo), <b>🎯 Roba baza</b> (el segundo se la lleva en tu lugar), <b>👑 Mini triunfo</b> y <b>⬆️ Empujón</b> (tu carta cuenta como triunfo, o gana pase lo que pase) y <b>⬇️ Piedra</b> (anula la carta de un rival). Las otras cinco —cambio de palo, cambio rápido, mira una carta, congelar y espejo— llegarán después.</p>
+          <p><b>Cofres y cartas</b>: los cofres se abren en cuanto quieres, no cuestan turno, y dan una carta especial al azar — máximo 3 guardadas y como mucho una usada por jugador y por baza. Las cartas de cada jugador son públicas, visibles junto a su nombre. Las doce están en juego: <b>🚫 Ignorar palo</b> (una vez, puedes no seguir el palo obligado), <b>🍀 Segunda oportunidad</b> (si fallas tu misión por una sola baza, se da por cumplida), <b>🛡️ Escudo</b> (evita ganar la baza aunque fueras a hacerlo), <b>🎯 Roba baza</b> (el segundo se la lleva en tu lugar), <b>👑 Mini triunfo</b> y <b>⬆️ Empujón</b> (tu carta cuenta como triunfo, o gana pase lo que pase) y <b>⬇️ Piedra</b> (anula la carta de un rival), <b>🔄 Cambio de palo</b> (tu carta cuenta del palo que elijas), <b>♻️ Cambio rápido</b> (cambias una carta a ciegas con un rival), <b>👁️ Mira una carta</b> (ves una carta de su mano, solo tú), <b>🧊 Congelar</b> (un rival se queda sin especiales esta baza y la siguiente) y <b>🪞 Espejo</b> (repite la última especial que haya usado un rival).</p>
         </div>
       </div>
     </div>
@@ -1277,7 +1290,7 @@ const SUITS = ['oros','copas','espadas','bastos'];
    ===================================================================== */
 const FR_DICT = {
   "Cofres y cartas": "Coffres et cartes",
-  ": los cofres se abren en cuanto quieres, no cuestan turno, y dan una carta especial al azar — máximo 3 guardadas y como mucho una usada por jugador y por baza. Las cartas de cada jugador son públicas, visibles junto a su nombre. De las doce del diseño, siete están ya en juego: ": " : les coffres s'ouvrent quand tu veux, sans coûter de tour, et donnent une carte spéciale au hasard — 3 au maximum en réserve et une seule utilisée par joueur et par pli. Les cartes de chacun sont publiques, visibles à côté de son nom. Sur les douze du design, sept sont déjà en jeu : ",
+  ": los cofres se abren en cuanto quieres, no cuestan turno, y dan una carta especial al azar — máximo 3 guardadas y como mucho una usada por jugador y por baza. Las cartas de cada jugador son públicas, visibles junto a su nombre. Las doce están en juego: ": " : les coffres s'ouvrent quand tu veux, sans coûter de tour, et donnent une carte spéciale au hasard — 3 au maximum en réserve et une seule utilisée par joueur et par pli. Les cartes de chacun sont publiques, visibles à côté de son nom. Les douze sont en jeu : ",
   "🚫 Ignorar palo": "🚫 Ignorer la couleur",
   " (una vez, puedes no seguir el palo obligado), ": " (une fois, tu peux ne pas suivre la couleur demandée), ",
   "🍀 Segunda oportunidad": "🍀 Seconde chance",
@@ -1291,7 +1304,7 @@ const FR_DICT = {
   "⬆️ Empujón": "⬆️ Coup de pouce",
   " (tu carta cuenta como triunfo, o gana pase lo que pase) y ": " (ta carte compte comme atout, ou gagne quoi qu'il arrive) et ",
   "⬇️ Piedra": "⬇️ Pierre",
-  " (anula la carta de un rival). Las otras cinco —cambio de palo, cambio rápido, mira una carta, congelar y espejo— llegarán después.": " (annule la carte d'un adversaire). Les cinq autres — changement de couleur, échange rapide, regarde une carte, geler et miroir — arriveront ensuite.",
+  " (anula la carta de un rival), <b>🔄 Cambio de palo</b> (tu carta cuenta del palo que elijas), <b>♻️ Cambio rápido</b> (cambias una carta a ciegas con un rival), <b>👁️ Mira una carta</b> (ves una carta de su mano, solo tú), <b>🧊 Congelar</b> (un rival se queda sin especiales esta baza y la siguiente) y <b>🪞 Espejo</b> (repite la última especial que haya usado un rival).": " (annule la carte d'un adversaire), <b>🔄 Changement de couleur</b> (ta carte compte dans la couleur de ton choix), <b>♻️ Échange rapide</b> (tu échanges une carte à l'aveugle avec un adversaire), <b>👁️ Regarde une carte</b> (tu vois une carte de sa main, toi seul), <b>🧊 Geler</b> (un adversaire se retrouve sans spéciales ce pli-ci et le suivant) et <b>🪞 Miroir</b> (répète la dernière spéciale utilisée par un adversaire).",
   "Tus cartas": "Tes cartes",
   "Ignorar palo": "Ignorer la couleur",
   "Segunda oportunidad": "Seconde chance",
@@ -1312,6 +1325,14 @@ const FR_DICT = {
   "Abrir cofre": "Ouvrir un coffre",
   "Usar": "Utiliser",
   "Todavía no hay ninguna carta rival en esta baza.": "Aucune carte adverse dans ce pli pour l'instant.",
+  "Ahora mismo no hay ningún rival al que apuntar.": "Aucun adversaire à viser pour l'instant.",
+  "{0} usa: {1} {2} — repite {3}.": "{0} utilise : {1} {2} — répète {3}.",
+  "Viste en la mano de {0}:": "Vu dans la main de {0} :",
+  "Actívala antes de jugar y elige un palo: tu carta de esta baza cuenta como si fuera de ese palo.": "Active-la avant de jouer et choisis une couleur : ta carte de ce pli compte comme si elle était de cette couleur.",
+  "Antes de jugar, cambia una carta al azar de tu mano por otra al azar de la de un rival. A ciegas: ninguno de los dos elige.": "Avant de jouer, échange une carte au hasard de ta main contre une autre au hasard de celle d'un adversaire. À l'aveugle : aucun des deux ne choisit.",
+  "Mira una carta al azar de la mano de un rival. Solo la ves tú, y sigue en su mano.": "Regarde une carte au hasard dans la main d'un adversaire. Toi seul la vois, et elle reste dans sa main.",
+  "Un rival se queda sin poder usar cartas especiales durante el resto de esta baza y toda la siguiente.": "Un adversaire ne peut plus utiliser de cartes spéciales pour le reste de ce pli et tout le suivant.",
+  "Repite sobre ti la última carta especial que haya usado un rival en esta ronda, contra el mismo objetivo que eligió.": "Répète sur toi la dernière carte spéciale utilisée par un adversaire dans cette manche, contre la même cible qu'il a choisie.",
   "Una vez, no sigues el palo obligado en tu próxima jugada de esta baza.": "Une fois, tu ne suis pas la couleur demandée à ta prochaine carte de ce pli.",
   "Si fallas tu misión por una sola baza, se da por cumplida. Se usa sola, no hace falta activarla.": "Si tu rates ta mission d'un seul pli, elle est considérée réussie. Elle s'active seule, pas besoin de l'utiliser.",
   "Evita ganar esta baza aunque fueras a hacerlo — la gana quien vaya después de ti.": "Évite de gagner ce pli même si tu allais le gagner — c'est le suivant qui le remporte.",
@@ -2680,14 +2701,23 @@ function playCard(seat,card){
   // Mini triunfo/Empujón additionally tag the trick entry itself, so
   // captainEffectiveWinner() can read it back at resolution time — this
   // never touches the real card or hand, only how THIS trick reads it.
-  let capEffect = null;
+  let capEffect = null, capSuit = null;
   if(state.subastaoMode==='capitan'){
     const cm = state.captainMode;
     if(cm.skipFollowSuit[seat]) cm.skipFollowSuit[seat]=false;
     if(cm.miniTriunfoArmed[seat]){ cm.miniTriunfoArmed[seat]=false; capEffect='mini_triunfo'; }
     if(cm.empujonArmed[seat]){ cm.empujonArmed[seat]=false; if(!capEffect) capEffect='empujon'; }
+    // Cambio de palo es Mini triunfo con el palo elegido a mano, así que
+    // viaja por el mismo carril: se tacha al jugar y deja la marca en la
+    // entrada de la baza, más el palo, que es lo único que Mini triunfo no
+    // necesita llevar (el suyo siempre es el triunfo).
+    if(cm.cambioPaloArmed[seat]){
+      const palo = cm.cambioPaloArmed[seat];
+      cm.cambioPaloArmed[seat] = null;
+      if(!capEffect){ capEffect='cambio_palo'; capSuit=palo; }
+    }
   }
-  state.currentTrick.push({seat,card,capEffect});
+  state.currentTrick.push({seat,card,capEffect,capSuit});
   state.log.push(tf('{0} juega {1}.', state.seatNames[seat], cardLabel(card)));
   // memory tracking: record card seen, and deduce a void suit if this player didn't follow the lead suit
   state.seenCards.push(card);
@@ -2936,6 +2966,16 @@ function startCaptainGame(){
     escudoSeats: new Set(),   // quién ha usado escudo en la baza en curso
     robaBazaSeats: new Set(), // ídem, roba baza
     piedraTarget: null,       // asiento al que se le ha aplicado piedra esta baza, o null
+    cambioPaloArmed: new Array(state.numPlayers).fill(null), // cambio_palo: palo elegido, armado hasta la próxima jugada
+    // Congelar deja a un asiento sin especiales "el resto de esta baza y toda
+    // la siguiente". Se guarda el número de la primera baza en la que vuelve a
+    // poder usarlas, no un contador, para que descongelarse no dependa de que
+    // nadie se olvide de decrementarlo en algún camino de salida de la baza.
+    frozenUntilTrick: new Array(state.numPlayers).fill(-1),
+    // Historial de especiales de la ronda, en orden — Espejo necesita mirar
+    // hacia atrás, y el registro es público igual que el inventario de cada uno.
+    specialHistory: [],
+    peeks: {},                // mira_carta: por asiento, la última carta espiada (solo se dibuja en su dispositivo)
     trickNumber: 0,           // bazas ya resueltas en la ronda en curso
     handSize: 0,              // cartas repartidas esta ronda — para saber cuál es "la última baza"
   };
@@ -3021,6 +3061,10 @@ function chooseCaptainMission(tier){
   state.captainMode.escudoSeats.clear();
   state.captainMode.robaBazaSeats.clear();
   state.captainMode.piedraTarget = null;
+  state.captainMode.cambioPaloArmed.fill(null);
+  state.captainMode.frozenUntilTrick.fill(-1);
+  state.captainMode.specialHistory = [];
+  state.captainMode.peeks = {};
   state.phase = 'playing';
   state.leader = state.captainSeat;
   state.turn = state.captainSeat;
@@ -3044,6 +3088,10 @@ function captainEffectiveWinner(trick, trump){
   const clone = trick.map(t=>{
     let card = t.card;
     if(t.capEffect==='mini_triunfo' && trump) card = Object.assign({}, card, {suit:trump});
+    // Cambio de palo: mismo truco sobre el clon, con el palo que se eligió en
+    // vez del triunfo. El palo de salida no se toca — lo marca la carta que
+    // se puso realmente, igual que con Mini triunfo.
+    else if(t.capEffect==='cambio_palo' && t.capSuit) card = Object.assign({}, card, {suit:t.capSuit});
     return {seat:t.seat, card, capEffect:t.capEffect};
   });
   const cm = state.captainMode;
@@ -3088,6 +3136,9 @@ function resolveCaptainTrick(){
   state.captainMode.escudoSeats.clear();
   state.captainMode.robaBazaSeats.clear();
   state.captainMode.piedraTarget = null;
+  // cambioPaloArmed no se limpia aquí: igual que skipFollowSuit/miniTriunfoArmed,
+  // lo consume playCard al jugar. frozenUntilTrick tampoco — es justo lo que
+  // tiene que sobrevivir al cambio de baza (ver captainFrozen).
   const isLastTrick = state.hands[0].length===0;
   if(isLastTrick){ endCaptainRound(); }
   else { state.leader=winnerSeat; state.turn=winnerSeat; playTick(); }
@@ -3184,26 +3235,28 @@ function renderCaptainSummary(s){
    fewest tricks) — this is what SPENDS them: opening one draws a random
    card into your inventory (max 3), which you can later use.
 
-   Of the 12 cards in the design doc, this first pass implements two, chosen
-   to prove the two shapes every other card will need:
-     · Ignorar palo    — an ACTIVE card: tap it, it arms a one-shot effect
-                          consumed by your very next card play (see the
-                          legalMoves override in the hand-render code, and
-                          the reset in playCard()).
-     · Segunda oportunidad — a PASSIVE card: never tapped at all, just held;
-                          checked automatically at endCaptainRound() and
-                          consumed only if it actually saves the mission.
-   The other ten (marked implemented:false below) still need real design
-   decisions that don't yet fit anywhere in the engine — cambio rápido needs
-   a "mazo restante" to draw from, which doesn't exist here (the whole deck
-   is dealt out up front); mira una carta needs a PRIVATE reveal only the
-   activator sees, unlike the shared/public state everything else here
-   already is; escudo/roba baza/mini triunfo/empujón/piedra all need a
-   queued-effects pass folded into resolveCaptainTrick() before it decides a
-   winner; congelar needs a per-trick block on OTHER seats' card use; espejo
-   needs every other power to already exist, since it just replays the last
-   one used against you. Each is a real follow-up, not a stub — this just
-   isn't building any of them half-finished.
+   All 12 cards from the design doc are implemented. They come in three
+   shapes, and every card is a variation on one of them:
+     · ARMED BEFORE PLAYING — tap it, it sets a one-shot flag consumed by
+       your very next card play (Ignorar palo, Mini triunfo, Empujón,
+       Cambio de palo). See the flags in state.captainMode and where
+       playCard() clears them.
+     · RESOLVED WITH THE TRICK — tap it any time in the trick; nothing
+       happens until captainEffectiveWinner() re-decides who won, reading
+       the marks left here (Escudo, Roba baza, Piedra).
+     · PASSIVE OR IMMEDIATE — never resolved against a trick at all:
+       Segunda oportunidad is checked at endCaptainRound() and consumed only
+       if it actually saves the mission; Mira una carta, Cambio rápido,
+       Congelar and Espejo take effect the moment they're tapped (Cambio
+       rápido still refuses once you've played, since swapping a card you
+       no longer hold would be pointless).
+   Two of them needed something the engine didn't have. Cambio rápido can't
+   draw from a "mazo restante" — the whole deck is dealt up front — so it
+   swaps blind with a rival's hand instead. Mira una carta is the only thing
+   in Modo Capitán drawn for ONE seat: the peeked card lives in the shared
+   state like the hands themselves do, and only renderCaptainPeek() on the
+   owner's device draws it (the log tells the table THAT you looked, never
+   at what).
    Deliberately NOT wired into the AI: Capitán seats never open chests or
    use cards themselves yet, so a solo game against AI never surprises you
    with one of these — only a human seat's own choices ever touch this. */
@@ -3232,7 +3285,31 @@ const CAPTAIN_CARD_ICONS = {
   piedra: '<rect x="7" y="2" width="10" height="13" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.4"/>'
     + '<path d="M12 17 L12 21.5 M9 19.3 L12 22.3 L15 19.3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
 };
+// The five newest cards come across from the deck study (_deck-preview.html)
+// exactly as drawn there: a 48x48 box with fill/stroke set once on a wrapper
+// instead of per path. Kept at their own size rather than re-scaled by hand,
+// so the artwork can't drift from the version that was approved.
+const CAPTAIN_CARD_ICONS_48 = {
+  cambio_palo: '<path d="M8 19A17 17 0 0 1 36 11l3 4m-1-9 1 9-9-1M40 29a17 17 0 0 1-28 8l-3-4m1 9-1-9 9 1"/>'
+    + '<path d="m24 15 7 9-7 9-7-9Z" fill="currentColor" fill-opacity=".08"/>',
+  cambio_rapido: '<rect x="7" y="13" width="15" height="24" rx="3" fill="currentColor" fill-opacity=".08"/>'
+    + '<rect x="27" y="11" width="15" height="24" rx="3" fill="currentColor" fill-opacity=".08"/>'
+    + '<path d="M9 7h24l-4-4m4 4-4 4M39 41H15l4-4m-4 4 4 4"/>',
+  mira_carta: '<path d="M8 32V11a4 4 0 0 1 4-4h23a4 4 0 0 1 4 4v21"/>'
+    + '<path d="M5 29s7-10 19-10 19 10 19 10-7 10-19 10S5 29 5 29Z" fill="currentColor" fill-opacity=".07"/>'
+    + '<circle cx="24" cy="29" r="5"/><circle cx="24" cy="29" r="1.5" fill="currentColor" stroke="none"/>',
+  congelar: '<path d="M24 5v38M8 14l32 20M8 34l32-20M19 8l5 5 5-5M19 40l5-5 5 5'
+    + 'M8 20l7-2-1-7M34 37l-1-7 7-2M8 28l7 2-1 7M34 11l-1 7 7 2"/>',
+  espejo: '<rect x="11" y="5" width="26" height="34" rx="12" fill="currentColor" fill-opacity=".06"/>'
+    + '<path d="M18 43h12m-6-4v4M17 20l11-10M20 27l10-9"/>'
+    + '<path d="m35 29 2 4 5 2-5 2-2 4-1-4-5-2 5-2Z" fill="var(--pergamino)"/>',
+};
 function captainCardIconHtml(key){
+  const grande = CAPTAIN_CARD_ICONS_48[key];
+  if(grande){
+    return `<svg viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="currentColor" `
+      + `stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">${grande}</g></svg>`;
+  }
   const svg = CAPTAIN_CARD_ICONS[key];
   return svg ? `<svg viewBox="0 0 24 24" aria-hidden="true">${svg}</svg>` : '';
 }
@@ -3250,12 +3327,17 @@ const CAPTAIN_CARDS = {
   empujon:             {key:'empujon',              label:'Empujón',             emoji:'⬆️',
     desc:'Actívala antes de jugar: tu carta de esta baza gana a cualquier otra.', kind:'active', implemented:true, needsTarget:false},
   piedra:              {key:'piedra',               label:'Piedra',              emoji:'⬇️',
-    desc:'Elige la carta de un rival ya jugada en esta baza y anúlala: pasa a perder frente a cualquier otra.', kind:'active', implemented:true, needsTarget:true},
-  cambio_palo:         {key:'cambio_palo',          label:'Cambio de palo',      emoji:'🔄', kind:'active',  implemented:false},
-  cambio_rapido:       {key:'cambio_rapido',        label:'Cambio rápido',       emoji:'♻️', kind:'active',  implemented:false},
-  mira_carta:          {key:'mira_carta',           label:'Mira una carta',      emoji:'👁️', kind:'active',  implemented:false},
-  congelar:            {key:'congelar',             label:'Congelar',            emoji:'🧊', kind:'active',  implemented:false},
-  espejo:              {key:'espejo',               label:'Espejo',              emoji:'🪞', kind:'active',  implemented:false},
+    desc:'Elige la carta de un rival ya jugada en esta baza y anúlala: pasa a perder frente a cualquier otra.', kind:'active', implemented:true, needsTarget:true, targetKind:'seat'},
+  cambio_palo:         {key:'cambio_palo',          label:'Cambio de palo',      emoji:'🔄',
+    desc:'Actívala antes de jugar y elige un palo: tu carta de esta baza cuenta como si fuera de ese palo.', kind:'active', implemented:true, needsTarget:true, targetKind:'suit'},
+  cambio_rapido:       {key:'cambio_rapido',        label:'Cambio rápido',       emoji:'♻️',
+    desc:'Antes de jugar, cambia una carta al azar de tu mano por otra al azar de la de un rival. A ciegas: ninguno de los dos elige.', kind:'active', implemented:true, needsTarget:true, targetKind:'seat'},
+  mira_carta:          {key:'mira_carta',           label:'Mira una carta',      emoji:'👁️',
+    desc:'Mira una carta al azar de la mano de un rival. Solo la ves tú, y sigue en su mano.', kind:'active', implemented:true, needsTarget:true, targetKind:'seat'},
+  congelar:            {key:'congelar',             label:'Congelar',            emoji:'🧊',
+    desc:'Un rival se queda sin poder usar cartas especiales durante el resto de esta baza y toda la siguiente.', kind:'active', implemented:true, needsTarget:true, targetKind:'seat'},
+  espejo:              {key:'espejo',               label:'Espejo',              emoji:'🪞',
+    desc:'Repite sobre ti la última carta especial que haya usado un rival en esta ronda, contra el mismo objetivo que eligió.', kind:'active', implemented:true, needsTarget:false},
 };
 // Only implemented cards are ever actually drawn from a chest — the rest of
 // the roster above exists so the pool grows the moment each one is finished,
@@ -3287,16 +3369,97 @@ function captainOpenChest(seat){
 // Activates one of `seat`'s ACTIVE cards. Passive cards (segunda_oportunidad)
 // can't be activated by hand — they're checked automatically instead — and
 // every seat gets at most one activation per trick, active card or not.
-// Targets Piedra may legally be pointed at right now: whichever OTHER
-// seats have already played a card in the trick in progress.
-function captainPiedraTargets(seat){
-  return state.currentTrick.filter(t=>t.seat!==seat).map(t=>t.seat);
+// Which seats a targeted card may legally be pointed at right now. Piedra is
+// the odd one out — it works on a card already on the table, so it can only
+// name seats that have played in the trick in progress; the rest just need a
+// rival, and the two that reach into a hand need that hand to be non-empty.
+function captainSeatTargets(seat, key){
+  if(key==='piedra') return state.currentTrick.filter(t=>t.seat!==seat).map(t=>t.seat);
+  const rivales = [];
+  for(let s=0;s<state.numPlayers;s++) if(s!==seat) rivales.push(s);
+  if(key==='cambio_rapido' || key==='mira_carta') return rivales.filter(s=>state.hands[s].length>0);
+  return rivales; // congelar
+}
+// Congelar leaves a seat unable to spend specials "el resto de esta baza y
+// toda la siguiente" — stored as the first trick they're free again (see
+// frozenUntilTrick) so it can't be left behind by a path out of the trick.
+function captainFrozen(seat){
+  return state.captainMode.frozenUntilTrick[seat] > state.captainMode.trickNumber;
+}
+// The most recent special a rival spent this round, which is what Espejo
+// repeats. Espejo itself is skipped, so two mirrors in a row reach past each
+// other to the real card rather than reflecting each other forever.
+function captainMirrorSource(seat){
+  const h = state.captainMode.specialHistory;
+  for(let i=h.length-1;i>=0;i--){
+    if(h[i].seat!==seat && h[i].key!=='espejo') return h[i];
+  }
+  return null;
+}
+// Applies one card's own rule and nothing else — no inventory, no
+// one-per-trick, no logging. Split out from captainUseCard so Espejo can
+// replay somebody else's card through exactly the same code that ran it the
+// first time. Returns false if the card's own rule says it can't be used now,
+// in which case nothing has been touched and the card is not spent.
+function captainApplyEffect(seat, key, targetSeat, suit){
+  const cm = state.captainMode;
+  const yaJugueEstaBaza = state.currentTrick.some(t=>t.seat===seat);
+  if(key==='ignorar_palo'){
+    if(yaJugueEstaBaza) return false; // hay que armarla antes de tu jugada, como el resto de las "antes de jugar"
+    cm.skipFollowSuit[seat] = true;
+  } else if(key==='mini_triunfo'){
+    if(yaJugueEstaBaza) return false;
+    cm.miniTriunfoArmed[seat] = true;
+  } else if(key==='empujon'){
+    if(yaJugueEstaBaza) return false;
+    cm.empujonArmed[seat] = true;
+  } else if(key==='cambio_palo'){
+    if(yaJugueEstaBaza) return false;
+    if(!SUITS.includes(suit)) return false;
+    cm.cambioPaloArmed[seat] = suit;
+  } else if(key==='escudo'){
+    cm.escudoSeats.add(seat);
+  } else if(key==='roba_baza'){
+    if(cm.trickNumber+1 >= cm.handSize) return false; // "no puede utilizarse en la última baza"
+    cm.robaBazaSeats.add(seat);
+  } else if(key==='piedra'){
+    const objetivos = captainSeatTargets(seat, 'piedra');
+    if(!objetivos.includes(targetSeat)) return false;
+    cm.piedraTarget = targetSeat;
+  } else if(key==='congelar'){
+    if(!captainSeatTargets(seat, 'congelar').includes(targetSeat)) return false;
+    cm.frozenUntilTrick[targetSeat] = cm.trickNumber + 2; // esta baza y la siguiente
+  } else if(key==='mira_carta'){
+    if(!captainSeatTargets(seat, 'mira_carta').includes(targetSeat)) return false;
+    const mano = state.hands[targetSeat];
+    const vista = mano[Math.floor(Math.random()*mano.length)];
+    // Se guarda en el estado compartido, como las manos, y solo se dibuja en
+    // el dispositivo de quien la miró (ver renderCaptainPeek). El reparto ya
+    // viaja entero a todos los clientes, así que esto no abre nada nuevo.
+    cm.peeks[seat] = {targetSeat, cardId: vista.id, trick: cm.trickNumber};
+  } else if(key==='cambio_rapido'){
+    if(yaJugueEstaBaza) return false;
+    if(!captainSeatTargets(seat, 'cambio_rapido').includes(targetSeat)) return false;
+    const mia = state.hands[seat], suya = state.hands[targetSeat];
+    if(!mia.length || !suya.length) return false;
+    const i = Math.floor(Math.random()*mia.length), j = Math.floor(Math.random()*suya.length);
+    const tmp = mia[i]; mia[i] = suya[j]; suya[j] = tmp;
+    sortHand(mia, state.trumpSuit);
+    sortHand(suya, state.trumpSuit);
+  } else if(key==='espejo'){
+    const fuente = captainMirrorSource(seat);
+    if(!fuente) return false;
+    return captainApplyEffect(seat, fuente.key, fuente.targetSeat, fuente.suit);
+  } else {
+    return false; // no implementada todavía — no debería poder llegar aquí
+  }
+  return true;
 }
 // Activates one of `seat`'s ACTIVE cards — `targetSeat` only matters for
 // Piedra. Every card shares the same outer gates (exists, one-per-trick);
 // each `if` below is that one card's own extra rule, straight from its
 // description in CAPTAIN_CARDS.
-function captainUseCard(seat, key, targetSeat){
+function captainUseCard(seat, key, targetSeat, suit){
   if(state.subastaoMode!=='capitan' || state.phase!=='playing') return;
   const m = CAPTAIN_CARDS[key];
   if(!m || m.kind!=='active') return;
@@ -3304,33 +3467,21 @@ function captainUseCard(seat, key, targetSeat){
   const idx = inv.indexOf(key);
   if(idx===-1) return;
   if(state.captainMode.usedCardThisTrick[seat]) return;
-  const yaJugueEstaBaza = state.currentTrick.some(t=>t.seat===seat);
+  if(captainFrozen(seat)) return; // congelado por un rival
   const cm = state.captainMode;
 
-  if(key==='ignorar_palo'){
-    if(yaJugueEstaBaza) return; // hay que armarla antes de tu jugada, como el resto de las "antes de jugar"
-    cm.skipFollowSuit[seat] = true;
-  } else if(key==='mini_triunfo'){
-    if(yaJugueEstaBaza) return;
-    cm.miniTriunfoArmed[seat] = true;
-  } else if(key==='empujon'){
-    if(yaJugueEstaBaza) return;
-    cm.empujonArmed[seat] = true;
-  } else if(key==='escudo'){
-    cm.escudoSeats.add(seat);
-  } else if(key==='roba_baza'){
-    if(cm.trickNumber+1 >= cm.handSize) return; // "no puede utilizarse en la última baza"
-    cm.robaBazaSeats.add(seat);
-  } else if(key==='piedra'){
-    const objetivos = captainPiedraTargets(seat);
-    if(!objetivos.length || !objetivos.includes(targetSeat)) return;
-    cm.piedraTarget = targetSeat;
-  } else {
-    return; // no implementada todavía — no debería poder llegar aquí
-  }
+  if(!captainApplyEffect(seat, key, targetSeat, suit)) return;
+
   inv.splice(idx,1);
   cm.usedCardThisTrick[seat] = true;
-  if(key==='piedra'){
+  cm.specialHistory.push({seat, key, targetSeat, suit});
+  if(key==='espejo'){
+    const fuente = captainMirrorSource(seat);
+    state.log.push(tf('{0} usa: {1} {2} — repite {3}.', state.seatNames[seat], m.emoji, t(m.label),
+      t(CAPTAIN_CARDS[fuente.key].label)));
+  } else if(key==='cambio_palo'){
+    state.log.push(tf('{0} usa: {1} {2} → {3}.', state.seatNames[seat], m.emoji, t(m.label), suitName(suit)));
+  } else if(m.targetKind==='seat'){
     state.log.push(tf('{0} usa: {1} {2} → {3}.', state.seatNames[seat], m.emoji, t(m.label), state.seatNames[targetSeat]));
   } else {
     state.log.push(tf('{0} usa: {1} {2}.', state.seatNames[seat], m.emoji, t(m.label)));
@@ -3365,6 +3516,11 @@ function captainPickTarget(targetSeat){
   captainUseCard(mySeatIndex(), capitanCardSeleccionada, targetSeat);
   capitanCardSeleccionada = null;
 }
+function captainPickSuit(suit){
+  if(!capitanCardSeleccionada) return;
+  captainUseCard(mySeatIndex(), capitanCardSeleccionada, null, suit);
+  capitanCardSeleccionada = null;
+}
 // Your OWN inventory strip, next to your hand: a chest button (with however
 // many you have queued) and up to 3 card icons. Tapping a card doesn't use
 // it straight away — it opens the "qué hace" panel underneath with a Usar
@@ -3378,6 +3534,8 @@ function renderCaptainInventory(seat){
     return `<button class="captain-card-btn ${activa?'sel':''}" onclick="captainSelectCard(${seat},'${key}')" title="${t(m.label)}">
       <span class="em">${captainCardIconHtml(key)}</span></button>`;
   });
+  // Congelado: las cartas siguen a la vista y se pueden abrir para leerlas,
+  // lo único que no se puede es gastarlas (ver captainUseCard).
   for(let i=inv.length;i<3;i++) slots.push('<div class="captain-card-empty"></div>');
   document.getElementById('captainInventoryCards').innerHTML = slots.join('');
 
@@ -3387,6 +3545,23 @@ function renderCaptainInventory(seat){
   document.getElementById('captainChestCount').textContent = n;
 
   renderCaptainCardDetail(seat);
+  renderCaptainPeek(seat);
+}
+// The card Mira una carta showed you, kept on screen until the round ends.
+function renderCaptainPeek(seat){
+  const el = document.getElementById('captainPeek');
+  if(!el) return;
+  const p = state.captainMode.peeks && state.captainMode.peeks[seat];
+  const carta = p && state.hands[p.targetSeat] && state.hands[p.targetSeat].find(c=>c.id===p.cardId);
+  if(!p || !carta){
+    // Sin espiar todavía, o la carta ya se ha jugado y está a la vista de todos.
+    el.classList.add('hidden');
+    el.innerHTML = '';
+    return;
+  }
+  el.classList.remove('hidden');
+  el.innerHTML = `<span>${tf('Viste en la mano de {0}:', state.seatNames[p.targetSeat])}</span>`
+    + cardHtml(carta, 'mini');
 }
 // The "qué hace / usar" panel for whichever card is currently selected —
 // hidden entirely when nothing is selected.
@@ -3402,24 +3577,37 @@ function renderCaptainCardDetail(seat){
   document.getElementById('captainCardDetailIcon').innerHTML = captainCardIconHtml(key);
   document.getElementById('captainCardDetailName').textContent = t(m.label);
   document.getElementById('captainCardDetailDesc').textContent = t(m.desc);
-  const usedYa = state.captainMode.usedCardThisTrick[seat];
+  // Congelado cuenta igual que "ya has gastado la de esta baza": la carta se
+  // puede leer, pero ni el botón ni los objetivos responden.
+  const usedYa = state.captainMode.usedCardThisTrick[seat] || captainFrozen(seat);
   const targetsEl = document.getElementById('captainCardTargets');
   const useBtn = document.getElementById('captainUseBtn');
   if(m.kind!=='active'){
     // Segunda oportunidad: nothing to tap — just the explanation.
     targetsEl.classList.add('hidden');
     useBtn.classList.add('hidden');
+  } else if(m.targetKind==='suit'){
+    // Cambio de palo pide un palo, no un asiento: se ofrecen los cuatro con su
+    // propio dibujo, el mismo botón que ya usa la elección de triunfo.
+    useBtn.classList.add('hidden');
+    targetsEl.classList.toggle('hidden', usedYa);
+    targetsEl.innerHTML = usedYa ? '' : SUITS.map(s=>
+      `<button class="ghost-btn" onclick="captainPickSuit('${s}')" title="${suitName(s)}" aria-label="${suitName(s)}">`
+      + `${suitIcon(s)}<span>${suitName(s)}</span></button>`).join('');
   } else if(m.needsTarget){
     useBtn.classList.add('hidden');
-    const objetivos = captainPiedraTargets(seat);
+    const objetivos = captainSeatTargets(seat, key);
     targetsEl.classList.toggle('hidden', usedYa);
     targetsEl.innerHTML = usedYa ? '' : (objetivos.length
       ? objetivos.map(s=>`<button class="ghost-btn" onclick="captainPickTarget(${s})">${state.seatNames[s]}</button>`).join('')
-      : `<p class="toggle-hint">${t('Todavía no hay ninguna carta rival en esta baza.')}</p>`);
+      : `<p class="toggle-hint">${key==='piedra'
+          ? t('Todavía no hay ninguna carta rival en esta baza.')
+          : t('Ahora mismo no hay ningún rival al que apuntar.')}</p>`);
   } else {
     targetsEl.classList.add('hidden');
     useBtn.classList.remove('hidden');
-    useBtn.disabled = usedYa;
+    // Espejo sin nada que reflejar no se puede gastar: sería tirar la carta.
+    useBtn.disabled = usedYa || (key==='espejo' && !captainMirrorSource(seat));
   }
 }
 
@@ -5414,7 +5602,7 @@ function applyNetAction(action){
     case 'captainTrump': chooseCaptainTrump(action.suit); break;
     case 'captainMission': chooseCaptainMission(action.tier); break;
     case 'captainOpenChest': captainOpenChest(action.seat); break;
-    case 'captainUseCard': captainUseCard(action.seat, action.key, action.targetSeat); break;
+    case 'captainUseCard': captainUseCard(action.seat, action.key, action.targetSeat, action.suit); break;
     case 'advance': onAdvanceClicked(); break;
   }
 }
@@ -5525,9 +5713,11 @@ captainOpenChest = function(seat){
   if(netShouldForward()){ netSendAction('captainOpenChest', {seat}); return; }
   _localCaptainOpenChest(seat);
 };
-captainUseCard = function(seat, key, targetSeat){
-  if(netShouldForward()){ netSendAction('captainUseCard', {seat, key, targetSeat}); return; }
-  _localCaptainUseCard(seat, key, targetSeat);
+captainUseCard = function(seat, key, targetSeat, suit){
+  // Firestore rechaza `undefined`, y la mayoría de las especiales no llevan ni
+  // objetivo ni palo — se mandan como null explícito.
+  if(netShouldForward()){ netSendAction('captainUseCard', {seat, key, targetSeat: targetSeat ?? null, suit: suit ?? null}); return; }
+  _localCaptainUseCard(seat, key, targetSeat, suit);
 };
 </script>
 
