@@ -284,6 +284,18 @@
   .card.mini svg{width:11px; height:11px;}
   .card.mini img.suit-img{width:14px; height:14px;}
 
+  /* Figure cards: the drawing is the card. It bleeds to the rounded corners
+     (the frame is the .card box itself), so no padding here — the viewBox in
+     courtArt() is already cropped to the figure. The rank letter moves to the
+     corner and drops to a size that reads without fighting the illustration. */
+  .card.court-card{justify-content:flex-start; overflow:hidden;}
+  .card.court-card svg.court{width:100%; height:100%; display:block;}
+  .card.court-card .rk-corner{
+    position:absolute; top:2px; left:4px; font-size:0.62rem; line-height:1;
+    z-index:1; text-shadow:0 0 3px var(--pergamino), 0 0 3px var(--pergamino);
+  }
+  .card.mini.court-card .rk-corner{top:1px; left:3px; font-size:0.54rem;}
+
   /* HAND */
   /* Your cards sit on a faint band of cloth, watermarked with a caña and a
      plate of olives drawn as line art. Both are masks rather than images, so
@@ -1793,6 +1805,126 @@ const SUIT_IMG = {
 // as the other three.
 function suitIcon(suit){
   return `<img class="suit-img suit-${suit}" src="${SUIT_IMG[suit]}" alt="" aria-hidden="true">`;
+}
+
+/* ---------- COURT ILLUSTRATIONS ----------
+   Rey, caballo and sota are drawn rather than spelled out. The three
+   silhouettes are shared across the four suits: the garment is painted with
+   `currentColor`, which .card.oros/.copas/.espadas/.bastos already set, so one
+   set of paths yields twelve distinct figures. The suit itself is the same
+   raster pip the number cards use (SUIT_IMG), placed in the figure's hand
+   (rey, sota) or on the saddlecloth (caballo) — the art is never a second
+   drawing of a palo that would drift from the original.
+   Coordinates are in the preview's 100x150 card space; courtArt() crops to the
+   part the figure actually occupies so it fills a 39x54 card in the game. */
+const COURT_ART = {
+ Rey:`
+   <path d="M29 112h43" stroke="currentColor" opacity=".18"/>
+   <path d="M35 56 25 66 29 107 44 112 68 108 70 72 58 57Z" fill="currentColor"/>
+   <path d="m35 57 8 6-7 43-7-3-2-36Z" fill="#fffefa" fill-opacity=".2" stroke="none"/>
+   <path d="m42 60 14-2 8 51-26 3Z" fill="#f1e4c8"/>
+   <path d="m49 69-4 37m11-36 3 34" stroke="#bd9b61" stroke-width=".7"/>
+   <path d="m37 56 8 10 6-6 5 5 5-10-9-4Z" fill="#e0be75"/>
+   <path d="m41 57 3 5m13-7-2 6" stroke="#fffefa" stroke-width="1.2"/>
+   <path d="M38 37c-2 2-2 8-1 13l5 7 14-1 4-8-2-11Z" fill="#535a49"/>
+   <path d="M41 37h14v10l-3 8-6 1-5-7Z" fill="#e6c7a4" stroke="#785d4c" stroke-width=".65"/>
+   <path d="M40 46c3 5 5 3 8 5 3-3 5-1 8-5v7l-7 8-8-7Z" fill="#535a49" stroke="none"/>
+   <path d="m44 45 2-.2m6 0h1m-4 0-1 5h2" fill="none" stroke="#61523f" stroke-width=".65"/>
+   <path d="m44 52 4 1 4-1" fill="none" stroke="#e6c7a4" stroke-width=".65"/>
+   <path d="m37 29 6 4 5-8 5 8 6-4-2 10H39Z" fill="#d5b36d" stroke="#9b793b" stroke-width=".8"/>
+   <path d="M40 35h16" stroke="#fff2cb" stroke-width=".9"/>
+   <path d="m48 33 1.5 2-1.5 2-1.5-2Z" fill="currentColor" stroke="none"/>
+   <path d="M35 65 31 82l14 8 3-6-9-8 4-8" fill="currentColor"/>
+   <path d="m32 79 4-3 10 7-3 6Z" fill="#d5b36d" stroke="none"/>
+   <path d="m43 84 5-1 7 4-1 3-7-1-3-2Z" fill="#e6c7a4" stroke="#785d4c" stroke-width=".65"/>
+   <path d="m62 62 8 10-2 9-5-1-2-11" fill="currentColor"/>
+   <path d="m62 77 8 1-1 5-7-1Z" fill="#d5b36d" stroke="none"/>
+   <path d="m64 76 1-7 4-1 2 3-3 7" fill="#e6c7a4" stroke="#785d4c" stroke-width=".65"/>
+   <path d="m38 108 4 3 22-3" fill="none" stroke="#d5b36d" stroke-width="1.8"/>
+   <path d="m34 87 1 12m29-10 1 10" fill="none" stroke="#fffefa" stroke-opacity=".35" stroke-width=".8"/>
+ `,
+ Caballo:`
+   <path d="M22 115h58" stroke="currentColor" opacity=".18"/>
+   <path d="M29 74c-12-1-9 14-13 22 8-2 10-9 10-15l6-1" fill="currentColor"/>
+   <path d="m33 87 8 2-8 19 3 5h-8l-1-7Z" fill="#d2ceba" stroke="#7a806f" stroke-width=".75"/>
+   <path d="m61 86 7-1-3 17 10 6-2 4-15-8Z" fill="#d2ceba" stroke="#7a806f" stroke-width=".75"/>
+   <path d="M27 75c9-6 23 0 30-3 7-3 4-14 12-19l4 2 4 18-7 13c-12 11-29 8-41 2Z" fill="#f3ecd9" stroke="#65705e" stroke-width=".85"/>
+   <path d="m29 84 9 6 1 20 5 3-1 3H33l-2-22Z" fill="#f3ecd9" stroke="#65705e" stroke-width=".85"/>
+   <path d="m58 87 9-3-2 10-8 17 4 2-1 3h-9l-1-6Z" fill="#f3ecd9" stroke="#65705e" stroke-width=".85"/>
+   <path d="M32 112h10l1 4H33Zm19 0h9v4h-9Z" fill="#576050" stroke="none"/>
+   <path d="M59 76c2-12 4-24 11-26l7 8-8 4-2 15Z" fill="currentColor"/>
+   <path d="m69 54 1-9 5 7 3-4 1 10 6 8-2 7-8-2-6-12Z" fill="#f3ecd9" stroke="#65705e" stroke-width=".85"/>
+   <path d="m70 54 3-4 1 5m5 3 3 8-4 2" fill="none" stroke="#c5b894" stroke-width="1"/>
+   <circle cx="77" cy="59" r="1" fill="#3b493d" stroke="none"/>
+   <path d="m76 67 8 1m-12-12 7 15" stroke="currentColor" stroke-width="1.4" fill="none"/>
+   <path d="M78 70c-8 5-13-2-21-7" fill="none" stroke="#a48449" stroke-width="1"/>
+   <path d="m34 73 23 1-2 17-10 5-11-7Z" fill="currentColor"/>
+   <path d="m36 76 18 1-2 12-7 4-9-6Z" fill="none" stroke="#d6b473" stroke-width="1"/>
+   <path d="m37 72 20 1" stroke="#825e34" stroke-width="2.2"/>
+   <path d="m42 47-9 6-4 15 12 1 7-17Z" fill="currentColor" opacity=".8"/>
+   <path d="m43 47 9 1 7 18-8 8-12-5Z" fill="#d9b775" stroke="#9c7d46" stroke-width=".7"/>
+   <path d="m43 52 3 13 8-1" fill="none" stroke="#f5e7c6" stroke-width="1"/>
+   <path d="m41 69 13 1 2 14-6 10-5-3 4-10-6-5Z" fill="currentColor"/>
+   <path d="m47 87 6 2-3 8h-9v-4h5Z" fill="#425143" stroke="none"/>
+   <path d="m50 49 8 10 9 2-1 5-12-3-9-9" fill="currentColor"/>
+   <path d="m63 60 6 1 1 3-4 2-3-1Z" fill="#e6c7a4" stroke="#785d4c" stroke-width=".6"/>
+   <path d="m43 35 10-1 2 8-4 7-7-3Z" fill="#e6c7a4" stroke="#785d4c" stroke-width=".65"/>
+   <path d="M40 37c-1-10 10-14 16-6l1 6-8-1-7 5Z" fill="#aab6aa" stroke="#5c7062" stroke-width=".8"/>
+   <path d="M41 34h15m-9-6v7" stroke="#f7f4e7" stroke-width="1"/>
+   <path d="m52 39 1 4-3 1m1-5h1" fill="none" stroke="#725b43" stroke-width=".65"/>
+   <path d="M46 27c-1-7 7-9 11-7-1 5-6 7-11 7Z" fill="currentColor" stroke="none"/>
+ `,
+ Sota:`
+   <path d="M27 115h47" stroke="currentColor" opacity=".18"/>
+   <path d="m41 87 9 1-2 24h-6l-3-13Z" fill="#d9b775" stroke="#9c7d46" stroke-width=".7"/>
+   <path d="m54 87 8-1 3 24-6 1-5-12Z" fill="#f1e4c8"/>
+   <path d="m41 108 8 1v6H34c-1-3 4-3 7-7Zm17 1 7-1 2 4 7 1v3H58Z" fill="#425143" stroke="none"/>
+   <path d="m39 60 18-3 8 12-3 10 4 16-15-3-6 4-11-5 5-15Z" fill="currentColor"/>
+   <path d="m48 61 7-1 1 32-5-1-5 3Z" fill="#f1e4c8"/>
+   <path d="m49 65 5-1m-5 7h5m-5 6h5" stroke="#b9995e" stroke-width=".7"/>
+   <path d="m37 81 25-1 1 4-26 1Z" fill="#d5b36d" stroke="#9c7d46" stroke-width=".7"/>
+   <rect x="47" y="80" width="5" height="5" rx=".6" fill="none" stroke="#f8eccf" stroke-width=".9"/>
+   <path d="m39 61-8 3-5 13 4 5 12-11" fill="currentColor"/>
+   <path d="m28 72 6 2-3 6-6-2Z" fill="#d5b36d" stroke="none"/>
+   <path d="m26 73-2-6 1-4h3l3 7-1 5Z" fill="#e6c7a4" stroke="#785d4c" stroke-width=".65"/>
+   <path d="m58 60 9 5 6 14-10 6-3-5 7-4-6-8" fill="currentColor"/>
+   <path d="m64 77 3 5-5 3-3-5Z" fill="#d5b36d" stroke="none"/>
+   <path d="m62 80-5-1-3 3 2 3 6-1Z" fill="#e6c7a4" stroke="#785d4c" stroke-width=".65"/>
+   <path d="M42 39c-4 4-4 13 2 17l12-1 3-13-6-7Z" fill="#6a5940"/>
+   <path d="m44 41 12-1 1 9-3 9-8-2-3-7Z" fill="#e6c7a4" stroke="#785d4c" stroke-width=".65"/>
+   <path d="M43 43c4 0 8-1 12-5l-11-1Z" fill="#6a5940" stroke="none"/>
+   <path d="m52 46 1 5h-2m-4-5h1m6-1h1m-6 9 4-.2" fill="none" stroke="#785d4c" stroke-width=".65"/>
+   <path d="m42 58 4-4 5 5 5-4 2 4-6 6Z" fill="#f1e4c8"/>
+   <path d="M38 40c-3-4 3-10 10-11 9-2 12 2 14 7l-6 6Z" fill="currentColor"/>
+   <path d="m38 40 19 2 5-6" fill="none" stroke="#d5b36d" stroke-width="2"/>
+   <path d="M53 32c0-7 4-13 10-15 3 6-2 12-10 15Z" fill="#d9b775" stroke="#9c7d46" stroke-width=".6"/>
+   <path d="m53 34 8-13" fill="none" stroke="#fff3cf" stroke-width=".8"/>
+   <path d="m39 87-1 3m22-3 2 4" stroke="#fffefa" stroke-opacity=".4" stroke-width=".8"/>
+ `
+};
+
+// The pip inside a figure is the plain SUIT_IMG bitmap, untouched. Espadas gets
+// the same 1.3 optical bump it gets everywhere else (see img.suit-img.suit-espadas):
+// the sword's ink fills only ~30% of its square.
+function courtPip(suit, x, y, size){
+  const w = size * (suit === 'espadas' ? 1.3 : 1);
+  return `<image href="${SUIT_IMG[suit]}" x="${x - w/2}" y="${y - w/2}" width="${w}" height="${w}"/>`;
+}
+
+// Where each rank holds its suit: the rey raises it, the sota offers it out to
+// the side, the caballo carries it on the horse's cloth.
+const COURT_PIP = { Rey:[68,64,26], Caballo:[45,84,15], Sota:[26,60,25] };
+
+function courtArt(suit, rank){
+  const [px, py, ps] = COURT_PIP[rank];
+  // The crop has to clear the widest extremes across all twelve faces: the
+  // caballo's horse reaches x=85 on the right, and the sota's espada — the one
+  // pip scaled 1.3 — reaches x=9.75 on the left. 76x105 keeps the 39:54 ratio
+  // of the card box, so the figure fills it without distortion.
+  return `<svg class="court" viewBox="9 17 76 105" aria-hidden="true">`
+    + `<g fill="none" stroke="currentColor" stroke-width=".75" stroke-linejoin="round" stroke-linecap="round">${COURT_ART[rank]}</g>`
+    + courtPip(suit, px, py, ps)
+    + `</svg>`;
 }
 
 /* ---------- STATE ----------
@@ -4417,6 +4549,16 @@ function renderHelp(activeSeat){
    always just "whatever the current state says it should be" rather than
    being updated incrementally. */
 function cardHtml(card, extraClass){
+  // Figures swap the centred letter+pip for the illustration, which fills the
+  // whole card; the rank letter shrinks into the top-left corner so the face
+  // stays readable at 39x54. Number cards are unchanged.
+  if(COURT_ART[card.rank]){
+    return `<div class="card court-card ${card.suit} ${extraClass||''}" data-id="${card.id}">
+      <div class="rk-corner">${RANK_SHORT[card.rank]}</div>
+      ${courtArt(card.suit, card.rank)}
+      ${card.pts>0?`<div class="pts">${card.pts}</div>`:''}
+    </div>`;
+  }
   return `<div class="card ${card.suit} ${extraClass||''}" data-id="${card.id}">
     <div>${RANK_SHORT[card.rank]}</div>
     <div class="icon-wrap">${suitIcon(card.suit)}</div>
