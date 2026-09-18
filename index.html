@@ -272,6 +272,7 @@
     font-weight:700; font-size:1.06rem; flex-shrink:0; position:relative;
   }
   .card .pts{position:absolute; bottom:3px; right:5px; font-size:0.44rem; font-family:'Inter'; color:var(--piedra); font-weight:600;}
+  .trump-card-mini{vertical-align:middle; margin-left:2px;}
   .card .icon-wrap{margin-top:2px; height:16px; display:flex; align-items:center; justify-content:center;}
   .card svg{width:13px; height:13px;}
   .card img.suit-img{width:16px; height:16px; object-fit:contain; display:block;}
@@ -291,11 +292,12 @@
   .card.court-card .court-label{
     position:absolute; bottom:0; left:0; right:0; height:15px; padding:0 3px;
     display:flex; align-items:center; justify-content:space-between;
-    background:#fff; border-top:1px solid #e4e1d8; font:bold 13px/1 Arial,sans-serif;
+    background:#fff; border-top:1px solid #e4e1d8;
+    font-family:'Fraunces', serif; font-weight:700; font-size:0.8rem;
   }
   .card.court-card .court-label img.suit-img{width:13px; height:13px;}
   .card.court-card .court-label img.suit-espadas{transform:none;}
-  .card.court-card .court-label .pts{position:static; font:7px/1 Arial,sans-serif;}
+  .card.court-card .court-label .pts{position:static; font-family:'Inter'; font-size:0.44rem; font-weight:600; color:var(--piedra);}
   .card.mini.court-card svg.court{top:7px; left:5px; width:24px; height:26px;}
   .card.mini.court-card .court-label{height:12px; padding:0 2px; font-size:11px;}
   .card.mini.court-card .court-label img.suit-img{width:11px; height:11px;}
@@ -804,10 +806,10 @@
   }
   .side-tab .chevron{font-size:0.75rem; line-height:1; transition:transform .28s ease;}
   .side-tab .dot{width:3px; height:3px; border-radius:50%; background:var(--bg); opacity:.7;}
-  .side-drawer.open .side-tab{transform:translateX(-156px);}
+  .side-drawer.open .side-tab{transform:translateX(-204px);}
   .side-drawer.open .side-tab .chevron{transform:rotate(180deg);}
   .side-drawer-panel{
-    position:absolute; bottom:0; right:0; width:156px; height:54px;
+    position:absolute; bottom:0; right:0; width:204px; height:54px;
     background:var(--pergamino);
     border-radius:14px; box-shadow:0 10px 28px rgba(0,0,0,0.25);
     padding:0 10px; display:flex; align-items:center; gap:8px;
@@ -1245,9 +1247,10 @@
 <div class="side-drawer" id="sideDrawer">
   <div class="side-scrim" onclick="closeSideDrawer()"></div>
   <div class="side-drawer-panel">
-    <button title="Nueva partida" onclick="closeSideDrawer(); restartSameSetup();">+</button>
+    <button title="Volver al inicio" onclick="closeSideDrawer(); goHome();">⌂</button>
     <button title="Ajustes" onclick="closeSideDrawer(); openSettings();">⚙</button>
     <button class="side-help-btn" id="sideHelpBtn" title="Ayuda" onclick="toggleHelpFromDrawer()">i</button>
+    <button title="Nueva partida" onclick="closeSideDrawer(); restartSameSetup();">+</button>
   </div>
   <button class="side-tab" id="sideTab" onclick="toggleSideDrawer()" aria-label="Abrir menú">
     <span class="chevron">‹</span>
@@ -4176,6 +4179,18 @@ function restartSameSetup(){
 }
 function closeOverlay(){ restartSameSetup(); }
 
+// "Volver al inicio" (side drawer): leaves any online room, drops the
+// current match, and takes the player back to the very first launcher
+// screen so they can pick a different game/modality entirely — unlike
+// restartSameSetup(), which replays the same setup.
+function goHome(){
+  netTeardown();
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('settingsOverlay').classList.add('hidden');
+  launcherGo(1);
+  document.getElementById('launcherOverlay').classList.remove('hidden');
+}
+
 /* ---------- PASS-AND-PLAY (multiple humans sharing this phone) ---------- */
 // Seats 0..humanPlayers-1 are controlled by real people taking turns with the
 // phone; the rest are filled in by AI. Whenever it's a different human seat's
@@ -4723,6 +4738,9 @@ function renderHelp(activeSeat){
    always just "whatever the current state says it should be" rather than
    being updated incrementally. */
 function cardHtml(card, extraClass){
+  // Los puntos por carta (as/tres/figuras) solo cuentan en el Subastao — en
+  // la Pocha lo que importa son las bazas, así que no se muestran ahí.
+  const showPts = card.pts>0 && state.gameType!=='pocha';
   // Enlarged portraits with a rank/suit strip that survives row overlap.
   if(COURT_ART[card.rank]){
     return `<div class="card court-card ${card.suit} ${extraClass||''}" data-id="${card.id}">
@@ -4730,20 +4748,24 @@ function cardHtml(card, extraClass){
       <div class="court-label">
         <span>${RANK_SHORT[card.rank]}</span>
         ${suitIcon(card.suit)}
-        ${card.pts>0?`<span class="pts">${card.pts}</span>`:''}
+        ${showPts?`<span class="pts">${card.pts}</span>`:''}
       </div>
     </div>`;
   }
   return `<div class="card ${card.suit} ${extraClass||''}" data-id="${card.id}">
     <div>${RANK_SHORT[card.rank]}</div>
     <div class="icon-wrap">${suitIcon(card.suit)}</div>
-    ${card.pts>0?`<div class="pts">${card.pts}</div>`:''}
+    ${showPts?`<div class="pts">${card.pts}</div>`:''}
   </div>`;
 }
 
 // The trump on the mesa is shown with the suit's own drawing, in colour, the
-// same artwork the cards carry — not its name spelled out.
-function trumpInfoHtml(suit){
+// same artwork the cards carry — not its name spelled out. In la Pocha the
+// trump comes from an actual card turned up at the deal, so that card (not
+// just its suit) is what's shown; el Subastao elige el palo sin carta de
+// por medio, así que ahí se mantiene solo el icono.
+function trumpInfoHtml(suit, card){
+  if(card) return `${t('Triunfo')}: ${cardHtml(card, 'mini trump-card-mini')}`;
   return `${t('Triunfo')}: <span class="trump-pip" title="${suitName(suit)}" aria-label="${suitName(suit)}">${suitIcon(suit)}</span>`;
 }
 function seatAiTag(s){
@@ -4949,7 +4971,7 @@ function render(){
 
   // mesa info
   if(state.gameType==='pocha'){
-    document.getElementById('trumpInfo').innerHTML = state.trumpSuit ? trumpInfoHtml(state.trumpSuit)
+    document.getElementById('trumpInfo').innerHTML = state.trumpSuit ? trumpInfoHtml(state.trumpSuit, state.pocha.trumpCard)
       : t(state.pocha.auctionRound ? 'Triunfo: a subasta' : 'Sin triunfo esta ronda');
     const roundSize = state.pocha.roundSizes[state.pocha.roundIndex];
     document.getElementById('bidInfo').textContent = tf(roundSize===1 ? 'Ronda {0}/{1} · {2} carta' : 'Ronda {0}/{1} · {2} cartas',
