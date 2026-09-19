@@ -273,10 +273,6 @@
     box-shadow:0 3px 8px rgba(0,0,0,0.28); font-family:'Fraunces', serif;
     font-weight:700; font-size:1.06rem; flex-shrink:0; position:relative; isolation:isolate;
   }
-  .card::after{
-    content:""; position:absolute; inset:2px; border:0.6px solid #8c826d;
-    border-radius:3px; pointer-events:none; z-index:3;
-  }
   .card .pts{position:absolute; bottom:3px; right:5px; font-size:0.44rem; font-family:'Inter'; color:var(--piedra); font-weight:600; z-index:2; background:var(--card-paper);}
   .trump-card-mini{vertical-align:middle; margin-left:2px;}
   .card.mini{width:32px; height:45px; --card-index-size:11px; --card-index-pip:8px;}
@@ -4670,12 +4666,16 @@ function cardHtml(card, extraClass){
   const isCourt = Object.hasOwn(COURT_ART, card.rank);
   // Number cards already show the suit as a count of real pips in the
   // center — repeating it in the corner index was redundant, so only the
-  // rank goes there. Court cards keep rank+suit (no pips to read the suit off).
-  const index = isCourt ? `<span>${RANK_SHORT[card.rank]}</span>${suitIcon(card.suit)}` : `<span>${RANK_SHORT[card.rank]}</span>`;
+  // rank goes there. Court cards keep rank+suit (no pips to read the suit
+  // off), letter-over-suit at top-right and, mirrored, suit-over-letter at
+  // bottom-left.
+  const letter = `<span>${RANK_SHORT[card.rank]}</span>`;
+  const indexTR = isCourt ? `${letter}${suitIcon(card.suit)}` : letter;
+  const indexBL = isCourt ? `${suitIcon(card.suit)}${letter}` : letter;
   return `<div class="card ${isCourt?'court-card':''} ${card.suit} ${extraClass||''}" data-id="${card.id}" aria-label="${cardLabel(card)}">
     ${isCourt ? courtArt(card.rank, card.suit) : cardPipsHtml(card)}
-    <div class="card-corner top-right" aria-hidden="true">${index}</div>
-    <div class="card-corner bottom-left" aria-hidden="true">${index}</div>
+    <div class="card-corner top-right" aria-hidden="true">${indexTR}</div>
+    <div class="card-corner bottom-left" aria-hidden="true">${indexBL}</div>
     ${showPts?`<div class="pts">${card.pts}</div>`:''}
   </div>`;
 }
