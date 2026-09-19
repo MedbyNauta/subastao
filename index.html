@@ -360,6 +360,25 @@
   .card.clickable:hover{transform:translateY(-4px);}
   .card.disabled{opacity:0.32; cursor:default;}
 
+  /* DEAL-IN — the hand arrives card by card right after a fresh deal (see
+     render()'s dealAnimHandSeq guard, which only ever plays this once per
+     seat per deal — every later render of the same hand is a plain,
+     un-animated rebuild). Trump-mini gets its own slide from the left. */
+  .card.deal-in{animation:card-deal-in .28s cubic-bezier(.26,1,.4,1) both; animation-delay:calc(var(--deal-i,0) * 65ms);}
+  @keyframes card-deal-in{
+    0%{opacity:0; transform:translateY(60px) scale(.7);}
+    65%{opacity:1; transform:translateY(-4px) scale(1.03);}
+    100%{opacity:1; transform:translateY(0) scale(1);}
+  }
+  .trump-card-mini.deal-in{animation:trump-deal-in .5s cubic-bezier(.2,.85,.32,1.1) both;}
+  @keyframes trump-deal-in{
+    0%{opacity:0; transform:translateX(-70px) rotate(-14deg);}
+    100%{opacity:1; transform:translateX(0) rotate(0deg);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .card.deal-in, .trump-card-mini.deal-in{animation:none;}
+  }
+
   /* SPARKLES — a brief gold twinkle instead of confetti, so it stays in the game's
      own palette and never blocks the board for more than ~1-1.5s. */
   @keyframes sparkle-twinkle {
@@ -2279,6 +2298,11 @@ function newGame(target, playerType, aiLevel, humanPlayers, pochaVariantName, po
   pochaVariantName = POCHA_VARIANTS[pochaVariantName] ? pochaVariantName : pochaVariant;
   humanPlayers = parseInt(humanPlayers)||numPlayers; // default: all players are human
   gameEpoch++; // invalidate any setTimeout callbacks still pending from the previous game
+  // A new game restarts dealSeq at 0, so the deal-in trackers must forget
+  // the previous game's numbering too, or a matching dealSeq (e.g. both
+  // games' first hand being 1) would wrongly look "already animated".
+  dealAnimTrumpSeq = -1;
+  dealAnimHandSeq = {};
   state = {
     epoch: gameEpoch,
     gameType,
@@ -2294,6 +2318,7 @@ function newGame(target, playerType, aiLevel, humanPlayers, pochaVariantName, po
       : (numPlayers===4 ? {A:0,B:0} : {0:0,1:0,2:0})),
     dealerIndex:0,
     revealedSeat:null, // pass-and-play: which human seat has tapped "ver mis cartas" and is currently displayed
+    dealSeq:0, // bumped on every fresh deal — see the .deal-in CSS and dealAnimTrumpSeq/dealAnimHandSeq below
   };
   document.getElementById('logoWord1').textContent = gameType==='pocha' ? t('La Pocha') : t('Subastao');
   document.getElementById('logoWord2').textContent = logoWord2Text(gameType, subastaoMode, pochaVariantName);
@@ -2411,6 +2436,7 @@ function startNewHand(){
   state.hands = Array.from({length:state.numPlayers}, ()=>[]);
   for(let i=0;i<deck.length;i++) state.hands[i%state.numPlayers].push(deck[i]);
   for(let s=0;s<state.numPlayers;s++) sortHand(state.hands[s]); // every seat's hand needs sorting now, not just seat 0 — several may be human
+  state.dealSeq = (state.dealSeq||0) + 1; // see the .deal-in CSS: each seat's hand and the trump-mini play their entrance once per fresh deal
   state.trumpSuit=null;
   state.currentTrick=[];
   state.canteOffer=null;
@@ -2897,6 +2923,7 @@ function startCaptainRound(){
   state.hands = Array.from({length:state.numPlayers}, ()=>[]);
   for(let i=0;i<deck.length;i++) state.hands[i%state.numPlayers].push(deck[i]);
   for(let s=0;s<state.numPlayers;s++) sortHand(state.hands[s]);
+  state.dealSeq = (state.dealSeq||0) + 1;
   state.captainMode.handSize = state.hands[0].length;
   state.captainMode.trickNumber = 0;
   state.trumpSuit = null;
@@ -3556,6 +3583,7 @@ function startPochaRound(){
   for(let s=0;s<state.numPlayers;s++){
     for(let i=0;i<roundSize;i++) state.hands[s].push(deck.shift());
   }
+  state.dealSeq = (state.dealSeq||0) + 1;
   let trumpCard = null, fromDealer = false;
   if(!auction){
     trumpCard = deck.shift() || null;
@@ -4343,6 +4371,15 @@ function computePochaHelp(seat){
 // Where your own card left from: measured at the moment you tap it, since the
 // card is out of the DOM by the time the animation runs.
 let flyTapRect = null;
+// Deal-in bookkeeping deliberately lives OUTSIDE `state`: online play
+// broadcasts the host's whole `state` wholesale to every device (see
+// serializeState), so a "have I already shown this" flag stored inside it
+// would get overwritten by every incoming sync and replay on each update.
+// Keyed by state.dealSeq (bumped once per fresh deal, and part of the
+// synced state) rather than by seat alone, so a genuinely new deal always
+// gets to animate again even if a seat number repeats.
+let dealAnimTrumpSeq = -1;
+let dealAnimHandSeq = {};
 function reducedMotion(){
   return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
@@ -4848,6 +4885,14 @@ function render(){
   if(state.gameType==='pocha'){
     document.getElementById('trumpInfo').innerHTML = state.trumpSuit ? trumpInfoHtml(state.trumpSuit, state.pocha.trumpCard)
       : t(state.pocha.auctionRound ? 'Triunfo: a subasta' : 'Sin triunfo esta ronda');
+    // The trump card only ever gets to "arrive" once per deal — see
+    // dealAnimTrumpSeq above — every later render (a bid coming in, a card
+    // played) redraws the same markup without replaying it.
+    if(state.trumpSuit && dealAnimTrumpSeq!==state.dealSeq && !reducedMotion()){
+      const mini = document.querySelector('#trumpInfo .trump-card-mini');
+      if(mini) mini.classList.add('deal-in');
+      dealAnimTrumpSeq = state.dealSeq;
+    }
     const roundSize = state.pocha.roundSizes[state.pocha.roundIndex];
     document.getElementById('bidInfo').textContent = tf(roundSize===1 ? 'Ronda {0}/{1} · {2} carta' : 'Ronda {0}/{1} · {2} cartas',
       state.pocha.roundIndex+1, state.pocha.roundSizes.length, roundSize);
@@ -4939,14 +4984,21 @@ function render(){
     const bottomRow=document.createElement('div'); bottomRow.className='hand-row bottom';
     if(hand.length%2!==0) bottomRow.classList.add('offset');
     const topCount=Math.ceil(hand.length/2);
+    // Deal-in: only the very first time THIS seat's hand is shown this deal
+    // (dealAnimHandSeq[displaySeat] tracks the last dealSeq it already
+    // played for) — otherwise every render mid-hand (a card played, a bid
+    // coming in) would replay the "cards arriving" animation.
+    const animateDeal = dealAnimHandSeq[displaySeat]!==state.dealSeq && !reducedMotion();
     hand.forEach((card,i)=>{
       const ok = canPlay && legal.includes(card.id);
       const el=document.createElement('div');
       el.innerHTML = cardHtml(card, ok?'clickable':(canPlay?'disabled':''));
       const node = el.firstElementChild;
       if(ok) node.onclick=()=>{ flyTapRect = node.getBoundingClientRect(); playCard(displaySeat,card); };
+      if(animateDeal){ node.classList.add('deal-in'); node.style.setProperty('--deal-i', i); }
       (i<topCount?topRow:bottomRow).appendChild(node);
     });
+    dealAnimHandSeq[displaySeat] = state.dealSeq;
     handRow.appendChild(topRow);
     handRow.appendChild(bottomRow);
   }
@@ -5424,6 +5476,11 @@ async function startOnlineGame(){
 // just published and start rendering our own view of it.
 function enterOnlineGame(data, isHost){
   if(isHost || !data.stateJson) return;
+  // A guest hopping between rooms in the same tab could otherwise reuse a
+  // dealSeq number this device already marked as animated in a PREVIOUS
+  // room — see the newGame() reset for why these can't just keep counting up.
+  dealAnimTrumpSeq = -1;
+  dealAnimHandSeq = {};
   state = deserializeState(data.stateJson);
   const mySeat = (data.players||[]).findIndex(p=>p.sessionId===onlineUid);
   state.online = { code: lobbyRoomCode, isHost:false, uid:onlineUid, authUid:onlineAuthUid, mySeat, players:data.players };
