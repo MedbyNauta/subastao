@@ -148,8 +148,8 @@
      Small and quiet — this is information, not a control (see the separate
      "usa una carta" strip near your own hand for that). */
   .seat-cards{display:flex; gap:3px; margin-top:2px; line-height:1;}
-  .seat-cards .ico{display:inline-flex; color:var(--oro);}
-  .seat-cards .ico svg{width:13px; height:13px;}
+  .seat-cards .ico{display:inline-flex; background:var(--pergamino); border-radius:4px; padding:1px;}
+  .seat-cards .ico svg{width:17px; height:17px;}
   .seat-cards .empty{opacity:0.25; font-size:0.72rem;}
 
   /* 4-player Subastao scores by pair, so the pair is the unit. No
@@ -288,7 +288,7 @@
   /* Portraits emphasise the crown, horse head and feathered hat. The bottom
      strip keeps rank and suit visible beneath the overlapping hand row. */
   .card.court-card{justify-content:flex-start; overflow:hidden;}
-  .card.court-card svg.court{position:absolute; top:9px; left:6px; width:30px; height:32px; display:block;}
+  .card.court-card svg.court{position:absolute; top:0; left:0; width:39px; height:40px; display:block;}
   .card.court-card .court-label{
     position:absolute; bottom:0; left:0; right:0; height:15px; padding:0 3px;
     display:flex; align-items:center; justify-content:space-between;
@@ -298,7 +298,7 @@
   .card.court-card .court-label img.suit-img{width:13px; height:13px;}
   .card.court-card .court-label img.suit-espadas{transform:none;}
   .card.court-card .court-label .pts{position:static; font-family:'Inter'; font-size:0.44rem; font-weight:600; color:var(--piedra);}
-  .card.mini.court-card svg.court{top:7px; left:5px; width:24px; height:26px;}
+  .card.mini.court-card svg.court{top:0; left:0; width:32px; height:34px;}
   .card.mini.court-card .court-label{height:12px; padding:0 2px; font-size:11px;}
   .card.mini.court-card .court-label img.suit-img{width:11px; height:11px;}
   .card.mini.court-card .court-label .pts{font-size:6px;}
@@ -412,8 +412,7 @@
   @media (prefers-reduced-motion: reduce){ .cante-offer-btn{animation:none;} }
 
   /* MODO CAPITÁN — your own inventory strip, folded into the hand-wrap
-     felt band right below your cards: a drawn chest (opens on tap, see the
-     JS-driven .open class below and showChestAnimation) and up to 3 card
+     felt band right below your cards: a matte illustrated chest (opens on tap; see showChestAnimation) and up to 3 card
      icon buttons. Quieter than the cante prompt above (this is available
      most of the time, not a fleeting window), so it reads as a toolbar
      rather than an alert. */
@@ -425,27 +424,26 @@
     border:none; background:none; cursor:pointer; color:var(--oro);
     position:relative;
   }
-  .chest-btn svg{width:40px; height:34px; overflow:visible;}
-  .chest-lid-shape{fill:var(--oro); stroke:var(--bg); stroke-width:1;}
-  .chest-body{fill:var(--oro); opacity:0.82; stroke:var(--bg); stroke-width:1;}
-  .chest-band, .chest-lock{stroke:var(--bg); stroke-width:1.4; fill:var(--bg);}
-  .chest-band{opacity:0.5;}
-  .chest-lid{transform-origin:24px 19px; transition:transform .3s ease;}
-  .chest-btn:active .chest-lid{transform:rotate(-18deg);}
+  .chest-btn svg{width:58px; height:58px; display:block; transition:transform .18s ease;}
+  .chest-btn:active svg{transform:scale(.94);}
+  .chest-btn:focus-visible, .captain-card-btn:focus-visible{outline:2px solid var(--oro); outline-offset:3px;}
   .chest-count{
     font-family:'Fraunces', serif; font-weight:700; font-size:1rem; color:var(--oro);
   }
   .chest-btn.hidden{display:none;}
   .captain-card-btn{
-    display:flex; align-items:center; justify-content:center; padding:8px;
-    width:40px; height:40px; border:1px solid var(--linea); border-radius:10px;
-    cursor:pointer; color:var(--text); background:rgba(var(--wash-rgb),0.04);
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:3px 2px;
+    width:58px; min-height:76px; border:1px solid rgba(80,85,63,.28); border-radius:9px;
+    cursor:pointer; color:var(--tinta); background:var(--pergamino);
+    box-shadow:0 2px 5px rgba(0,0,0,.12); transition:transform .15s ease, box-shadow .15s ease;
   }
-  .captain-card-btn svg{width:22px; height:22px;}
-  .captain-card-btn.sel{border-color:var(--oro); background:rgba(var(--wash-rgb),0.12); color:var(--oro);}
+  .captain-card-btn .em{display:block; width:46px; height:46px; flex-shrink:0;}
+  .captain-card-btn svg{width:100%; height:100%; display:block;}
+  .captain-card-caption{font-family:'Inter',sans-serif; font-size:8px; font-weight:600; line-height:1.15; text-align:center; margin-top:2px; overflow-wrap:anywhere;}
+  .captain-card-btn.sel{border-color:var(--oro); box-shadow:0 0 0 2px var(--oro),0 4px 8px rgba(0,0,0,.16); transform:translateY(-3px);}
   .captain-card-btn:disabled{opacity:0.4; cursor:default;}
   .captain-card-empty{
-    width:40px; height:40px; border-radius:10px;
+    width:58px; height:76px; border-radius:9px;
     border:1px dashed var(--linea);
   }
   /* "Qué hace / usar" panel for the currently-selected card — a reminder of
@@ -455,7 +453,7 @@
     padding:10px; border-radius:10px; background:rgba(var(--wash-rgb),0.06);
     border:1px solid var(--linea);
   }
-  .ccd-icon{flex-shrink:0; width:30px; height:30px; color:var(--oro);}
+  .ccd-icon{flex-shrink:0; width:52px; height:58px; padding:3px; background:var(--pergamino); border-radius:8px;}
   .ccd-icon svg{width:100%; height:100%;}
   .ccd-txt{flex:1; min-width:0;}
   .ccd-name{font-weight:700; font-size:0.88rem; color:var(--oro);}
@@ -474,19 +472,23 @@
   }
   .chest-wash{
     position:absolute; inset:0;
-    background:linear-gradient(160deg, #E0A526 0%, #6B4A12 100%);
+    background:radial-gradient(ellipse at center, #54735C 0%, #183B30 78%);
     animation: cante-wash-pulse 3s ease-out forwards;
   }
   .chest-anim{position:relative; text-align:center; padding:0 20px;}
-  .chest-anim-svg{width:120px; height:100px; overflow:visible; filter:drop-shadow(0 6px 14px rgba(0,0,0,0.5));}
-  .chest-anim-svg .chest-lid{transform-origin:24px 19px; animation:chest-lid-open 0.5s ease-in 0.15s forwards;}
-  @keyframes chest-lid-open{ 100%{ transform:rotate(-100deg) translate(-2px,-6px);} }
+  .chest-anim-art{position:relative; width:180px; height:180px; margin:auto; filter:drop-shadow(0 8px 10px rgba(0,0,0,.22));}
+  .chest-anim-art > div{position:absolute; inset:0;}
+  .chest-anim-art .chest-art{position:absolute; inset:0; width:100%; height:100%;}
+  .chest-closed{animation:chest-close-out .25s ease .35s forwards;}
+  .chest-open{opacity:0; transform:translateY(5px); animation:chest-open-in .3s ease .35s forwards;}
+  @keyframes chest-close-out{to{opacity:0;}}
+  @keyframes chest-open-in{to{opacity:1;transform:translateY(0);}}
   .chest-card-reveal{
     margin-top:10px; opacity:0; transform:scale(0.5) translateY(10px);
     animation: chest-card-in 0.5s cubic-bezier(.19,1.6,.4,1) 0.5s forwards;
   }
   @keyframes chest-card-in{ 100%{ opacity:1; transform:scale(1) translateY(0);} }
-  .chest-card-icon{width:48px; height:48px; margin:0 auto; color:#fff;}
+  .chest-card-icon{width:76px; height:86px; padding:5px; margin:0 auto; background:var(--pergamino); border-radius:11px; box-shadow:0 4px 12px rgba(0,0,0,.2);}
   .chest-card-icon svg{width:100%; height:100%;}
   .chest-card-name{
     font-family:'Fraunces', serif; font-weight:700; font-size:1.5rem; color:#fff;
@@ -581,7 +583,10 @@
   @media (prefers-reduced-motion: reduce){
     .cante-overlay, .cante-wash, .cante-burst, .cante-shout, .cante-detail{animation:none; opacity:1; transform:none;}
     .cante-overlay{animation:cante-overlay-fade 3.2s ease-out forwards;}
-    .chest-overlay, .chest-wash, .chest-anim-svg .chest-lid, .chest-card-reveal{animation:none !important; opacity:1 !important; transform:none !important;}
+    .chest-open{animation:none; opacity:1; transform:none;}
+    .chest-closed{animation:none; opacity:0;}
+    .chest-btn svg, .captain-card-btn{transition:none;}
+    .chest-overlay, .chest-wash, .chest-card-reveal{animation:none !important; opacity:1 !important; transform:none !important;}
   }
 
   /* PANELS */
@@ -887,14 +892,9 @@
          /captainUseCard(). -->
     <div class="captain-inventory hidden" id="captainInventory">
       <div class="captain-inventory-row" id="captainInventoryRow">
-        <button class="chest-btn hidden" id="captainChestBtn" onclick="captainOpenChest(mySeatIndex())" title="Abrir cofre">
-          <svg viewBox="0 0 48 40" aria-hidden="true">
-            <g class="chest-lid">
-              <path class="chest-lid-shape" d="M4 18 Q24 2 44 18 L44 20 L4 20 Z"/>
-              <circle class="chest-lock" cx="24" cy="16" r="2.6"/>
-            </g>
-            <rect class="chest-body" x="4" y="19" width="40" height="17" rx="2.5"/>
-            <line class="chest-band" x1="24" y1="19" x2="24" y2="36"/>
+        <button class="chest-btn hidden" id="captainChestBtn" onclick="captainOpenChest(mySeatIndex())" title="Abrir cofre" aria-label="Abrir cofre">
+          <svg class="chest-art" viewBox="30 250 715 635" aria-hidden="true" focusable="false">
+            <image href="assets/matte/chests.png" width="1536" height="1024"/>
           </svg>
           <span class="chest-count" id="captainChestCount">0</span>
         </button>
@@ -1836,105 +1836,22 @@ function suitIcon(suit){
   return `<img class="suit-img suit-${suit}" src="${SUIT_IMG[suit]}" alt="" aria-hidden="true">`;
 }
 
-/* ---------- COURT ILLUSTRATIONS ----------
-   Rey, caballo and sota are drawn rather than spelled out. The three
-   silhouettes are shared across the four suits: the garment is painted with
-   `currentColor`, which .card.oros/.copas/.espadas/.bastos already set, so one
-   set of paths yields twelve distinct figures. Coordinates are in the
-   preview's 100x150 card space; courtArt() crops to each portrait. The suit
-   uses the original SUIT_IMG pip in a separate label below the portrait. */
-const COURT_ART = {
- Rey:`
-   <path d="M29 112h43" stroke="currentColor" opacity=".18"/>
-   <path d="M35 56 25 66 29 107 44 112 68 108 70 72 58 57Z" fill="currentColor"/>
-   <path d="m35 57 8 6-7 43-7-3-2-36Z" fill="#fffefa" fill-opacity=".2" stroke="none"/>
-   <path d="m42 60 14-2 8 51-26 3Z" fill="#f1e4c8"/>
-   <path d="m49 69-4 37m11-36 3 34" stroke="#bd9b61" stroke-width=".7"/>
-   <path d="m37 56 8 10 6-6 5 5 5-10-9-4Z" fill="#e0be75"/>
-   <path d="m41 57 3 5m13-7-2 6" stroke="#fffefa" stroke-width="1.2"/>
-   <path d="M38 37c-2 2-2 8-1 13l5 7 14-1 4-8-2-11Z" fill="#535a49"/>
-   <path d="M41 37h14v10l-3 8-6 1-5-7Z" fill="#e6c7a4" stroke="#785d4c" stroke-width=".65"/>
-   <path d="M40 46c3 5 5 3 8 5 3-3 5-1 8-5v7l-7 8-8-7Z" fill="#535a49" stroke="none"/>
-   <path d="m44 45 2-.2m6 0h1m-4 0-1 5h2" fill="none" stroke="#61523f" stroke-width=".65"/>
-   <path d="m44 52 4 1 4-1" fill="none" stroke="#e6c7a4" stroke-width=".65"/>
-   <path d="m37 29 6 4 5-8 5 8 6-4-2 10H39Z" fill="#d5b36d" stroke="#9b793b" stroke-width=".8"/>
-   <path d="M40 35h16" stroke="#fff2cb" stroke-width=".9"/>
-   <path d="m48 33 1.5 2-1.5 2-1.5-2Z" fill="currentColor" stroke="none"/>
-   <path d="M35 65 31 82l14 8 3-6-9-8 4-8" fill="currentColor"/>
-   <path d="m32 79 4-3 10 7-3 6Z" fill="#d5b36d" stroke="none"/>
-   <path d="m43 84 5-1 7 4-1 3-7-1-3-2Z" fill="#e6c7a4" stroke="#785d4c" stroke-width=".65"/>
-   <path d="m62 62 8 10-2 9-5-1-2-11" fill="currentColor"/>
-   <path d="m62 77 8 1-1 5-7-1Z" fill="#d5b36d" stroke="none"/>
-   <path d="m64 76 1-7 4-1 2 3-3 7" fill="#e6c7a4" stroke="#785d4c" stroke-width=".65"/>
-   <path d="m38 108 4 3 22-3" fill="none" stroke="#d5b36d" stroke-width="1.8"/>
-   <path d="m34 87 1 12m29-10 1 10" fill="none" stroke="#fffefa" stroke-opacity=".35" stroke-width=".8"/>
- `,
- Caballo:`
-   <path d="M22 115h58" stroke="currentColor" opacity=".18"/>
-   <path d="M29 74c-12-1-9 14-13 22 8-2 10-9 10-15l6-1" fill="currentColor"/>
-   <path d="m33 87 8 2-8 19 3 5h-8l-1-7Z" fill="#d2ceba" stroke="#7a806f" stroke-width=".75"/>
-   <path d="m61 86 7-1-3 17 10 6-2 4-15-8Z" fill="#d2ceba" stroke="#7a806f" stroke-width=".75"/>
-   <path d="M27 75c9-6 23 0 30-3 7-3 4-14 12-19l4 2 4 18-7 13c-12 11-29 8-41 2Z" fill="#f3ecd9" stroke="#65705e" stroke-width=".85"/>
-   <path d="m29 84 9 6 1 20 5 3-1 3H33l-2-22Z" fill="#f3ecd9" stroke="#65705e" stroke-width=".85"/>
-   <path d="m58 87 9-3-2 10-8 17 4 2-1 3h-9l-1-6Z" fill="#f3ecd9" stroke="#65705e" stroke-width=".85"/>
-   <path d="M32 112h10l1 4H33Zm19 0h9v4h-9Z" fill="#576050" stroke="none"/>
-   <path d="M59 76c2-12 4-24 11-26l7 8-8 4-2 15Z" fill="currentColor"/>
-   <path d="m69 54 1-9 5 7 3-4 1 10 6 8-2 7-8-2-6-12Z" fill="#f3ecd9" stroke="#65705e" stroke-width=".85"/>
-   <path d="m70 54 3-4 1 5m5 3 3 8-4 2" fill="none" stroke="#c5b894" stroke-width="1"/>
-   <circle cx="77" cy="59" r="1" fill="#3b493d" stroke="none"/>
-   <path d="m76 67 8 1m-12-12 7 15" stroke="currentColor" stroke-width="1.4" fill="none"/>
-   <path d="M78 70c-8 5-13-2-21-7" fill="none" stroke="#a48449" stroke-width="1"/>
-   <path d="m34 73 23 1-2 17-10 5-11-7Z" fill="currentColor"/>
-   <path d="m36 76 18 1-2 12-7 4-9-6Z" fill="none" stroke="#d6b473" stroke-width="1"/>
-   <path d="m37 72 20 1" stroke="#825e34" stroke-width="2.2"/>
-   <path d="m42 47-9 6-4 15 12 1 7-17Z" fill="currentColor" opacity=".8"/>
-   <path d="m43 47 9 1 7 18-8 8-12-5Z" fill="#d9b775" stroke="#9c7d46" stroke-width=".7"/>
-   <path d="m43 52 3 13 8-1" fill="none" stroke="#f5e7c6" stroke-width="1"/>
-   <path d="m41 69 13 1 2 14-6 10-5-3 4-10-6-5Z" fill="currentColor"/>
-   <path d="m47 87 6 2-3 8h-9v-4h5Z" fill="#425143" stroke="none"/>
-   <path d="m50 49 8 10 9 2-1 5-12-3-9-9" fill="currentColor"/>
-   <path d="m63 60 6 1 1 3-4 2-3-1Z" fill="#e6c7a4" stroke="#785d4c" stroke-width=".6"/>
-   <path d="m43 35 10-1 2 8-4 7-7-3Z" fill="#e6c7a4" stroke="#785d4c" stroke-width=".65"/>
-   <path d="M40 37c-1-10 10-14 16-6l1 6-8-1-7 5Z" fill="#aab6aa" stroke="#5c7062" stroke-width=".8"/>
-   <path d="M41 34h15m-9-6v7" stroke="#f7f4e7" stroke-width="1"/>
-   <path d="m52 39 1 4-3 1m1-5h1" fill="none" stroke="#725b43" stroke-width=".65"/>
-   <path d="M46 27c-1-7 7-9 11-7-1 5-6 7-11 7Z" fill="currentColor" stroke="none"/>
- `,
- Sota:`
-   <path d="M27 115h47" stroke="currentColor" opacity=".18"/>
-   <path d="m41 87 9 1-2 24h-6l-3-13Z" fill="#d9b775" stroke="#9c7d46" stroke-width=".7"/>
-   <path d="m54 87 8-1 3 24-6 1-5-12Z" fill="#f1e4c8"/>
-   <path d="m41 108 8 1v6H34c-1-3 4-3 7-7Zm17 1 7-1 2 4 7 1v3H58Z" fill="#425143" stroke="none"/>
-   <path d="m39 60 18-3 8 12-3 10 4 16-15-3-6 4-11-5 5-15Z" fill="currentColor"/>
-   <path d="m48 61 7-1 1 32-5-1-5 3Z" fill="#f1e4c8"/>
-   <path d="m49 65 5-1m-5 7h5m-5 6h5" stroke="#b9995e" stroke-width=".7"/>
-   <path d="m37 81 25-1 1 4-26 1Z" fill="#d5b36d" stroke="#9c7d46" stroke-width=".7"/>
-   <rect x="47" y="80" width="5" height="5" rx=".6" fill="none" stroke="#f8eccf" stroke-width=".9"/>
-   <path d="m39 61-8 3-5 13 4 5 12-11" fill="currentColor"/>
-   <path d="m28 72 6 2-3 6-6-2Z" fill="#d5b36d" stroke="none"/>
-   <path d="m26 73-2-6 1-4h3l3 7-1 5Z" fill="#e6c7a4" stroke="#785d4c" stroke-width=".65"/>
-   <path d="m58 60 9 5 6 14-10 6-3-5 7-4-6-8" fill="currentColor"/>
-   <path d="m64 77 3 5-5 3-3-5Z" fill="#d5b36d" stroke="none"/>
-   <path d="m62 80-5-1-3 3 2 3 6-1Z" fill="#e6c7a4" stroke="#785d4c" stroke-width=".65"/>
-   <path d="M42 39c-4 4-4 13 2 17l12-1 3-13-6-7Z" fill="#6a5940"/>
-   <path d="m44 41 12-1 1 9-3 9-8-2-3-7Z" fill="#e6c7a4" stroke="#785d4c" stroke-width=".65"/>
-   <path d="M43 43c4 0 8-1 12-5l-11-1Z" fill="#6a5940" stroke="none"/>
-   <path d="m52 46 1 5h-2m-4-5h1m6-1h1m-6 9 4-.2" fill="none" stroke="#785d4c" stroke-width=".65"/>
-   <path d="m42 58 4-4 5 5 5-4 2 4-6 6Z" fill="#f1e4c8"/>
-   <path d="M38 40c-3-4 3-10 10-11 9-2 12 2 14 7l-6 6Z" fill="currentColor"/>
-   <path d="m38 40 19 2 5-6" fill="none" stroke="#d5b36d" stroke-width="2"/>
-   <path d="M53 32c0-7 4-13 10-15 3 6-2 12-10 15Z" fill="#d9b775" stroke="#9c7d46" stroke-width=".6"/>
-   <path d="m53 34 8-13" fill="none" stroke="#fff3cf" stroke-width=".8"/>
-   <path d="m39 87-1 3m22-3 2 4" stroke="#fffefa" stroke-opacity=".4" stroke-width=".8"/>
- `
-};
-
-const COURT_PORTRAIT = { Rey:'30 23 39 44', Caballo:'62 44 25 33', Sota:'35 16 30 47' };
-
+/* ---------- MATTE GAME ART ----------
+   Approved style C. Each atlas is shared/cached across every card and suit.
+   SVG viewports crop the original raster artwork without stretching it. */
+const COURT_ART = { Rey:'0 110 512 650', Caballo:'520 110 560 650', Sota:'1090 110 446 650' };
+function matteArt(sheet, viewBox, className){
+  const size = sheet==='specials' ? 'width="1448" height="1086"' : 'width="1536" height="1024"';
+  const [, ,w,h] = viewBox.split(' ').map(Number);
+  return `<svg class="${className}" viewBox="0 0 ${w} ${h}" aria-hidden="true" focusable="false">`
+    + `<svg style="width:${w}px;height:${h}px" viewBox="${viewBox}" overflow="hidden">`
+    + `<image href="assets/matte/${sheet}.png" ${size}/></svg></svg>`;
+}
 function courtArt(rank){
-  return `<svg class="court" viewBox="${COURT_PORTRAIT[rank]}" aria-hidden="true">`
-    + `<g fill="none" stroke="currentColor" stroke-width=".75" stroke-linejoin="round" stroke-linecap="round">${COURT_ART[rank]}</g>`
-    + `</svg>`;
+  return matteArt('courts', COURT_ART[rank], 'court');
+}
+function chestArt(open=false){
+  return matteArt('chests', `${open?798:30} 170 715 715`, 'chest-art');
 }
 
 /* ---------- STATE ----------
@@ -3249,58 +3166,19 @@ function renderCaptainSummary(s){
    Deliberately NOT wired into the AI: Capitán seats never open chests or
    use cards themselves yet, so a solo game against AI never surprises you
    with one of these — only a human seat's own choices ever touch this. */
-// Original line-art icons, one per implemented card — same stroke-based style
-// as the suit icons and the caña/tapa filigrana (see suitIcon() and the
-// --art-canya/--art-tapa tokens): plain shapes, currentColor, no reused art.
-const CAPTAIN_CARD_ICONS = {
-  ignorar_palo: '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/>'
-    + '<path d="M12 7 L15.5 12 L12 17 L8.5 12 Z" fill="none" stroke="currentColor" stroke-width="1.3"/>'
-    + '<line x1="5.5" y1="18.5" x2="18.5" y2="5.5" stroke="currentColor" stroke-width="1.8"/>',
-  segunda_oportunidad: '<circle cx="9" cy="9" r="3.6" fill="none" stroke="currentColor" stroke-width="1.4"/>'
-    + '<circle cx="15" cy="9" r="3.6" fill="none" stroke="currentColor" stroke-width="1.4"/>'
-    + '<circle cx="9" cy="15" r="3.6" fill="none" stroke="currentColor" stroke-width="1.4"/>'
-    + '<circle cx="15" cy="15" r="3.6" fill="none" stroke="currentColor" stroke-width="1.4"/>'
-    + '<line x1="12" y1="15" x2="12" y2="21" stroke="currentColor" stroke-width="1.4"/>',
-  escudo: '<path d="M12 3 L19 6 V11.5 C19 16 16 19.5 12 21 C8 19.5 5 16 5 11.5 V6 Z" '
-    + 'fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
-  roba_baza: '<rect x="4" y="7" width="9" height="13" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.3" transform="rotate(-8 8.5 13.5)"/>'
-    + '<rect x="11" y="6" width="9" height="13" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.5" transform="rotate(6 15.5 12.5)"/>'
-    + '<path d="M6 5 C9 2 15 2 18 5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>'
-    + '<path d="M18 5 L15.6 4.6 M18 5 L17.2 7.2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>',
-  mini_triunfo: '<rect x="6" y="10" width="12" height="10" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.4"/>'
-    + '<path d="M7 8 L9 4 L12 7 L15 4 L17 8 Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>',
-  empujon: '<rect x="7" y="9" width="10" height="13" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.4"/>'
-    + '<path d="M12 6 L12 1 M9 3.5 L12 0.7 L15 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
-  piedra: '<rect x="7" y="2" width="10" height="13" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.4"/>'
-    + '<path d="M12 17 L12 21.5 M9 19.3 L12 22.3 L15 19.3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
-};
-// The five newest cards come across from the deck study (_deck-preview.html)
-// exactly as drawn there: a 48x48 box with fill/stroke set once on a wrapper
-// instead of per path. Kept at their own size rather than re-scaled by hand,
-// so the artwork can't drift from the version that was approved.
-const CAPTAIN_CARD_ICONS_48 = {
-  cambio_palo: '<path d="M8 19A17 17 0 0 1 36 11l3 4m-1-9 1 9-9-1M40 29a17 17 0 0 1-28 8l-3-4m1 9-1-9 9 1"/>'
-    + '<path d="m24 15 7 9-7 9-7-9Z" fill="currentColor" fill-opacity=".08"/>',
-  cambio_rapido: '<rect x="7" y="13" width="15" height="24" rx="3" fill="currentColor" fill-opacity=".08"/>'
-    + '<rect x="27" y="11" width="15" height="24" rx="3" fill="currentColor" fill-opacity=".08"/>'
-    + '<path d="M9 7h24l-4-4m4 4-4 4M39 41H15l4-4m-4 4 4 4"/>',
-  mira_carta: '<path d="M8 32V11a4 4 0 0 1 4-4h23a4 4 0 0 1 4 4v21"/>'
-    + '<path d="M5 29s7-10 19-10 19 10 19 10-7 10-19 10S5 29 5 29Z" fill="currentColor" fill-opacity=".07"/>'
-    + '<circle cx="24" cy="29" r="5"/><circle cx="24" cy="29" r="1.5" fill="currentColor" stroke="none"/>',
-  congelar: '<path d="M24 5v38M8 14l32 20M8 34l32-20M19 8l5 5 5-5M19 40l5-5 5 5'
-    + 'M8 20l7-2-1-7M34 37l-1-7 7-2M8 28l7 2-1 7M34 11l-1 7 7 2"/>',
-  espejo: '<rect x="11" y="5" width="26" height="34" rx="12" fill="currentColor" fill-opacity=".06"/>'
-    + '<path d="M18 43h12m-6-4v4M17 20l11-10M20 27l10-9"/>'
-    + '<path d="m35 29 2 4 5 2-5 2-2 4-1-4-5-2 5-2Z" fill="var(--pergamino)"/>',
+// Reading order of the twelve illustrations in the 4 × 3 sprite atlas.
+const CAPTAIN_CARD_ART = {
+  escudo:0, mini_triunfo:1, congelar:2, espejo:3,
+  segunda_oportunidad:4, roba_baza:5, ignorar_palo:6, empujon:7,
+  piedra:8, cambio_palo:9, cambio_rapido:10, mira_carta:11,
 };
 function captainCardIconHtml(key){
-  const grande = CAPTAIN_CARD_ICONS_48[key];
-  if(grande){
-    return `<svg viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="currentColor" `
-      + `stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round">${grande}</g></svg>`;
-  }
-  const svg = CAPTAIN_CARD_ICONS[key];
-  return svg ? `<svg viewBox="0 0 24 24" aria-hidden="true">${svg}</svg>` : '';
+  const i = CAPTAIN_CARD_ART[key];
+  if(i===undefined) return '';
+  // The generated rows have unequal gutters; crop between objects so a
+  // mirror handle cannot leak into the arrow beneath it.
+  const edges = [0,390,740,1086], row = Math.floor(i/4);
+  return matteArt('specials', `${i%4*362} ${edges[row]} 362 ${edges[row+1]-edges[row]}`, 'special-art');
 }
 const CAPTAIN_CARDS = {
   ignorar_palo:        {key:'ignorar_palo',        label:'Ignorar palo',        emoji:'🚫',
@@ -3520,8 +3398,8 @@ function renderCaptainInventory(seat){
   const slots = inv.map(key=>{
     const m = CAPTAIN_CARDS[key];
     const activa = capitanCardSeleccionada===key;
-    return `<button class="captain-card-btn ${activa?'sel':''}" onclick="captainSelectCard(${seat},'${key}')" title="${t(m.label)}">
-      <span class="em">${captainCardIconHtml(key)}</span></button>`;
+    return `<button class="captain-card-btn ${activa?'sel':''}" onclick="captainSelectCard(${seat},'${key}')" title="${t(m.label)}" aria-label="${t(m.label)}" aria-pressed="${activa}">
+      <span class="em">${captainCardIconHtml(key)}</span><span class="captain-card-caption">${t(m.label)}</span></button>`;
   });
   // Congelado: las cartas siguen a la vista y se pueden abrir para leerlas,
   // lo único que no se puede es gastarlas (ver captainUseCard).
@@ -3532,6 +3410,7 @@ function renderCaptainInventory(seat){
   const n = captainChestCount(seat);
   chestBtn.classList.toggle('hidden', !(n>0 && inv.length<3));
   document.getElementById('captainChestCount').textContent = n;
+  chestBtn.setAttribute('aria-label', tf('Abrir cofre ({0})', n));
 
   renderCaptainCardDetail(seat);
   renderCaptainPeek(seat);
@@ -4690,14 +4569,10 @@ function showChestAnimation(seatName, key){
   overlay.innerHTML = `
     <div class="chest-wash"></div>
     <div class="chest-anim">
-      <svg class="chest-anim-svg" viewBox="0 0 48 40" aria-hidden="true">
-        <g class="chest-lid">
-          <path class="chest-lid-shape" d="M4 18 Q24 2 44 18 L44 20 L4 20 Z"/>
-          <circle class="chest-lock" cx="24" cy="16" r="2.6"/>
-        </g>
-        <rect class="chest-body" x="4" y="19" width="40" height="17" rx="2.5"/>
-        <line class="chest-band" x1="24" y1="19" x2="24" y2="36"/>
-      </svg>
+      <div class="chest-anim-art" aria-hidden="true">
+        <div class="chest-closed">${chestArt()}</div>
+        <div class="chest-open">${chestArt(true)}</div>
+      </div>
       <div class="chest-card-reveal">
         <div class="chest-card-icon">${captainCardIconHtml(key)}</div>
         <div class="chest-card-name">${t(m.label)}</div>
@@ -4742,7 +4617,7 @@ function cardHtml(card, extraClass){
   // la Pocha lo que importa son las bazas, así que no se muestran ahí.
   const showPts = card.pts>0 && state.gameType!=='pocha';
   // Enlarged portraits with a rank/suit strip that survives row overlap.
-  if(COURT_ART[card.rank]){
+  if(Object.hasOwn(COURT_ART, card.rank)){
     return `<div class="card court-card ${card.suit} ${extraClass||''}" data-id="${card.id}">
       ${courtArt(card.rank)}
       <div class="court-label">
