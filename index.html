@@ -4666,11 +4666,11 @@ function cardHtml(card, extraClass){
   const isCourt = Object.hasOwn(COURT_ART, card.rank);
   // Number cards already show the suit as a count of real pips in the
   // center — repeating it in the corner index was redundant, so only the
-  // rank goes there. Court cards keep rank+suit (no pips to read the suit
-  // off), letter-over-suit at top-right and, mirrored, suit-over-letter at
-  // bottom-left.
+  // rank goes there. Court cards: top-right is just the letter (the suit
+  // there was redundant too, next to the illustration itself); bottom-left
+  // keeps suit-over-letter.
   const letter = `<span>${RANK_SHORT[card.rank]}</span>`;
-  const indexTR = isCourt ? `${letter}${suitIcon(card.suit)}` : letter;
+  const indexTR = letter;
   const indexBL = isCourt ? `${suitIcon(card.suit)}${letter}` : letter;
   return `<div class="card ${isCourt?'court-card':''} ${card.suit} ${extraClass||''}" data-id="${card.id}" aria-label="${cardLabel(card)}">
     ${isCourt ? courtArt(card.rank, card.suit) : cardPipsHtml(card)}
