@@ -293,7 +293,7 @@
   .card-pips{position:absolute; left:34%; top:19%; width:32%; height:62%;}
   .card-pips .suit-img{position:absolute; width:50%; height:30%; transform:translate(-50%,-50%);}
   .card-pips .suit-img.suit-espadas{transform:translate(-50%,-50%) scaleX(1.5);}
-  .card-pips.single{left:34%; top:20%; width:32%; height:60%;}
+  .card-pips.single{left:28%; top:16%; width:44%; height:68%;}
   .card-pips.single .suit-img{width:100%; height:100%;}
   .card-pips.single .suit-img.suit-espadas{transform:translate(-50%,-50%) scaleX(1.4);}
   .card.captain-special .special-art{position:absolute; left:10%; top:16%; width:80%; height:68%; display:block;}
@@ -4654,20 +4654,13 @@ function renderHelp(activeSeat){
    change (start of a phase, card played, timer fired, etc), so the UI is
    always just "whatever the current state says it should be" rather than
    being updated incrementally. */
-// Central pips are countable; the two indices are separate from the score.
-const CARD_PIP_LAYOUTS = {
-  As:[[50,50]],
-  '2':[[50,18],[50,82]],
-  '3':[[50,12],[50,50],[50,88]],
-  '4':[[24,24],[76,24],[24,76],[76,76]],
-  '5':[[24,14],[76,14],[50,50],[24,86],[76,86]],
-  '6':[[24,14],[76,14],[24,50],[76,50],[24,86],[76,86]],
-  '7':[[24,9],[76,9],[24,36],[76,36],[50,63],[24,91],[76,91]],
-};
+// Counting real pips per rank (the classic-card pass) always read too small
+// at 39x54 no matter how much each pip was enlarged — back to one big
+// centered suit image for every numbered card, same as before that pass.
+// Court cards are untouched: they keep their own per-suit illustration.
 function cardPipsHtml(card){
-  const layout = CARD_PIP_LAYOUTS[card.rank] || [];
-  return `<div class="card-pips ${card.rank==='As'?'single':''}" aria-hidden="true">`
-    + layout.map(([x,y])=>`<img class="suit-img suit-${card.suit}" src="${SUIT_IMG[card.suit]}" alt="" style="left:${x}%;top:${y}%">`).join('')
+  return `<div class="card-pips single" aria-hidden="true">`
+    + `<img class="suit-img suit-${card.suit}" src="${SUIT_IMG[card.suit]}" alt="" style="left:50%;top:50%;">`
     + '</div>';
 }
 function cardHtml(card, extraClass){
@@ -4675,7 +4668,10 @@ function cardHtml(card, extraClass){
   // la Pocha lo que importa son las bazas, así que no se muestran ahí.
   const showPts = card.pts>0 && state.gameType!=='pocha';
   const isCourt = Object.hasOwn(COURT_ART, card.rank);
-  const index = `<span>${RANK_SHORT[card.rank]}</span>${suitIcon(card.suit)}`;
+  // Number cards already show the suit as a count of real pips in the
+  // center — repeating it in the corner index was redundant, so only the
+  // rank goes there. Court cards keep rank+suit (no pips to read the suit off).
+  const index = isCourt ? `<span>${RANK_SHORT[card.rank]}</span>${suitIcon(card.suit)}` : `<span>${RANK_SHORT[card.rank]}</span>`;
   return `<div class="card ${isCourt?'court-card':''} ${card.suit} ${extraClass||''}" data-id="${card.id}" aria-label="${cardLabel(card)}">
     ${isCourt ? courtArt(card.rank, card.suit) : cardPipsHtml(card)}
     <div class="card-corner top-right" aria-hidden="true">${index}</div>
