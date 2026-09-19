@@ -1,0 +1,19 @@
+Use case: stylized-concept. Create ONE polished high-resolution comparison sheet for a Spanish playing-card mobile game, SUBASTAO. Landscape sheet, three labeled horizontal rows of six upright cards, 18 cards total, all large enough to inspect. Neutral warm gray presentation background, cream card stock, precise grid, generous gaps. Title "SUBASTAO / CARD DIRECTIONS". Original professional illustration informed by traditional Spanish baraja visual language, clean contemporary refinement, no Fournier branding, logos, signatures or copied court compositions.
+
+Input images 1–4 are the game's EXISTING SUIT ART references, respectively oros, copas, espadas, bastos. Preserve their recognizable appearance and colors very faithfully throughout: round gold portrait coin, ornate red/gold chalice, straight pale-blue sword with yellow/red handle, chunky green wooden club. No French suits.
+
+CRITICAL SHARED CARD LAYOUT for EVERY card: large bold rank with a visible suit pip directly underneath at TOP RIGHT and at BOTTOM LEFT. Both index blocks read upright for this review. These two corners must have broad clean white clearance, no art behind. Top LEFT empty. Bottom RIGHT reserved exclusively for a SMALL muted gray score digit, approximately 35% of rank type size. Do not confuse rank with score. R/C/S are rank LETTERS, not 12/11/10. Rank indices around 17% of card width, suit icons beneath around 13%; readability paramount. Central art in the middle zone, ample breathing space.
+
+Repeat EXACT SAME six card identities in EACH ROW, left to right:
+1. Rey de oros: R + coin at top-right AND bottom-left, small score 4 bottom-right, adult bearded crowned king centrally.
+2. Caballo de espadas: C + sword at top-right AND bottom-left, small score 3 bottom-right, adult rider on a horse centrally, recognizable elegant horse anatomy.
+3. Sota de copas: S + chalice at top-right AND bottom-left, small score 2 bottom-right, adult standing court attendant with period cap centrally, mature facial proportions.
+4. As de bastos: A + club at top-right AND bottom-left, small score 11 bottom-right, ONE large traditional green club centrally.
+5. Tres de copas: 3 + chalice at top-right AND bottom-left, small score 10 bottom-right, exactly THREE central chalices in a balanced arrangement.
+6. Seis de oros: 6 + coin at top-right AND bottom-left, NO score, exactly SIX central gold coins arranged two columns of three.
+
+Row A label: "A / CLASICA LIMPIA". Closest to classic Spanish cards: original full length figures, assured fine dark contour lines, flat rich primary accents red blue gold green with generous cream, subtle geometric costume patterns, realistic adult face proportions, elegant restrained period clothing, thin single warm-gray card border.
+Row B label: "B / EDITORIAL". Cleaner more contemporary: original half-length king and sota portraits, horse head and partial rider for caballo, confident refined angular linework with selective flat shadow shapes, muted burgundy navy ochre forest green, off-white blank background, mature dignified faces and small natural eyes. Central numbered cards use the same authentic referenced pips, spaced a bit more generously. Borderless card face except softly rounded exterior.
+Row C label: "C / GRABADO MODERNO". Original mature court figures with very restrained fine engraving lines only in face and folds, flatter simplified silhouettes, limited ink navy and ochre with burgundy/green accents; thin inset frame with interruptions around indices. Numbered cards keep full-color traditional referenced suit icons, same exact count.
+
+No 3D, no Pixar, no baby faces, no large eyes, no toys, no glossy gradients, no decorative scenery, no marketing prose. Visually distinct adult illustration treatments yet consistent traditional suit identity and prescribed corner geometry. Flat front view, no perspective, no card overlapping. This is a review sheet, NOT production game assets.

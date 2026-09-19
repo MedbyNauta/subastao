@@ -148,8 +148,8 @@
      Small and quiet — this is information, not a control (see the separate
      "usa una carta" strip near your own hand for that). */
   .seat-cards{display:flex; gap:3px; margin-top:2px; line-height:1;}
-  .seat-cards .ico{display:inline-flex; background:var(--pergamino); border-radius:4px; padding:1px;}
-  .seat-cards .ico svg{width:17px; height:17px;}
+  .seat-cards .ico{display:inline-flex; width:18px; height:25px;}
+  .seat-cards .ico .card{transform:scale(.56); transform-origin:top left;}
   .seat-cards .empty{opacity:0.25; font-size:0.72rem;}
 
   /* 4-player Subastao scores by pair, so the pair is the unit. No
@@ -264,44 +264,40 @@
   img.suit-img{object-fit:contain; display:block;}
   img.suit-img.suit-espadas{transform:scale(1.4);}
 
-  /* CARDS */
+  /* One card face for the baraja and Capitán. The inset frame is always
+     drawn here, never baked into an illustration. */
   .card{
+    --card-paper:#fff8e8; --card-index-size:13px; --card-index-pip:10px;
     display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
-    width:39px; height:54px; background:var(--pergamino); color:var(--tinta); border-radius:8px;
+    width:39px; height:54px; background:var(--card-paper); color:var(--tinta); border-radius:5px;
     box-shadow:0 3px 8px rgba(0,0,0,0.28); font-family:'Fraunces', serif;
-    font-weight:700; font-size:1.06rem; flex-shrink:0; position:relative;
+    font-weight:700; font-size:1.06rem; flex-shrink:0; position:relative; isolation:isolate;
   }
-  .card .pts{position:absolute; bottom:3px; right:5px; font-size:0.44rem; font-family:'Inter'; color:var(--piedra); font-weight:600;}
+  .card::after{
+    content:""; position:absolute; inset:2px; border:0.6px solid #8c826d;
+    border-radius:3px; pointer-events:none; z-index:3;
+  }
+  .card .pts{position:absolute; bottom:3px; right:5px; font-size:0.44rem; font-family:'Inter'; color:var(--piedra); font-weight:600; z-index:2; background:var(--card-paper);}
   .trump-card-mini{vertical-align:middle; margin-left:2px;}
-  .card .icon-wrap{margin-top:2px; height:16px; display:flex; align-items:center; justify-content:center;}
-  .card svg{width:13px; height:13px;}
-  .card img.suit-img{width:16px; height:16px; object-fit:contain; display:block;}
-  .card.oros{color:var(--c-oros);}
-  .card.copas{color:var(--c-copas);}
-  .card.espadas{color:var(--c-espadas);}
-  .card.bastos{color:var(--c-bastos);}
-  .card.mini{width:32px; height:45px; font-size:0.85rem;}
-  .card.mini .icon-wrap{height:14px; margin-top:1px;}
-  .card.mini svg{width:11px; height:11px;}
-  .card.mini img.suit-img{width:14px; height:14px;}
-
-  /* Portraits emphasise the crown, horse head and feathered hat. The bottom
-     strip keeps rank and suit visible beneath the overlapping hand row. */
-  .card.court-card{justify-content:flex-start; overflow:hidden;}
-  .card.court-card svg.court{position:absolute; top:0; left:0; width:39px; height:40px; display:block;}
-  .card.court-card .court-label{
-    position:absolute; bottom:0; left:0; right:0; height:15px; padding:0 3px;
-    display:flex; align-items:center; justify-content:space-between;
-    background:var(--pergamino); border-top:1px solid rgba(31,42,61,0.14);
-    font-family:'Fraunces', serif; font-weight:700; font-size:0.8rem;
+  .card.mini{width:32px; height:45px; --card-index-size:11px; --card-index-pip:8px;}
+  .card-corner{
+    position:absolute; z-index:2; display:flex; flex-direction:column; align-items:center;
+    width:var(--card-index-pip); background:var(--card-paper); border-radius:2px;
+    font-size:var(--card-index-size); line-height:0.95; color:#292820;
   }
-  .card.court-card .court-label img.suit-img{width:13px; height:13px;}
-  .card.court-card .court-label img.suit-espadas{transform:none;}
-  .card.court-card .court-label .pts{position:static; font-family:'Inter'; font-size:0.44rem; font-weight:600; color:var(--piedra);}
-  .card.mini.court-card svg.court{top:0; left:0; width:32px; height:34px;}
-  .card.mini.court-card .court-label{height:12px; padding:0 2px; font-size:11px;}
-  .card.mini.court-card .court-label img.suit-img{width:11px; height:11px;}
-  .card.mini.court-card .court-label .pts{font-size:6px;}
+  .card-corner.top-right{top:4px; right:3px;}
+  .card-corner.bottom-left{bottom:4px; left:3px;}
+  .card-corner img.suit-img{width:var(--card-index-pip); height:var(--card-index-pip); margin-top:1px;}
+  .card-corner img.suit-img.suit-espadas{transform:scaleX(1.5);}
+  .card svg.court{position:absolute; inset:4px 3px; width:calc(100% - 6px); height:calc(100% - 8px); display:block;}
+  .card-pips{position:absolute; left:34%; top:19%; width:32%; height:62%;}
+  .card-pips .suit-img{position:absolute; width:50%; height:30%; transform:translate(-50%,-50%);}
+  .card-pips .suit-img.suit-espadas{transform:translate(-50%,-50%) scaleX(1.5);}
+  .card-pips.single{left:34%; top:20%; width:32%; height:60%;}
+  .card-pips.single .suit-img{width:100%; height:100%;}
+  .card-pips.single .suit-img.suit-espadas{transform:translate(-50%,-50%) scaleX(1.4);}
+  .card.captain-special .special-art{position:absolute; left:10%; top:16%; width:80%; height:68%; display:block;}
+  .card.captain-special .card-corner{font-size:9px; line-height:1; color:#937129;}
 
   /* Mira una carta: la nota privada bajo tu tira de especiales. */
   .captain-peek{
@@ -451,18 +447,16 @@
   }
   .chest-btn.hidden{display:none;}
   .captain-card-btn{
-    display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:3px 2px;
-    width:58px; min-height:76px; border:1px solid rgba(80,85,63,.28); border-radius:9px;
-    cursor:pointer; color:var(--tinta); background:var(--pergamino);
-    box-shadow:0 2px 5px rgba(0,0,0,.12); transition:transform .15s ease, box-shadow .15s ease;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:0;
+    width:60px; border:0; border-radius:5px; cursor:pointer; color:var(--text); background:none;
+    transition:transform .15s ease;
   }
-  .captain-card-btn .em{display:block; width:46px; height:46px; flex-shrink:0;}
-  .captain-card-btn svg{width:100%; height:100%; display:block;}
-  .captain-card-caption{font-family:'Inter',sans-serif; font-size:8px; font-weight:600; line-height:1.15; text-align:center; margin-top:2px; overflow-wrap:anywhere;}
-  .captain-card-btn.sel{border-color:var(--oro); box-shadow:0 0 0 2px var(--oro),0 4px 8px rgba(0,0,0,.16); transform:translateY(-3px);}
+  .captain-card-caption{font-family:'Inter',sans-serif; font-size:9px; font-weight:600; line-height:1.2; text-align:center; margin-top:5px; overflow-wrap:anywhere;}
+  .captain-card-btn.sel{transform:translateY(-3px);}
+  .captain-card-btn.sel .card{box-shadow:0 0 0 2px var(--oro),0 4px 8px rgba(0,0,0,.16);}
   .captain-card-btn:disabled{opacity:0.4; cursor:default;}
   .captain-card-empty{
-    width:58px; height:76px; border-radius:9px;
+    width:39px; height:54px; margin:0 10.5px; border-radius:5px;
     border:1px dashed var(--linea);
   }
   /* "Qué hace / usar" panel for the currently-selected card — a reminder of
@@ -472,8 +466,7 @@
     padding:10px; border-radius:10px; background:rgba(var(--wash-rgb),0.06);
     border:1px solid var(--linea);
   }
-  .ccd-icon{flex-shrink:0; width:52px; height:58px; padding:3px; background:var(--pergamino); border-radius:8px;}
-  .ccd-icon svg{width:100%; height:100%;}
+  .ccd-icon{flex-shrink:0; width:39px; height:54px;}
   .ccd-txt{flex:1; min-width:0;}
   .ccd-name{font-weight:700; font-size:0.88rem; color:var(--oro);}
   .ccd-desc{font-size:0.8rem; color:var(--text); opacity:0.85; margin-top:2px;}
@@ -507,8 +500,8 @@
     animation: chest-card-in 0.5s cubic-bezier(.19,1.6,.4,1) 0.5s forwards;
   }
   @keyframes chest-card-in{ 100%{ opacity:1; transform:scale(1) translateY(0);} }
-  .chest-card-icon{width:76px; height:86px; padding:5px; margin:0 auto; background:var(--pergamino); border-radius:11px; box-shadow:0 4px 12px rgba(0,0,0,.2);}
-  .chest-card-icon svg{width:100%; height:100%;}
+  .chest-card-icon{width:78px; height:108px; margin:0 auto;}
+  .chest-card-icon .card{display:flex; transform:scale(2); transform-origin:top left;}
   .chest-card-name{
     font-family:'Fraunces', serif; font-weight:700; font-size:1.5rem; color:#fff;
     text-shadow:0 2px 8px rgba(0,0,0,0.5); margin-top:6px;
@@ -1855,10 +1848,10 @@ function suitIcon(suit){
   return `<img class="suit-img suit-${suit}" src="${SUIT_IMG[suit]}" alt="" aria-hidden="true">`;
 }
 
-/* ---------- MATTE GAME ART ----------
-   Approved style C. Each atlas is shared/cached across every card and suit.
-   SVG viewports crop the original raster artwork without stretching it. */
-const COURT_ART = { Rey:'0 110 512 650', Caballo:'520 110 560 650', Sota:'1090 110 446 650' };
+/* ---------- GAME ART ----------
+   Classic A uses isolated illustrations; every frame and index is HTML/CSS.
+   The two atlases are cached across the deck. Chests keep their existing art. */
+const COURT_ART = { Rey:0, Caballo:1, Sota:2 };
 function matteArt(sheet, viewBox, className){
   const size = sheet==='specials' ? 'width="1448" height="1086"' : 'width="1536" height="1024"';
   const [, ,w,h] = viewBox.split(' ').map(Number);
@@ -1866,8 +1859,15 @@ function matteArt(sheet, viewBox, className){
     + `<svg style="width:${w}px;height:${h}px" viewBox="${viewBox}" overflow="hidden">`
     + `<image href="assets/matte/${sheet}.png" ${size}/></svg></svg>`;
 }
-function courtArt(rank){
-  return matteArt('courts', COURT_ART[rank], 'court');
+function classicArt(sheet, viewBox, className){
+  const size = sheet==='courts' ? [1254,1254] : [1448,1086];
+  const [, ,w,h] = viewBox.split(' ').map(Number);
+  return `<svg class="${className}" viewBox="0 0 ${w} ${h}" aria-hidden="true" focusable="false">`
+    + `<svg width="${w}" height="${h}" viewBox="${viewBox}" overflow="hidden">`
+    + `<image href="assets/classic/${sheet}.png" width="${size[0]}" height="${size[1]}"/></svg></svg>`;
+}
+function courtArt(rank, suit){
+  return classicArt('courts', `${SUITS.indexOf(suit)*313.5} ${COURT_ART[rank]*418} 313.5 418`, 'court');
 }
 function chestArt(open=false){
   return matteArt('chests', `${open?798:30} 170 715 715`, 'chest-art');
@@ -3204,8 +3204,13 @@ function captainCardIconHtml(key){
   if(i===undefined) return '';
   // The generated rows have unequal gutters; crop between objects so a
   // mirror handle cannot leak into the arrow beneath it.
-  const edges = [0,390,740,1086], row = Math.floor(i/4);
-  return matteArt('specials', `${i%4*362} ${edges[row]} 362 ${edges[row+1]-edges[row]}`, 'special-art');
+  const edges = [0,387,728,1086], row = Math.floor(i/4);
+  return classicArt('specials', `${i%4*362} ${edges[row]} 362 ${edges[row+1]-edges[row]}`, 'special-art');
+}
+function captainCardFaceHtml(key, extraClass=''){
+  return `<span class="card captain-special ${extraClass}" aria-hidden="true">`
+    + captainCardIconHtml(key)
+    + '<span class="card-corner top-right">✦</span><span class="card-corner bottom-left">✦</span></span>';
 }
 const CAPTAIN_CARDS = {
   ignorar_palo:        {key:'ignorar_palo',        label:'Ignorar palo',        emoji:'🚫',
@@ -3388,7 +3393,7 @@ function captainUseCard(seat, key, targetSeat, suit){
 // the row's width doesn't jump as cards come and go.
 function captainInventoryIconsHtml(seat){
   const inv = state.captainMode.inventory[seat];
-  const llenas = inv.map(k=>`<span class="ico" title="${t(CAPTAIN_CARDS[k].label)}">${captainCardIconHtml(k)}</span>`);
+  const llenas = inv.map(k=>`<span class="ico" title="${t(CAPTAIN_CARDS[k].label)}" aria-label="${t(CAPTAIN_CARDS[k].label)}">${captainCardFaceHtml(k,'mini')}</span>`);
   const vacias = new Array(3-inv.length).fill('<span class="empty">·</span>');
   return `<span class="seat-cards">${llenas.concat(vacias).join(' ')}</span>`;
 }
@@ -3426,7 +3431,7 @@ function renderCaptainInventory(seat){
     const m = CAPTAIN_CARDS[key];
     const activa = capitanCardSeleccionada===key;
     return `<button class="captain-card-btn ${activa?'sel':''}" onclick="captainSelectCard(${seat},'${key}')" title="${t(m.label)}" aria-label="${t(m.label)}" aria-pressed="${activa}">
-      <span class="em">${captainCardIconHtml(key)}</span><span class="captain-card-caption">${t(m.label)}</span></button>`;
+      ${captainCardFaceHtml(key)}<span class="captain-card-caption">${t(m.label)}</span></button>`;
   });
   // Congelado: las cartas siguen a la vista y se pueden abrir para leerlas,
   // lo único que no se puede es gastarlas (ver captainUseCard).
@@ -3469,7 +3474,7 @@ function renderCaptainCardDetail(seat){
   }
   const m = CAPTAIN_CARDS[key];
   panel.classList.remove('hidden');
-  document.getElementById('captainCardDetailIcon').innerHTML = captainCardIconHtml(key);
+  document.getElementById('captainCardDetailIcon').innerHTML = captainCardFaceHtml(key);
   document.getElementById('captainCardDetailName').textContent = t(m.label);
   document.getElementById('captainCardDetailDesc').textContent = t(m.desc);
   // Congelado cuenta igual que "ya has gastado la de esta baza": la carta se
@@ -4611,7 +4616,7 @@ function showChestAnimation(seatName, key){
         <div class="chest-open">${chestArt(true)}</div>
       </div>
       <div class="chest-card-reveal">
-        <div class="chest-card-icon">${captainCardIconHtml(key)}</div>
+        <div class="chest-card-icon">${captainCardFaceHtml(key)}</div>
         <div class="chest-card-name">${t(m.label)}</div>
         <div class="chest-card-who">${seatName}</div>
       </div>
@@ -4649,24 +4654,32 @@ function renderHelp(activeSeat){
    change (start of a phase, card played, timer fired, etc), so the UI is
    always just "whatever the current state says it should be" rather than
    being updated incrementally. */
+// Central pips are countable; the two indices are separate from the score.
+const CARD_PIP_LAYOUTS = {
+  As:[[50,50]],
+  '2':[[50,18],[50,82]],
+  '3':[[50,12],[50,50],[50,88]],
+  '4':[[24,24],[76,24],[24,76],[76,76]],
+  '5':[[24,14],[76,14],[50,50],[24,86],[76,86]],
+  '6':[[24,14],[76,14],[24,50],[76,50],[24,86],[76,86]],
+  '7':[[24,9],[76,9],[24,36],[76,36],[50,63],[24,91],[76,91]],
+};
+function cardPipsHtml(card){
+  const layout = CARD_PIP_LAYOUTS[card.rank] || [];
+  return `<div class="card-pips ${card.rank==='As'?'single':''}" aria-hidden="true">`
+    + layout.map(([x,y])=>`<img class="suit-img suit-${card.suit}" src="${SUIT_IMG[card.suit]}" alt="" style="left:${x}%;top:${y}%">`).join('')
+    + '</div>';
+}
 function cardHtml(card, extraClass){
   // Los puntos por carta (as/tres/figuras) solo cuentan en el Subastao — en
   // la Pocha lo que importa son las bazas, así que no se muestran ahí.
   const showPts = card.pts>0 && state.gameType!=='pocha';
-  // Enlarged portraits with a rank/suit strip that survives row overlap.
-  if(Object.hasOwn(COURT_ART, card.rank)){
-    return `<div class="card court-card ${card.suit} ${extraClass||''}" data-id="${card.id}">
-      ${courtArt(card.rank)}
-      <div class="court-label">
-        <span>${RANK_SHORT[card.rank]}</span>
-        ${suitIcon(card.suit)}
-        ${showPts?`<span class="pts">${card.pts}</span>`:''}
-      </div>
-    </div>`;
-  }
-  return `<div class="card ${card.suit} ${extraClass||''}" data-id="${card.id}">
-    <div>${RANK_SHORT[card.rank]}</div>
-    <div class="icon-wrap">${suitIcon(card.suit)}</div>
+  const isCourt = Object.hasOwn(COURT_ART, card.rank);
+  const index = `<span>${RANK_SHORT[card.rank]}</span>${suitIcon(card.suit)}`;
+  return `<div class="card ${isCourt?'court-card':''} ${card.suit} ${extraClass||''}" data-id="${card.id}" aria-label="${cardLabel(card)}">
+    ${isCourt ? courtArt(card.rank, card.suit) : cardPipsHtml(card)}
+    <div class="card-corner top-right" aria-hidden="true">${index}</div>
+    <div class="card-corner bottom-left" aria-hidden="true">${index}</div>
     ${showPts?`<div class="pts">${card.pts}</div>`:''}
   </div>`;
 }

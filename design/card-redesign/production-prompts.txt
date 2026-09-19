@@ -1,0 +1,22 @@
+COURT ATLAS — built-in image_gen
+
+Create a production SPRITE ATLAS for a Spanish playing card game. Reference image is a review sheet: MATCH ONLY THE TOP ROW "A / CLASICA LIMPIA" illustration treatment: traditional flat Spanish baraja, mature full-length figures, crisp dark contour, restrained original costume detailing, rich red cobalt blue gold green, clean professional adult faces with small natural eyes. Original illustrations, no copied brand artwork.
+
+OUTPUT: square canvas with a STRICT invisible 4-column by 3-row EQUAL CELL grid, twelve separate illustrations. Transparent background everywhere outside illustrations. No grid lines, NO CARDS, NO FRAMES, NO LETTERS, NO NUMBERS, NO LABELS, NO SHADOWS. Each illustration completely contained within the central 78% width and 84% height of its cell, ample transparent gutters; full bodies and feet visible, never touches another cell. Same visual size across row. Each cell is 3:4 portrait because the entire sheet is square. All figures centered.
+Columns from left to right: OROS gold coin, COPAS red/gold traditional chalice, ESPADAS straight pale blue Spanish sword yellow hilt, BASTOS chunky green wooden club (NEVER French club symbol).
+Row 1 all REY: dignified mature bearded crowned king standing full length in red cloak and blue/gold robes. Each holds the column's distinctive suit object visibly at chest or side. No throne or background.
+Row 2 all CABALLO: mature mounted cavalry rider, elegant WHITE horse full body, hooves visible, rider wearing period blue/red/gold clothes. Each rider carries that column's suit object. Keep whole rider and horse inside its cell, coherent anatomy, visually simple.
+Row 3 all SOTA: mature adult court attendant standing full length, colorful period cap and red/blue/gold tunic, natural adult proportions. Each holds that column's suit object.
+Use similar cohesive character identity across suits, different appropriate hand poses. Less ornate than the reference, fewer tiny costume patterns, clear silhouettes readable on small mobile playing cards. Flat illustration only, no 3D, no cartoon child faces, no gradients. This is isolated illustration artwork only; the game will draw all borders and typography separately.
+
+CAPITÁN ATLAS — built-in image_gen
+
+Create a production SPRITE ATLAS of 12 power-card illustrations for El Capitán, a Spanish baraja game. First reference image is the approved card style: match ONLY top row A / CLASICA LIMPIA. Second reference image shows OLD 3D power icons: retain the meaning and basic recognizable objects, COMPLETELY REDRAW as traditional Spanish playing-card flat illustration with clean fine dark outlines, flat gold red royal blue forest green, sparse line details, professional and modern. No 3D or plastic or gradients or cartoon faces.
+
+OUTPUT: landscape canvas 4:3 ratio, STRICT invisible 4-column x 3-row EQUAL SQUARE CELL grid. Twelve separate icons, each centered in its own cell, filling 70% of cell width and height, plenty of TRANSPARENT gutter. Genuinely transparent background, no checkerboard. No card frames, no border, no text, no labels, no letters or digits. Do not let art cross cell boundaries.
+
+Exact reading order:
+row 1: ornate simple green/gold SHIELD; gold CROWN; pale blue ICE BLOCK enclosing a simple cream playing card; gold framed HAND MIRROR.
+row 2: green FOUR-LEAF CLOVER; elegant GLOVED HAND holding two cream cards with gold coin motifs; red PROHIBITION CIRCLE crossing one cream card; gold UPWARD ARROW lifting one cream card.
+row 3: charcoal gray STONE resting atop cream card; two curved arrows joining a red/gold Spanish CHALICE and a chunky GREEN WOODEN CLUB (not a French trefoil); two cream cards with two opposite gold EXCHANGE ARROWS; clean stylized EYE in front of a cream card.
+Use warm cream for the small card props. Flat clear icon silhouettes compatible with the full-length traditional baraja court illustrations. Fine period ornament used sparingly. All 12 same apparent visual weight, all isolated fully visible, no cropped objects.
