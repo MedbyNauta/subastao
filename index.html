@@ -1517,6 +1517,7 @@ const FR_DICT = {
   "Multi en móvil": "Multi sur un téléphone",
   "Os vais pasando el teléfono": "Vous vous passez le téléphone",
   "Multi Online": "Multi en ligne",
+  "Multi Online no está configurado en esta versión. Solo y Multi en móvil siguen disponibles.": "Le mode Multi en ligne n'est pas configuré dans cette version. Solo et Multi sur mobile restent disponibles.",
   "Cada uno desde su móvil": "Chacun depuis son téléphone",
   "¿Cuántas personas?": "Combien de personnes ?",
   "Crear partida": "Créer une partie",
@@ -1719,6 +1720,28 @@ const RANKS_3P = ['As','3','Rey','Caballo','Sota','7','6','5','4'];
 const RANK_SHORT = {As:'A','3':'3',Rey:'R',Caballo:'C',Sota:'S','7':'7','6':'6','5':'5','4':'4','2':'2'};
 const POINTS = {As:11,'3':10,Rey:4,Caballo:3,Sota:2,'7':0,'6':0,'5':0,'4':0,'2':0};
 const TEAM_OF_4 = {0:'A',1:'B',2:'A',3:'B'};
+
+// Escape any untrusted string before it is interpolated into innerHTML.
+// Player names, imported history fields, and lobby labels all go through here.
+function escapeHtml(value){
+  return String(value ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+// Strip markup/control chars from a display name at the point of entry so
+// logs and network payloads never carry raw HTML even before escapeHtml.
+function sanitizePlayerName(name, fallback){
+  const cleaned = String(name ?? '')
+    .replace(/[<>&"'`\\/]/g, '')
+    .replace(/[\u0000-\u001F\u007F]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 8);
+  return cleaned || fallback;
+}
 
 // La Pocha: a separate no-partners game for 3 to 5 players (see the POCHA
 // GAME FLOW section far below) — everyone bids how many tricks they'll take
@@ -3150,7 +3173,7 @@ function renderCaptainSummary(s){
   const filas = seatRange().map(seat=>{
     const tag = seat===s.captainSeat ? ` · ${t('Capitán')}` : '';
     const ganado = s.tricksWon[seat] + (seat===s.captainSeat && s.success ? s.reward : 0);
-    return `<div class="summary-row pocha-row"><span>${state.seatNames[seat]}${tag}</span><span class="bw">${s.tricksWon[seat]}</span><span class="score">+${ganado}</span></div>`;
+    return `<div class="summary-row pocha-row"><span>${escapeHtml(state.seatNames[seat])}${tag}</span><span class="bw">${s.tricksWon[seat]}</span><span class="score">+${ganado}</span></div>`;
   }).join('');
   document.getElementById('summaryBody').innerHTML = mission + filas;
   document.getElementById('summaryAdvanceBtn').textContent = t(
@@ -3456,7 +3479,7 @@ function renderCaptainPeek(seat){
     return;
   }
   el.classList.remove('hidden');
-  el.innerHTML = `<span>${tf('Viste en la mano de {0}:', state.seatNames[p.targetSeat])}</span>`
+  el.innerHTML = `<span>${escapeHtml(tf('Viste en la mano de {0}:', state.seatNames[p.targetSeat]))}</span>`
     + cardHtml(carta, 'mini');
 }
 // The "qué hace / usar" panel for whichever card is currently selected —
@@ -3495,7 +3518,7 @@ function renderCaptainCardDetail(seat){
     const objetivos = captainSeatTargets(seat, key);
     targetsEl.classList.toggle('hidden', usedYa);
     targetsEl.innerHTML = usedYa ? '' : (objetivos.length
-      ? objetivos.map(s=>`<button class="ghost-btn" onclick="captainPickTarget(${s})">${state.seatNames[s]}</button>`).join('')
+      ? objetivos.map(s=>`<button class="ghost-btn" onclick="captainPickTarget(${s})">${escapeHtml(state.seatNames[s])}</button>`).join('')
       : `<p class="toggle-hint">${key==='piedra'
           ? t('Todavía no hay ninguna carta rival en esta baza.')
           : t('Ahora mismo no hay ningún rival al que apuntar.')}</p>`);
@@ -3932,7 +3955,7 @@ function endPochaRound(){
 function renderPochaSummary(results, isLastRound){
   document.getElementById('summaryTitle').textContent = tf('Ronda {0} de {1}', state.pocha.roundIndex+1, state.pocha.roundSizes.length);
   document.getElementById('summaryBody').innerHTML = results.map(r=>
-    `<div class="summary-row pocha-row"><span>${state.seatNames[r.seat]}</span><span class="bw">${r.bid} · ${r.won}</span><span class="score">${r.score>=0?'+':''}${r.score}</span></div>`
+    `<div class="summary-row pocha-row"><span>${escapeHtml(state.seatNames[r.seat])}</span><span class="bw">${r.bid} · ${r.won}</span><span class="score">${r.score>=0?'+':''}${r.score}</span></div>`
   ).join('');
   document.getElementById('summaryAdvanceBtn').textContent = t(isLastRound ? 'Ver resultado final' : 'Siguiente ronda');
 }
@@ -4010,19 +4033,20 @@ function renderResultHistory(){
   const box = document.getElementById('resultHistoryList');
   if(!box) return;
   const list = loadResultHistory();
-  if(list.length===0){ box.innerHTML = `<span style="color:var(--piedra);">${t('Aún no has guardado ninguna partida.')}</span>`; return; }
+  if(list.length===0){ box.innerHTML = `<span style="color:var(--piedra);">${escapeHtml(t('Aún no has guardado ninguna partida.'))}</span>`; return; }
   const levelLabel = {low:'Bajo', medium:'Medio', high:'Alto'};
   box.innerHTML = list.map(e=>{
-    const type = e.gameType==='pocha' ? `Pocha a ${e.numPlayers}`
+    const type = e.gameType==='pocha' ? `Pocha a ${escapeHtml(e.numPlayers)}`
       : (e.numPlayers===4 ? 'Subastao a 4' : 'Subastao a 3') + (e.subastaoMode==='capitan' ? ' · Capitán' : '');
-    const human = e.humanPlayers>=e.numPlayers ? `${e.numPlayers} personas` : `${e.humanPlayers} persona${e.humanPlayers===1?'':'s'}+IA`;
-    const meta = e.gameType==='pocha' ? '' : `meta ${e.target} · `;
-    const scoreStr = Object.entries(e.scores||{}).map(([k,v])=>`${k}:${v}`).join(' · ');
-    const stakeStr = e.stake ? ` · Se jugó: ${e.stake}€` : '';
-    const playersStr = (e.players && e.players.length) ? `<div style="color:var(--piedra); font-size:0.74rem; margin-top:1px;">Jugadores: ${e.players.join(', ')}</div>` : '';
+    const human = e.humanPlayers>=e.numPlayers ? `${escapeHtml(e.numPlayers)} personas` : `${escapeHtml(e.humanPlayers)} persona${e.humanPlayers===1?'':'s'}+IA`;
+    const meta = e.gameType==='pocha' ? '' : `meta ${escapeHtml(e.target)} · `;
+    const scoreStr = Object.entries(e.scores||{}).map(([k,v])=>`${escapeHtml(k)}:${escapeHtml(v)}`).join(' · ');
+    const stakeStr = e.stake ? ` · Se jugó: ${escapeHtml(e.stake)}€` : '';
+    const playersStr = (e.players && e.players.length) ? `<div style="color:var(--piedra); font-size:0.74rem; margin-top:1px;">Jugadores: ${e.players.map(escapeHtml).join(', ')}</div>` : '';
+    const aiLabel = levelLabel[e.aiLevel] || e.aiLevel;
     return `<div style="padding:7px 0; border-bottom:1px solid rgba(31,42,61,0.12);">
-      <div style="display:flex; justify-content:space-between;"><b>${e.name}</b><span style="color:var(--piedra); font-size:0.74rem;">${fmtHistoryDate(e.date)}</span></div>
-      <div style="color:var(--piedra); font-size:0.76rem; margin-top:1px;">Gana ${e.winner} · ${meta}${type} · ${human} · IA ${levelLabel[e.aiLevel]||e.aiLevel}${stakeStr}</div>
+      <div style="display:flex; justify-content:space-between;"><b>${escapeHtml(e.name)}</b><span style="color:var(--piedra); font-size:0.74rem;">${escapeHtml(fmtHistoryDate(e.date))}</span></div>
+      <div style="color:var(--piedra); font-size:0.76rem; margin-top:1px;">Gana ${escapeHtml(e.winner)} · ${meta}${type} · ${human} · IA ${escapeHtml(aiLabel)}${stakeStr}</div>
       ${playersStr}
       <div style="font-size:0.76rem; margin-top:1px;">${scoreStr}</div>
     </div>`;
@@ -4046,6 +4070,47 @@ function exportResultHistory(){
   a.remove();
   URL.revokeObjectURL(url);
 }
+function sanitizeHistoryScores(scores){
+  if(!scores || typeof scores!=='object' || Array.isArray(scores)) return {};
+  const out = {};
+  for(const [k,v] of Object.entries(scores)){
+    if(typeof k!=='string' || k.length>40) continue;
+    const num = typeof v==='number' ? v : Number(v);
+    if(!Number.isFinite(num)) continue;
+    out[sanitizePlayerName(k, k.slice(0,8)) || '—'] = num;
+    if(Object.keys(out).length>=8) break;
+  }
+  return out;
+}
+function sanitizeHistoryEntry(raw){
+  if(!raw || typeof raw!=='object' || Array.isArray(raw)) return null;
+  if(typeof raw.date!=='string' || !raw.date.trim()) return null;
+  if(typeof raw.name!=='string') return null;
+  const date = String(raw.date).slice(0, 40);
+  if(Number.isNaN(Date.parse(date))) return null;
+  const players = Array.isArray(raw.players)
+    ? raw.players.filter(p=>typeof p==='string' || typeof p==='number')
+        .map(p=>sanitizePlayerName(p, 'Jugador')).filter(Boolean).slice(0, 8)
+    : [];
+  const numPlayers = Number(raw.numPlayers);
+  const humanPlayers = Number(raw.humanPlayers);
+  const target = Number(raw.target);
+  const stakeNum = raw.stake==null || raw.stake==='' ? null : Number(raw.stake);
+  return {
+    date,
+    name: String(raw.name).replace(/[<>&"'`]/g,'').trim().slice(0, 80) || 'Partida',
+    winner: String(raw.winner ?? '').replace(/[<>&"'`]/g,'').trim().slice(0, 80),
+    gameType: raw.gameType==='pocha' ? 'pocha' : 'subastao',
+    subastaoMode: raw.subastaoMode==='capitan' ? 'capitan' : (raw.subastaoMode==null ? undefined : 'normal'),
+    numPlayers: Number.isFinite(numPlayers) ? Math.min(5, Math.max(2, Math.round(numPlayers))) : 4,
+    humanPlayers: Number.isFinite(humanPlayers) ? Math.min(5, Math.max(0, Math.round(humanPlayers))) : 1,
+    target: Number.isFinite(target) ? Math.min(10000, Math.max(0, Math.round(target))) : 500,
+    aiLevel: ({low:1,medium:1,high:1}[raw.aiLevel] ? raw.aiLevel : 'medium'),
+    stake: (stakeNum!==null && Number.isFinite(stakeNum) && stakeNum>0) ? stakeNum : null,
+    players,
+    scores: sanitizeHistoryScores(raw.scores)
+  };
+}
 function importResultHistory(file){
   if(!file) return;
   const reader = new FileReader();
@@ -4054,10 +4119,12 @@ function importResultHistory(file){
     try{ incoming = JSON.parse(reader.result); }
     catch(e){ alert(t('El fichero no es un historial válido.')); return; }
     if(!Array.isArray(incoming)){ alert(t('El fichero no es un historial válido.')); return; }
+    const cleaned = incoming.map(sanitizeHistoryEntry).filter(Boolean);
+    if(!cleaned.length){ alert(t('El fichero no es un historial válido.')); return; }
     const existing = loadResultHistory();
     // merge by date+name to avoid duplicating entries already present
     const seen = new Set(existing.map(e=>e.date+'|'+e.name));
-    const merged = existing.concat(incoming.filter(e=>e && e.date && !seen.has(e.date+'|'+e.name)));
+    const merged = existing.concat(cleaned.filter(e=>!seen.has(e.date+'|'+e.name)));
     merged.sort((a,b)=> new Date(b.date) - new Date(a.date));
     if(merged.length>200) merged.length=200;
     saveResultHistory(merged);
@@ -4276,7 +4343,7 @@ function computeHelp(seat){
     if(s===seat) continue;
     const voids=[...state.voidSuits[s]];
     if(voids.length){
-      knownLines.push(`<b>${state.seatNames[s]}</b> no tiene: ${voids.map(v=>SUIT_LABEL[v]).join(', ')}.`);
+      knownLines.push(`<b>${escapeHtml(state.seatNames[s])}</b> no tiene: ${voids.map(v=>SUIT_LABEL[v]).join(', ')}.`);
     }
   }
   const outTrumpsLeft=outstanding[trump].length;
@@ -4346,7 +4413,7 @@ function computePochaHelp(seat){
   for(let s=0;s<state.numPlayers;s++){
     if(s===seat) continue;
     const voids=[...state.voidSuits[s]];
-    if(voids.length) knownLines.push(`<b>${state.seatNames[s]}</b> no tiene: ${voids.map(v=>SUIT_LABEL[v]).join(', ')}.`);
+    if(voids.length) knownLines.push(`<b>${escapeHtml(state.seatNames[s])}</b> no tiene: ${voids.map(v=>SUIT_LABEL[v]).join(', ')}.`);
   }
   if(trump) knownLines.push(tf('Quedan <b>{0}</b> triunfo(s) de {1} sin ver (fuera de tu mano).', outstanding[trump].length, suitName(trump)));
   else knownLines.push(t('Esta ronda se juega sin triunfo.'));
@@ -4555,7 +4622,7 @@ function showCanteAnimation(seatName, suit, pts){
     <div class="cante-burst"></div>
     <div class="cante-text">
       <div class="cante-shout">${t('¡Cante!')}</div>
-      <div class="cante-detail">${suitIcon(suit)}<span>${pts} · ${seatName}</span></div>
+      <div class="cante-detail">${suitIcon(suit)}<span>${pts} · ${escapeHtml(seatName)}</span></div>
     </div>`;
   document.body.appendChild(overlay);
   spawnCanteSparks(isForty?55:40, isForty?'spark-fire':'spark-blue');
@@ -4614,7 +4681,7 @@ function showChestAnimation(seatName, key){
       <div class="chest-card-reveal">
         <div class="chest-card-icon">${captainCardFaceHtml(key)}</div>
         <div class="chest-card-name">${t(m.label)}</div>
-        <div class="chest-card-who">${seatName}</div>
+        <div class="chest-card-who">${escapeHtml(seatName)}</div>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -4762,7 +4829,7 @@ function renderSeatsBar(){
       const nombres = t.seats.map((s,k)=>{
         const cls = 'n' + (s===mine?' mio':'') + (seatIsActing(s)?' turno':'');
         const est = seatEstados(s).map(e=>`<span class="estado">${e}</span>`).join('');
-        return `${k?'<span class="sep">·</span>':''}<span class="${cls}" data-seat="${s}">${state.seatNames[s]}${est}</span>`;
+        return `${k?'<span class="sep">·</span>':''}<span class="${cls}" data-seat="${s}">${escapeHtml(state.seatNames[s])}${est}</span>`;
       }).join('');
       return `<div class="team ${t.seats.includes(mine)?'you':''}" data-key="${t.key}">
         <span class="val">${state.scores[t.key]}</span>
@@ -4782,7 +4849,7 @@ function renderSeatsBar(){
     // design doc's "todos los jugadores saben qué poderes posee cada rival".
     const cartas = state.subastaoMode==='capitan' ? captainInventoryIconsHtml(s) : '';
     return `<div class="seat ${s===mine?'you':''} ${seatIsActing(s)?'turn':''}" data-seat="${s}" data-key="${s}">
-      <span class="nm">${state.seatNames[s]}</span>
+      <span class="nm">${escapeHtml(state.seatNames[s])}</span>
       <span class="val">${total}</span>
       <span class="vivo">${vivo}</span>
       <span class="estado-linea">${est || '&nbsp;'}</span>
@@ -4942,20 +5009,20 @@ function render(){
     // The empty spacer matches a mini card's height exactly (45px), so a slot
     // is the same size whether or not a card has landed in it and the mesa
     // never changes height mid-trick.
-    slot.innerHTML = played ? cardHtml(played.card,'mini') + `<div class="who">${state.seatNames[s]}${seatAiTag(s)}</div>` : `<div style="height:45px;"></div><div class="who">${state.seatNames[s]}${seatAiTag(s)}</div>`;
+    slot.innerHTML = played ? cardHtml(played.card,'mini') + `<div class="who">${escapeHtml(state.seatNames[s])}${seatAiTag(s)}</div>` : `<div style="height:45px;"></div><div class="who">${escapeHtml(state.seatNames[s])}${seatAiTag(s)}</div>`;
     grid.appendChild(slot);
   });
 
   // bid log
   if(state.bidLog){
-    document.getElementById('bidLog').innerHTML = state.bidLog.map(l=>`<div>${l}</div>`).join('');
+    document.getElementById('bidLog').innerHTML = state.bidLog.map(l=>`<div>${escapeHtml(l)}</div>`).join('');
     document.getElementById('bidLog').scrollTop = 999999;
   }
   // pocha bid log — rebuilt fresh from state.pocha.bids each render, rather
   // than an append-only log, so it always reflects who's bid what so far.
   if(state.gameType==='pocha' && state.phase==='pocha-bidding'){
     document.getElementById('pochaBidLog').innerHTML = seatRange().map(s=>
-      `<div>${state.seatNames[s]}: ${state.pocha.bids[s]===null?'—':state.pocha.bids[s]}</div>`).join('');
+      `<div>${escapeHtml(state.seatNames[s])}: ${state.pocha.bids[s]===null?'—':state.pocha.bids[s]}</div>`).join('');
   }
 
   // hand — shows whichever human seat currently has the phone (handDisplaySeat),
@@ -5014,7 +5081,7 @@ function render(){
 
   // log
   if(state.log){
-    document.getElementById('logList').innerHTML = state.log.slice(-40).map(l=>`<div>${l}</div>`).join('');
+    document.getElementById('logList').innerHTML = state.log.slice(-40).map(l=>`<div>${escapeHtml(l)}</div>`).join('');
     document.getElementById('logList').scrollTop = 999999;
   }
 
@@ -5087,15 +5154,15 @@ function renderSummary(){
   const s=state.lastSummary;
   document.getElementById('summaryTitle').textContent = t(s.success ? 'Mano cumplida' : 'Mano bañada');
   let rows = `
-    <div class="summary-row"><span>${t(state.numPlayers===4?'Pareja subastadora':'Jugador solo')}</span><span>${biddingSideLabel()}</span></div>
+    <div class="summary-row"><span>${t(state.numPlayers===4?'Pareja subastadora':'Jugador solo')}</span><span>${escapeHtml(biddingSideLabel())}</span></div>
     <div class="summary-row"><span>${t('Puntos pujados')}</span><span>${state.bidAmount}</span></div>
     <div class="summary-row"><span>${t('Puntos reunidos')}</span><span>${s.made}</span></div>`;
   if(state.numPlayers===4){
-    rows += `<div class="summary-row total"><span>${t('Anota')}</span><span>${scoreLabelFor(s.awardedKey)}: +${state.bidAmount}</span></div>`;
+    rows += `<div class="summary-row total"><span>${t('Anota')}</span><span>${escapeHtml(scoreLabelFor(s.awardedKey))}: +${state.bidAmount}</span></div>`;
   } else if(s.success){
-    rows += `<div class="summary-row total"><span>${t('Anota')}</span><span>${state.seatNames[state.biddingTeam]}: +${state.bidAmount}</span></div>`;
+    rows += `<div class="summary-row total"><span>${t('Anota')}</span><span>${escapeHtml(state.seatNames[state.biddingTeam])}: +${state.bidAmount}</span></div>`;
   } else {
-    const entries = Object.entries(s.splits).map(([seat,amt])=>`${state.seatNames[seat]}: +${amt}`).join(' · ');
+    const entries = Object.entries(s.splits).map(([seat,amt])=>`${escapeHtml(state.seatNames[seat])}: +${amt}`).join(' · ');
     rows += `<div class="summary-row total"><span>${t('Anotan')}</span><span>${entries}</span></div>`;
   }
   document.getElementById('summaryBody').innerHTML = rows;
@@ -5214,18 +5281,13 @@ function finishLauncher(humanPlayers){
 /* =====================================================================
    NETWORKING / ONLINE MULTIPLAYER (Firebase Firestore)
    One device is the "host": it's the only one that ever runs the actual
-   game engine (startAuction/bidTick/playTick/AI turns/etc, all untouched
-   above) — after every render() it publishes the whole `state` object to
-   rooms/{code}.stateJson. Every other device just mirrors that state and
-   re-renders (see enterOnlineGame/applyRemoteState); when a guest acts
-   (bids, plays a card...) their tap doesn't touch local state at all — it
-   posts a small action doc to rooms/{code}/actions instead, which the host
-   listens for and replays through the exact same recordBid/playCard/etc
-   functions a local click would use (see the wrapping at the bottom of
-   this section), then republishes the result. Card privacy note: the
-   published state includes every seat's hand — fine against a casual
-   opponent, but not hardened against someone reading the Firestore doc
-   directly (see accompanying firestore.rules notes).
+   game engine. After every render() it publishes a REDACTED public state
+   (no private hands) to rooms/{code}.stateJson, plus each human seat's
+   hand to rooms/{code}/hands/{authUid} (readable only by that player —
+   see firestore.rules). Guests mirror public state and merge in their
+   private hand listener. Guest taps post action docs the host replays.
+   Open lobbies are listed from a separate `lobbies` collection that holds
+   only non-secret metadata (code, game type, seats, host name).
    ===================================================================== */
 // `onlineUid` identifies THIS BROWSER TAB as a distinct player, so testing
 // with two tabs of the same browser (or two people sharing a device/profile)
@@ -5233,9 +5295,10 @@ function finishLauncher(humanPlayers){
 // profile and shared across every tab of that profile, so it can't tell tabs
 // apart — sessionStorage can (fresh per tab, stable across reloads of that
 // same tab). `onlineAuthUid` is the real Firebase Auth uid, kept separately
-// only because firestore.rules ties action writes to request.auth.uid.
+// only because firestore.rules ties action writes / hand docs to request.auth.uid.
 let onlineUid = null, onlineAuthUid = null;
-let roomUnsub = null, actionsUnsub = null, lobbyRoomCode = null;
+let roomUnsub = null, actionsUnsub = null, handUnsub = null, lobbyRoomCode = null;
+let cachedPrivateHand = null;
 // Shown while any online Firestore listener is erroring out (device offline,
 // permission hiccup, etc) — purely informational, the SDK keeps retrying the
 // listener itself. connErrorSources tracks WHICH listeners are currently
@@ -5268,42 +5331,51 @@ function ensureSessionId(){
   return id;
 }
 
-function goLauncherOnlineMenu(){ launcherGo('OnlineMenu'); }
+async function goLauncherOnlineMenu(){
+  try{
+    await ensureFirebaseReady();
+  }catch(e){
+    alert(t('Multi Online no está configurado en esta versión. Solo y Multi en móvil siguen disponibles.'));
+    return;
+  }
+  launcherGo('OnlineMenu');
+}
 function goLauncherOnlineJoin(){ launcherGo('OnlineJoin'); watchOpenRooms(); }
 function leaveOnlineJoinScreen(){ stopWatchingOpenRooms(); launcherGo('OnlineMenu'); }
 
-// Live list of rooms still in their lobby (not started, not full) — lets a
-// guest tap straight into one instead of having to type its code.
+// Live list of open lobbies from the public `lobbies` index (not full room
+// docs — those are members-only once a game is playing).
 let openRoomsUnsub = null;
 async function watchOpenRooms(){
   const list = document.getElementById('openRoomsList');
   try{
     await ensureFirebaseAuth();
   }catch(e){
-    list.innerHTML = `<p class="toggle-hint">${t('No se pudo comprobar las salas abiertas.')}</p>`;
+    list.innerHTML = `<p class="toggle-hint">${escapeHtml(t('No se pudo comprobar las salas abiertas.'))}</p>`;
     return;
   }
   if(openRoomsUnsub) openRoomsUnsub();
-  openRoomsUnsub = fbDb.collection('rooms').where('status','==','lobby').onSnapshot(snap=>{
+  openRoomsUnsub = fbDb.collection('lobbies').onSnapshot(snap=>{
     const rooms=[];
     snap.forEach(doc=>rooms.push({code:doc.id, ...doc.data()}));
     renderOpenRoomsList(rooms);
-  }, ()=>{ list.innerHTML = `<p class="toggle-hint">${t('No se pudo comprobar las salas abiertas.')}</p>`; });
+  }, ()=>{ list.innerHTML = `<p class="toggle-hint">${escapeHtml(t('No se pudo comprobar las salas abiertas.'))}</p>`; });
 }
 function stopWatchingOpenRooms(){
   if(openRoomsUnsub){ openRoomsUnsub(); openRoomsUnsub=null; }
 }
 function renderOpenRoomsList(rooms){
   const list = document.getElementById('openRoomsList');
-  const open = rooms.filter(r=>(r.players||[]).length < maxSeatsFor(r.gameType));
-  if(!open.length){ list.innerHTML = `<p class="toggle-hint">${t('No hay salas abiertas ahora mismo — crea una o introduce un código.')}</p>`; return; }
+  const open = rooms.filter(r=>(r.playerCount||0) < (r.maxSeats||maxSeatsFor(r.gameType)));
+  if(!open.length){ list.innerHTML = `<p class="toggle-hint">${escapeHtml(t('No hay salas abiertas ahora mismo — crea una o introduce un código.'))}</p>`; return; }
   list.innerHTML = open.map(r=>{
-    const max = maxSeatsFor(r.gameType);
+    const max = r.maxSeats || maxSeatsFor(r.gameType);
     const {gameType:rGameType, pochaVariant:rVariant, subastaoMode:rMode} = parseGameSelector(r.gameType);
     const gameLabel = rGameType==='pocha' ? `${pochaVariant(rVariant).label} a ${max}`
       : `Subastao a ${max}` + (rMode==='capitan' ? ' · Capitán' : '');
-    const host = (r.players||[]).find(p=>p.uid===r.hostUid);
-    return `<div class="launcher-item" onclick="joinOpenRoom('${r.code}')"><div><b>${gameLabel} · ${r.code}</b><span>${tf('Anfitrión {0} · {1}/{2} jugadores', host?host.name:'?', (r.players||[]).length, max)}</span></div><div class="chev">›</div></div>`;
+    const code = String(r.code||'').replace(/[^A-Z0-9]/gi,'');
+    const count = Number(r.playerCount)||0;
+    return `<div class="launcher-item" onclick="joinOpenRoom('${code}')"><div><b>${escapeHtml(gameLabel)} · ${escapeHtml(code)}</b><span>${escapeHtml(tf('Anfitrión {0} · {1}/{2} jugadores', r.hostName||'?', count, max))}</span></div><div class="chev">›</div></div>`;
   }).join('');
 }
 function joinOpenRoom(code){
@@ -5320,11 +5392,33 @@ function genRoomCode(){
 function maxSeatsFor(gameType){ return parseGameSelector(gameType).numPlayers; }
 
 function ensureFirebaseAuth(){
-  return new Promise((resolve,reject)=>{
+  return ensureFirebaseReady().then(()=> new Promise((resolve,reject)=>{
     if(fbAuth.currentUser){ resolve(fbAuth.currentUser.uid); return; }
     const unsub = fbAuth.onAuthStateChanged(user=>{ if(user){ unsub(); resolve(user.uid); } });
     fbAuth.signInAnonymously().catch(e=>{ unsub(); reject(e); });
-  });
+  }));
+}
+
+function lobbyIndexPayload(code, data, hostName){
+  const players = data.players || [];
+  const host = players.find(p=>p.uid===data.hostUid);
+  return {
+    gameType: data.gameType,
+    hostUid: data.hostUid,
+    hostName: hostName || (host && host.name) || 'Anfitrión',
+    playerCount: players.length,
+    maxSeats: maxSeatsFor(data.gameType),
+    createdAt: data.createdAt || firebase.firestore.FieldValue.serverTimestamp()
+  };
+}
+function syncLobbyIndex(code, data){
+  if(!data || data.status!=='lobby') return;
+  fbDb.collection('lobbies').doc(code).set(lobbyIndexPayload(code, data), {merge:true})
+    .catch(e=>console.error('syncLobbyIndex failed', e));
+}
+function removeLobbyIndex(code){
+  if(!code) return;
+  fbDb.collection('lobbies').doc(code).delete().catch(()=>{});
 }
 
 async function startCreateOnlineRoom(){
@@ -5333,7 +5427,7 @@ async function startCreateOnlineRoom(){
   const nameEl = document.getElementById('onlineCreateName');
   const stakeEl = document.getElementById('onlineCreateStake');
   const errEl = document.getElementById('onlineCreateError');
-  const name = (nameEl.value||'').trim().slice(0,8) || 'Anfitrión';
+  const name = sanitizePlayerName(nameEl.value, 'Anfitrión');
   const stake = stakeEl.value ? parseFloat(stakeEl.value) : null;
   errEl.textContent = '';
   btn.disabled = true;
@@ -5343,14 +5437,17 @@ async function startCreateOnlineRoom(){
     onlineUid = sessionId;
     onlineAuthUid = uid;
     const code = genRoomCode();
-    await fbDb.collection('rooms').doc(code).set({
+    const roomData = {
       gameType: launcherType,
       hostUid: uid,
       status: 'lobby',
       stake: (stake!==null && !isNaN(stake) && stake>0) ? stake : null,
       players: [{uid, sessionId, name, seat:0}],
+      memberUids: [uid],
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    };
+    await fbDb.collection('rooms').doc(code).set(roomData);
+    await fbDb.collection('lobbies').doc(code).set(lobbyIndexPayload(code, roomData, name));
     lobbyRoomCode = code;
     openOnlineLobby(code, true);
   }catch(e){
@@ -5366,8 +5463,8 @@ async function joinOnlineRoom(){
   const nameEl = document.getElementById('onlineJoinName');
   const codeEl = document.getElementById('onlineJoinCode');
   const errEl = document.getElementById('onlineJoinError');
-  const name = (nameEl.value||'').trim().slice(0,8) || 'Jugador';
-  const code = (codeEl.value||'').trim().toUpperCase();
+  const name = sanitizePlayerName(nameEl.value, 'Jugador');
+  const code = (codeEl.value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
   errEl.textContent = '';
   if(!code){ errEl.textContent = t('Introduce un código.'); return; }
   btn.disabled = true;
@@ -5382,18 +5479,29 @@ async function joinOnlineRoom(){
       if(!doc.exists) throw new Error(t('Esa sala no existe.'));
       const data = doc.data();
       const players = data.players || [];
+      const memberUids = Array.isArray(data.memberUids) ? data.memberUids.slice() : players.map(p=>p.uid).filter(Boolean);
       const idx = players.findIndex(p=>p.sessionId===sessionId);
       if(idx>=0){
         // Reconnecting from this same tab (e.g. after a reload) — same seat
         // as before, whatever the game's status; just refresh uid/name.
+        // Playing-room reconnects are host-only updates, so only refresh in lobby.
+        if(data.status!=='lobby'){
+          if(!memberUids.includes(uid))
+            throw new Error(t('Esa partida ya ha empezado.'));
+          // Already a member of a playing room — no write needed to reattach listeners.
+          return;
+        }
         players[idx] = {...players[idx], uid, name};
-        tx.update(ref, {players});
+        if(!memberUids.includes(uid)) memberUids.push(uid);
+        tx.update(ref, {players, memberUids});
         return;
       }
       if(data.status!=='lobby') throw new Error(t('Esa partida ya ha empezado.'));
       if(players.length>=maxSeatsFor(data.gameType)) throw new Error(t('La sala ya está completa.'));
+      if(memberUids.includes(uid)) throw new Error(t('Ya estás en esta sala desde otra pestaña.'));
       players.push({uid, sessionId, name, seat: players.length});
-      tx.update(ref, {players});
+      memberUids.push(uid);
+      tx.update(ref, {players, memberUids});
     });
     lobbyRoomCode = code;
     stopWatchingOpenRooms();
@@ -5420,6 +5528,7 @@ function openOnlineLobby(code, isHost){
     if(data.stake) stakeEl.textContent = tf('Se juega: {0}€', data.stake);
     if(data.status==='lobby'){
       renderOnlineLobbyPlayers(data);
+      if(isHost) syncLobbyIndex(code, data);
     } else if(data.status==='playing'){
       if(!state.online) enterOnlineGame(data, isHost);
       else if(!state.online.isHost && data.stateJson) applyRemoteState(data.stateJson);
@@ -5429,11 +5538,11 @@ function openOnlineLobby(code, isHost){
 function renderOnlineLobbyPlayers(data){
   const max = maxSeatsFor(data.gameType);
   const list = document.getElementById('onlineLobbyPlayers');
-  list.innerHTML = data.players.map(p=>
-    `<div class="launcher-item" style="cursor:default;"><div><b>${p.name}</b><span>${t(p.uid===data.hostUid?'Anfitrión':'Jugador')}</span></div></div>`
+  list.innerHTML = (data.players||[]).map(p=>
+    `<div class="launcher-item" style="cursor:default;"><div><b>${escapeHtml(p.name)}</b><span>${escapeHtml(t(p.uid===data.hostUid?'Anfitrión':'Jugador'))}</span></div></div>`
   ).join('');
   document.getElementById('onlineLobbyStartBtn').textContent =
-    data.players.length>=max ? t('Empezar partida') : tf('Empezar ({0}/{1}, resto IA)', data.players.length, max);
+    (data.players||[]).length>=max ? t('Empezar partida') : tf('Empezar ({0}/{1}, resto IA)', (data.players||[]).length, max);
 }
 function leaveOnlineLobby(){
   netTeardown();
@@ -5442,10 +5551,13 @@ function leaveOnlineLobby(){
 function netTeardown(){
   if(roomUnsub){ roomUnsub(); roomUnsub=null; }
   if(actionsUnsub){ actionsUnsub(); actionsUnsub=null; }
+  if(handUnsub){ handUnsub(); handUnsub=null; }
   stopWatchingOpenRooms();
   lobbyRoomCode = null;
+  cachedPrivateHand = null;
   setConnError('room', false);
   setConnError('actions', false);
+  setConnError('hand', false);
   appliedActionIds.clear();
 }
 
@@ -5464,7 +5576,7 @@ async function startOnlineGame(){
     const data = doc.data();
     const players = data.players || [];
     newGame(500, data.gameType, 'medium', players.length);
-    players.forEach((p,i)=>{ state.seatNames[i] = p.name; });
+    players.forEach((p,i)=>{ state.seatNames[i] = sanitizePlayerName(p.name, SEAT_NAMES[i]||('J'+i)); });
     state.stake = data.stake || null;
     const hostSeat = Math.max(0, players.findIndex(p=>p.sessionId===onlineUid));
     state.online = { code, isHost:true, uid:onlineUid, authUid:onlineAuthUid, mySeat:hostSeat, players };
@@ -5472,13 +5584,38 @@ async function startOnlineGame(){
     // before state.online existed, so the pass-and-play "Pásale el móvil a…"
     // overlay could've been shown by mistake — re-render now that it's set.
     render();
-    await ref.set({ status:'playing' }, {merge:true});
+    removeLobbyIndex(code);
+    await ref.set({ status:'playing', memberUids: players.map(p=>p.uid).filter(Boolean) }, {merge:true});
     attachHostActionsListener(code);
     document.getElementById('launcherOverlay').classList.add('hidden');
     netPush(true);
   }finally{
     btn.disabled = false;
   }
+}
+
+function mergeCachedPrivateHand(){
+  if(!state.online || state.online.isHost || cachedPrivateHand==null) return;
+  const seat = state.online.mySeat;
+  if(seat==null || seat<0 || !Array.isArray(state.hands)) return;
+  state.hands[seat] = cachedPrivateHand;
+}
+function attachPrivateHandListener(code, authUid){
+  if(handUnsub){ handUnsub(); handUnsub=null; }
+  if(!code || !authUid) return;
+  handUnsub = fbDb.collection('rooms').doc(code).collection('hands').doc(authUid)
+    .onSnapshot(snap=>{
+      setConnError('hand', false);
+      if(!snap.exists) return;
+      try{
+        cachedPrivateHand = JSON.parse(snap.data().cardsJson);
+      }catch(e){ return; }
+      if(state.online && !state.online.isHost){
+        mergeCachedPrivateHand();
+        // Guests' render() netPush is a no-op; safe to call the wrapped render.
+        render();
+      }
+    }, ()=>setConnError('hand', true));
 }
 
 // Non-host, first time seeing status:'playing' — load the state the host
@@ -5493,6 +5630,8 @@ function enterOnlineGame(data, isHost){
   state = deserializeState(data.stateJson);
   const mySeat = (data.players||[]).findIndex(p=>p.sessionId===onlineUid);
   state.online = { code: lobbyRoomCode, isHost:false, uid:onlineUid, authUid:onlineAuthUid, mySeat, players:data.players };
+  mergeCachedPrivateHand();
+  attachPrivateHandListener(lobbyRoomCode, onlineAuthUid);
   // Joining/rejoining a game already under way can mean the synced state
   // already carries a backlog of past effects (trick wins, cantes...) — mark
   // them all as already-seen so this device doesn't replay the whole game's
@@ -5510,6 +5649,7 @@ function applyRemoteState(json){
   const online = state.online;
   state = deserializeState(json);
   state.online = online;
+  mergeCachedPrivateHand();
   render();
 }
 
@@ -5576,6 +5716,28 @@ function serializeState(s){
 function deserializeState(json){
   return JSON.parse(json, (k,v)=> (v && typeof v==='object' && Array.isArray(v.__set__)) ? new Set(v.__set__) : v);
 }
+// Public wire format: same as full state but every seat's hand emptied so
+// reading the room doc never reveals hidden cards. Private hands go to
+// rooms/{code}/hands/{authUid} instead.
+function serializePublicState(s){
+  const o = JSON.parse(serializeState(s));
+  if(Array.isArray(o.hands)) o.hands = o.hands.map(()=>[]);
+  return JSON.stringify(o);
+}
+function publishPrivateHands(){
+  if(!(state.online && state.online.isHost)) return;
+  const code = state.online.code;
+  const players = state.online.players || [];
+  players.forEach((p, seat)=>{
+    if(!p || !p.uid) return;
+    const cards = state.hands[seat] || [];
+    fbDb.collection('rooms').doc(code).collection('hands').doc(p.uid).set({
+      cardsJson: JSON.stringify(cards),
+      seat,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }).catch(e=>console.error('publishPrivateHands failed', e));
+  });
+}
 
 let netPushTimer = null;
 function netPush(immediate){
@@ -5583,9 +5745,11 @@ function netPush(immediate){
   const fire = ()=>{
     netPushTimer = null;
     fbDb.collection('rooms').doc(state.online.code).set({
-      stateJson: serializeState(state), status:'playing',
+      stateJson: serializePublicState(state), status:'playing',
+      memberUids: (state.online.players||[]).map(p=>p.uid).filter(Boolean),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     }, {merge:true}).catch(e=>console.error('netPush failed', e));
+    publishPrivateHands();
   };
   if(immediate){ if(netPushTimer){ clearTimeout(netPushTimer); netPushTimer=null; } fire(); return; }
   if(netPushTimer) return;
@@ -5672,25 +5836,43 @@ captainUseCard = function(seat, key, targetSeat, suit){
 </script>
 
 <!-- Firebase (compat build — plain globals, no bundler needed) used only for
-     Multi Online (see NETWORKING / ONLINE MULTIPLAYER section below). -->
+     Multi Online (see NETWORKING / ONLINE MULTIPLAYER section below).
+     No project credentials are shipped in this file — Solo / Multi en móvil
+     work without them. For local Multi Online, copy firebase-config.example.js
+     to firebase-config.js (gitignored) and fill in your Firebase web config. -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script>
-// TODO: paste your own Firebase project's config here (Project settings ›
-// General › "Your apps" › SDK setup and configuration). Needs Firestore
-// (Native mode) and Anonymous auth enabled — see firestore.rules below.
-const firebaseConfig = {
-  apiKey: "AIzaSyAxtJIPuwfIpCUEt6H-Hq4V7fSDYOURXak",
-  authDomain: "apuestas-de-bazas.firebaseapp.com",
-  projectId: "apuestas-de-bazas",
-  storageBucket: "apuestas-de-bazas.firebasestorage.app",
-  messagingSenderId: "929540107134",
-  appId: "1:929540107134:web:94b73d7697df2fb10de12f"
-};
-firebase.initializeApp(firebaseConfig);
-const fbAuth = firebase.auth();
-const fbDb = firebase.firestore();
+let fbAuth = null, fbDb = null;
+function readFirebaseConfig(){
+  const cfg = window.SUBASTAO_FIREBASE_CONFIG;
+  if(!cfg || typeof cfg!=='object') return null;
+  const required = ['apiKey','authDomain','projectId','appId'];
+  if(required.some(k=>!cfg[k] || /YOUR_/i.test(String(cfg[k])))) return null;
+  return cfg;
+}
+function loadOptionalFirebaseConfigFile(){
+  if(window.SUBASTAO_FIREBASE_CONFIG) return Promise.resolve();
+  return new Promise(resolve=>{
+    const s = document.createElement('script');
+    s.src = 'firebase-config.js';
+    s.onload = ()=>resolve();
+    s.onerror = ()=>resolve();
+    document.head.appendChild(s);
+  });
+}
+function ensureFirebaseReady(){
+  if(fbAuth && fbDb) return Promise.resolve();
+  return loadOptionalFirebaseConfigFile().then(()=>{
+    const cfg = readFirebaseConfig();
+    if(!cfg) throw new Error('firebase-config-missing');
+    if(typeof firebase==='undefined') throw new Error('firebase-sdk-missing');
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    fbAuth = firebase.auth();
+    fbDb = firebase.firestore();
+  });
+}
 </script>
 </body>
 </html>
