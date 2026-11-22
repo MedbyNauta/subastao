@@ -1517,6 +1517,7 @@ const FR_DICT = {
   "Multi en móvil": "Multi sur un téléphone",
   "Os vais pasando el teléfono": "Vous vous passez le téléphone",
   "Multi Online": "Multi en ligne",
+  "Multi Online no está configurado en esta versión. Solo y Multi en móvil siguen disponibles.": "Le mode Multi en ligne n'est pas configuré dans cette version. Solo et Multi sur mobile restent disponibles.",
   "Cada uno desde su móvil": "Chacun depuis son téléphone",
   "¿Cuántas personas?": "Combien de personnes ?",
   "Crear partida": "Créer une partie",
@@ -5330,7 +5331,15 @@ function ensureSessionId(){
   return id;
 }
 
-function goLauncherOnlineMenu(){ launcherGo('OnlineMenu'); }
+async function goLauncherOnlineMenu(){
+  try{
+    await ensureFirebaseReady();
+  }catch(e){
+    alert(t('Multi Online no está configurado en esta versión. Solo y Multi en móvil siguen disponibles.'));
+    return;
+  }
+  launcherGo('OnlineMenu');
+}
 function goLauncherOnlineJoin(){ launcherGo('OnlineJoin'); watchOpenRooms(); }
 function leaveOnlineJoinScreen(){ stopWatchingOpenRooms(); launcherGo('OnlineMenu'); }
 
@@ -5383,11 +5392,11 @@ function genRoomCode(){
 function maxSeatsFor(gameType){ return parseGameSelector(gameType).numPlayers; }
 
 function ensureFirebaseAuth(){
-  return new Promise((resolve,reject)=>{
+  return ensureFirebaseReady().then(()=> new Promise((resolve,reject)=>{
     if(fbAuth.currentUser){ resolve(fbAuth.currentUser.uid); return; }
     const unsub = fbAuth.onAuthStateChanged(user=>{ if(user){ unsub(); resolve(user.uid); } });
     fbAuth.signInAnonymously().catch(e=>{ unsub(); reject(e); });
-  });
+  }));
 }
 
 function lobbyIndexPayload(code, data, hostName){
@@ -5827,25 +5836,43 @@ captainUseCard = function(seat, key, targetSeat, suit){
 </script>
 
 <!-- Firebase (compat build — plain globals, no bundler needed) used only for
-     Multi Online (see NETWORKING / ONLINE MULTIPLAYER section below). -->
+     Multi Online (see NETWORKING / ONLINE MULTIPLAYER section below).
+     No project credentials are shipped in this file — Solo / Multi en móvil
+     work without them. For local Multi Online, copy firebase-config.example.js
+     to firebase-config.js (gitignored) and fill in your Firebase web config. -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 <script>
-// TODO: paste your own Firebase project's config here (Project settings ›
-// General › "Your apps" › SDK setup and configuration). Needs Firestore
-// (Native mode) and Anonymous auth enabled — see firestore.rules below.
-const firebaseConfig = {
-  apiKey: "AIzaSyAxtJIPuwfIpCUEt6H-Hq4V7fSDYOURXak",
-  authDomain: "apuestas-de-bazas.firebaseapp.com",
-  projectId: "apuestas-de-bazas",
-  storageBucket: "apuestas-de-bazas.firebasestorage.app",
-  messagingSenderId: "929540107134",
-  appId: "1:929540107134:web:94b73d7697df2fb10de12f"
-};
-firebase.initializeApp(firebaseConfig);
-const fbAuth = firebase.auth();
-const fbDb = firebase.firestore();
+let fbAuth = null, fbDb = null;
+function readFirebaseConfig(){
+  const cfg = window.SUBASTAO_FIREBASE_CONFIG;
+  if(!cfg || typeof cfg!=='object') return null;
+  const required = ['apiKey','authDomain','projectId','appId'];
+  if(required.some(k=>!cfg[k] || /YOUR_/i.test(String(cfg[k])))) return null;
+  return cfg;
+}
+function loadOptionalFirebaseConfigFile(){
+  if(window.SUBASTAO_FIREBASE_CONFIG) return Promise.resolve();
+  return new Promise(resolve=>{
+    const s = document.createElement('script');
+    s.src = 'firebase-config.js';
+    s.onload = ()=>resolve();
+    s.onerror = ()=>resolve();
+    document.head.appendChild(s);
+  });
+}
+function ensureFirebaseReady(){
+  if(fbAuth && fbDb) return Promise.resolve();
+  return loadOptionalFirebaseConfigFile().then(()=>{
+    const cfg = readFirebaseConfig();
+    if(!cfg) throw new Error('firebase-config-missing');
+    if(typeof firebase==='undefined') throw new Error('firebase-sdk-missing');
+    if(!firebase.apps.length) firebase.initializeApp(cfg);
+    fbAuth = firebase.auth();
+    fbDb = firebase.firestore();
+  });
+}
 </script>
 </body>
 </html>
